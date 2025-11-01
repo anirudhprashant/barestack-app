@@ -142,7 +142,7 @@ const LoginPage = () => {
 // --- MAIN APP LAYOUT ---
 const AppLayout = () => {
     return (
-        <div className="font-sans text-brand-dark bg-brand-light">
+        <div className="font-sans text-brand-dark bg-brand-light min-h-screen">
             <Sidebar />
             <div className="ml-[200px]">
                 <Header />
