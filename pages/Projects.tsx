@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, PageHeader, Button, Icon } from '../components/ui';
+import { Card, PageHeader, Button, Icon, Input, Modal } from '../components/ui';
 import { Project, Task, TaskStatus, ProjectStatus } from '../types';
 import { useHistory } from '../historyStore';
 
@@ -21,6 +21,10 @@ const Projects: React.FC = () => {
     const { state, setState } = useHistory();
     const { projects, contacts, tasks } = state.present;
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+    const [showProjectModal, setShowProjectModal] = useState(false);
+    const [projectForm, setProjectForm] = useState({ name: '', clientId: '', budget: 0, estimatedHours: 0 });
+    const [showTaskModal, setShowTaskModal] = useState(false);
+    const [taskForm, setTaskForm] = useState({ title: '', dueDate: '', estimatedHours: 8 });
 
     useEffect(() => {
         if (!selectedProjectId && projects.length > 0) {
@@ -29,20 +33,25 @@ const Projects: React.FC = () => {
     }, [projects, selectedProjectId]);
 
     const handleAddProject = () => {
-        const name = prompt("Enter project name:", "New Marketing Campaign");
-        if (!name || contacts.length === 0) {
-            if (contacts.length === 0) alert("Please create a contact first.");
+        if (contacts.length === 0) {
+            alert("Please create a contact first.");
             return;
         }
-        
-        const randomContact = contacts[Math.floor(Math.random() * contacts.length)];
+        setProjectForm({ name: '', clientId: contacts[0].id, budget: 0, estimatedHours: 0 });
+        setShowProjectModal(true);
+    };
+
+    const saveProject = () => {
+        const name = projectForm.name.trim();
+        if (!name) return;
+        const clientId = projectForm.clientId || contacts[0].id;
         const newProject: Project = {
             id: `p${Date.now()}`,
             name,
-            clientId: randomContact.id,
+            clientId,
             status: ProjectStatus.Active,
-            budget: 5000,
-            estimatedHours: 100,
+            budget: projectForm.budget || 0,
+            estimatedHours: projectForm.estimatedHours || 0,
         };
 
         const newActivity = {
@@ -57,24 +66,30 @@ const Projects: React.FC = () => {
             projects: [...state.present.projects, newProject],
             recentActivity: [...state.present.recentActivity, newActivity]
         });
+        setShowProjectModal(false);
     };
 
     const handleAddTask = () => {
         if (!selectedProject) return;
-        const title = prompt("Enter task title:", "Draft initial designs");
-        if (!title) return;
+        setTaskForm({ title: '', dueDate: '', estimatedHours: 8 });
+        setShowTaskModal(true);
+    };
 
+    const saveTask = () => {
+        if (!selectedProject) return;
+        const title = taskForm.title.trim();
+        if (!title) return;
         const newTask: Task = {
             id: `t${Date.now()}`,
             projectId: selectedProject.id,
             title,
             assignedTo: 'u1',
-            dueDate: new Date().toISOString(),
-            estimatedHours: 8,
+            dueDate: taskForm.dueDate || new Date().toISOString(),
+            estimatedHours: taskForm.estimatedHours || 8,
             status: TaskStatus.ToDo,
         };
-
         setState({ ...state.present, tasks: [...state.present.tasks, newTask] });
+        setShowTaskModal(false);
     };
 
     const getClientName = (clientId: string) => contacts.find(c => c.id === clientId)?.name || 'Unknown Client';
@@ -136,6 +151,47 @@ const Projects: React.FC = () => {
                         ))}
                     </div>
                 </div>
+            )}
+
+            {showProjectModal && (
+                <Modal title="Create Project" onClose={() => setShowProjectModal(false)}
+                    actions={
+                        <>
+                            <Button variant="secondary" onClick={() => setShowProjectModal(false)}>Cancel</Button>
+                            <Button onClick={saveProject}>Create Project</Button>
+                        </>
+                    }
+                >
+                    <Input label="Project Name" id="project-name" value={projectForm.name} onChange={e => setProjectForm({ ...projectForm, name: e.target.value })} />
+                    <div>
+                        <label className="block text-brand-dark font-bold mb-2">Client</label>
+                        <select className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark" value={projectForm.clientId} onChange={e => setProjectForm({ ...projectForm, clientId: e.target.value })}>
+                            {contacts.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <Input label="Budget ($)" id="project-budget" type="number" value={String(projectForm.budget)} onChange={e => setProjectForm({ ...projectForm, budget: parseInt(e.target.value || '0') })} />
+                    <Input label="Estimated Hours" id="project-hours" type="number" value={String(projectForm.estimatedHours)} onChange={e => setProjectForm({ ...projectForm, estimatedHours: parseInt(e.target.value || '0') })} />
+                </Modal>
+            )}
+
+            {showTaskModal && (
+                <Modal title="Add Task" onClose={() => setShowTaskModal(false)}
+                    actions={
+                        <>
+                            <Button variant="secondary" onClick={() => setShowTaskModal(false)}>Cancel</Button>
+                            <Button onClick={saveTask}>Add Task</Button>
+                        </>
+                    }
+                >
+                    <Input label="Title" id="task-title" value={taskForm.title} onChange={e => setTaskForm({ ...taskForm, title: e.target.value })} />
+                    <div>
+                        <label className="block text-brand-dark font-bold mb-2">Due Date</label>
+                        <input type="date" className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark" value={taskForm.dueDate} onChange={e => setTaskForm({ ...taskForm, dueDate: e.target.value })} />
+                    </div>
+                    <Input label="Estimated Hours" id="task-hours" type="number" value={String(taskForm.estimatedHours)} onChange={e => setTaskForm({ ...taskForm, estimatedHours: parseInt(e.target.value || '8') })} />
+                </Modal>
             )}
         </div>
     );
