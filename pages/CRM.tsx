@@ -25,16 +25,18 @@ const CRM: React.FC = () => {
     const [dealForm, setDealForm] = useState({ contactId: '', value: 0 });
 
     useEffect(() => {
-        const fetchContacts = async () => {
-            const fetchedContacts = await api.getContacts();
-            setState({ ...state.present, contacts: fetchedContacts });
+        const fetchData = async () => {
+            try {
+                const [fetchedContacts, fetchedDeals] = await Promise.all([
+                    api.getContacts(),
+                    api.getDeals(),
+                ]);
+                setState({ ...state.present, contacts: fetchedContacts, deals: fetchedDeals });
+            } catch (error) {
+                console.error("Error fetching CRM data:", error);
+            }
         };
-        const fetchDeals = async () => {
-            const fetchedDeals = await api.getDeals();
-            setState({ ...state.present, deals: fetchedDeals });
-        };
-        fetchContacts();
-        fetchDeals();
+        fetchData();
     }, []);
 
     const handleAddContact = () => {
