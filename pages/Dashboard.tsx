@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, StatCard, Icon } from '../components/ui';
 import { RecentActivity } from '../types';
 import { formatDistanceToNow } from 'date-fns';
-import { dashboardApi, activityApi } from '../services/api';
+import { api } from '../services/api';
 import { useHistory } from '../historyStore';
 
 const Dashboard: React.FC = () => {
@@ -32,7 +32,7 @@ const Dashboard: React.FC = () => {
             setLoading(true);
             // Load stats, tolerate failures
             try {
-                const statsData = await dashboardApi.getStats();
+                const statsData = await api.getStats();
                 setStats(statsData || {
                     total_contacts: 0,
                     active_projects: 0,
@@ -46,7 +46,7 @@ const Dashboard: React.FC = () => {
 
             // Load recent activity; if it fails or has different fields, fall back to local history
             try {
-                const activityData = await activityApi.getRecent();
+                const activityData = await api.getRecentActivity();
                 const normalized: RecentActivity[] = (activityData || []).map((item: any) => ({
                     id: String(item.id),
                     timestamp: item.timestamp || item.created_at || new Date().toISOString(),

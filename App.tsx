@@ -117,7 +117,7 @@ const Sidebar = () => {
                             `flex items-center space-x-3 p-2 rounded-[10px] text-brand-dark font-bold transition-all duration-200 hover:bg-brand-light ${isActive ? 'bg-brand-light border-2 border-brand-dark' : ''}`
                         }
                     >
-                        <Icon name={item.icon as any} className="w-6 h-6" />
+                        <Icon name={item.icon} className="w-6 h-6" />
                         <span>{item.label}</span>
                     </NavLink>
                 ))}
