@@ -34,6 +34,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    console.log('SUPABASE_URL:', Deno.env.get('SUPABASE_URL'));
+    console.log('SUPABASE_SERVICE_ROLE_KEY:', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -46,6 +49,7 @@ Deno.serve(async (req) => {
     });
 
     if (error) {
+      console.error('Supabase admin createUser error:', error);
       const msg = error?.message || String(error);
       if (/already exists/i.test(msg)) {
         return new Response(JSON.stringify({ error: 'User already exists' }), {
