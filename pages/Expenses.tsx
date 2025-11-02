@@ -1,26 +1,37 @@
 
-import React from 'react';
-import { Card, PageHeader, Button, Icon } from '../components/ui';
+import React, { useState } from 'react';
+import { Card, PageHeader, Button, Icon, Input, Modal } from '../components/ui';
 import { Expense, ExpenseCategory } from '../types';
 import { useHistory } from '../historyStore';
 
 const Expenses: React.FC = () => {
     const { state, setState } = useHistory();
     const { expenses, projects } = state.present;
+    const [showExpenseModal, setShowExpenseModal] = useState(false);
+    const [expenseForm, setExpenseForm] = useState<{ description: string; amount: number; category: ExpenseCategory; date: string; projectId?: string }>({
+        description: '',
+        amount: 0,
+        category: ExpenseCategory.Other,
+        date: '',
+        projectId: projects[0]?.id,
+    });
 
     const handleAddExpense = () => {
-        const description = prompt("Enter expense description:", "New Software Subscription");
-        if (!description) return;
-        
-        const amount = prompt("Enter amount:", "50");
-        if (!amount || isNaN(parseFloat(amount))) return;
+        setExpenseForm({ description: '', amount: 0, category: ExpenseCategory.Other, date: '', projectId: projects[0]?.id });
+        setShowExpenseModal(true);
+    };
 
+    const saveExpense = () => {
+        const description = expenseForm.description.trim();
+        if (!description) return;
+        const amountNum = expenseForm.amount || 0;
         const newExpense: Expense = {
             id: `e${Date.now()}`,
-            date: new Date().toISOString(),
-            category: ExpenseCategory.Software,
-            amount: parseFloat(amount),
+            date: expenseForm.date || new Date().toISOString(),
+            category: expenseForm.category,
+            amount: amountNum,
             description: description,
+            projectId: expenseForm.projectId || undefined,
         };
 
         const newActivity = {
@@ -35,6 +46,7 @@ const Expenses: React.FC = () => {
             expenses: [...state.present.expenses, newExpense],
             recentActivity: [...state.present.recentActivity, newActivity]
         });
+        setShowExpenseModal(false);
     };
     
     const getProjectName = (projectId?: string) => {
@@ -90,6 +102,41 @@ const Expenses: React.FC = () => {
                     </table>
                 </div>
             </Card>
+
+            {showExpenseModal && (
+                <Modal title="Add Expense" onClose={() => setShowExpenseModal(false)}
+                    actions={
+                        <>
+                            <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Cancel</Button>
+                            <Button onClick={saveExpense}>Add Expense</Button>
+                        </>
+                    }
+                >
+                    <Input label="Description" id="expense-description" value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} />
+                    <Input label="Amount ($)" id="expense-amount" type="number" value={String(expenseForm.amount)} onChange={e => setExpenseForm({ ...expenseForm, amount: parseFloat(e.target.value || '0') })} />
+                    <div>
+                        <label className="block text-brand-dark font-bold mb-2">Category</label>
+                        <select className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark" value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value as ExpenseCategory })}>
+                            {Object.values(ExpenseCategory).map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-brand-dark font-bold mb-2">Date</label>
+                        <input type="date" className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark" value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-brand-dark font-bold mb-2">Project (optional)</label>
+                        <select className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark" value={expenseForm.projectId || ''} onChange={e => setExpenseForm({ ...expenseForm, projectId: e.target.value || undefined })}>
+                            <option value="">None</option>
+                            {projects.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </Modal>
+            )}
         </div>
     );
 };

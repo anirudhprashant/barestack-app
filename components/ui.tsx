@@ -197,3 +197,33 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ title, children }) => {
         </div>
     );
 };
+
+// --- MODAL COMPONENT ---
+interface ModalProps {
+    title: string;
+    children: React.ReactNode;
+    onClose: () => void;
+    actions?: React.ReactNode;
+}
+
+export const Modal: React.FC<ModalProps> = ({ title, children, onClose, actions }) => {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/30" onClick={onClose}></div>
+            <div className="relative bg-white w-full max-w-lg p-6 rounded-[10px] border-2 border-brand-dark shadow-neo">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-2xl font-bold text-brand-dark">{title}</h3>
+                    <button onClick={onClose} className="bg-white text-brand-dark font-bold py-1 px-3 rounded-[10px] border-2 border-brand-dark shadow-neo-sm">Close</button>
+                </div>
+                <div className="space-y-4">
+                    {children}
+                </div>
+                {actions && (
+                    <div className="mt-6 flex justify-end space-x-2">
+                        {actions}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};

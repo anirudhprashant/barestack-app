@@ -1,13 +1,22 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, StatCard, Icon } from '../components/ui';
-import { RecentActivity, InvoiceStatus, ProjectStatus, TaskStatus } from '../types';
-import { formatDistanceToNow, startOfWeek, endOfWeek } from 'date-fns';
+import { RecentActivity } from '../types';
+import { formatDistanceToNow } from 'date-fns';
+import { dashboardApi, activityApi } from '../services/api';
 import { useHistory } from '../historyStore';
 
 const Dashboard: React.FC = () => {
+    const [stats, setStats] = useState({
+        total_contacts: 0,
+        active_projects: 0,
+        unpaid_invoices_total: 0,
+        hours_this_week: 0,
+        active_tasks: 0
+    });
+    const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+    const [loading, setLoading] = useState(true);
     const { state } = useHistory();
-    const { contacts, projects, invoices, timeEntries, tasks, recentActivity } = state.present;
 
     const activityIconMap: Record<RecentActivity['type'], React.ReactNode> = {
         'CONTACT_ADDED': <Icon name="users" className="w-6 h-6 text-blue-500"/>,
@@ -18,57 +27,82 @@ const Dashboard: React.FC = () => {
         'EXPENSE_ADDED': <Icon name="receipt" className="w-6 h-6 text-orange-500"/>,
     };
 
-    // Calculate stats
-    const unpaidInvoices = invoices.filter(i => i.status === InvoiceStatus.Sent || i.status === InvoiceStatus.Overdue);
-    const outstandingRevenue = unpaidInvoices.reduce((sum, inv) => {
-        const subtotal = inv.lineItems.reduce((s, li) => s + li.quantity * li.rate, 0);
-        return sum + subtotal * (1 + inv.taxRate / 100);
-    }, 0);
+    useEffect(() => {
+        const loadDashboardData = async () => {
+            setLoading(true);
+            // Load stats, tolerate failures
+            try {
+                const statsData = await dashboardApi.getStats();
+                setStats(statsData || {
+                    total_contacts: 0,
+                    active_projects: 0,
+                    unpaid_invoices_total: 0,
+                    hours_this_week: 0,
+                    active_tasks: 0
+                });
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+            }
 
-    const weekStart = startOfWeek(new Date());
-    const weekEnd = endOfWeek(new Date());
-    const hoursThisWeek = timeEntries
-        .filter(te => new Date(te.date) >= weekStart && new Date(te.date) <= weekEnd)
-        .reduce((sum, te) => sum + te.hours, 0);
-        
-    const stats = {
-        totalContacts: contacts.length,
-        activeProjects: projects.filter(p => p.status === ProjectStatus.Active).length,
-        unpaidInvoices: unpaidInvoices.length,
-        hoursLoggedThisWeek: hoursThisWeek,
-        outstandingRevenue: outstandingRevenue,
-        activeTasks: tasks.filter(t => t.status !== TaskStatus.Done).length,
-    };
+            // Load recent activity; if it fails or has different fields, fall back to local history
+            try {
+                const activityData = await activityApi.getRecent();
+                const normalized: RecentActivity[] = (activityData || []).map((item: any) => ({
+                    id: String(item.id),
+                    timestamp: item.timestamp || item.created_at || new Date().toISOString(),
+                    type: (item.type || 'CONTACT_ADDED') as RecentActivity['type'],
+                    description: item.description || item.action || 'Activity'
+                }));
+                setRecentActivity(normalized);
+            } catch (error) {
+                console.error('Error loading activity log, using local history:', error);
+                setRecentActivity(state.present.recentActivity || []);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const sortedActivity = [...recentActivity].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        loadDashboardData();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-brand-dark font-bold text-xl">Loading dashboard...</div>
+            </div>
+        );
+    }
 
     return (
         <div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-                <StatCard title="Outstanding Revenue" value={`$${stats.outstandingRevenue.toLocaleString()}`} icon="chart" />
-                <StatCard title="Active Projects" value={stats.activeProjects} icon="clipboard" />
-                <StatCard title="Hours Logged This Week" value={stats.hoursLoggedThisWeek} icon="clock" />
-                <StatCard title="Total Contacts" value={stats.totalContacts} icon="users" />
-                <StatCard title="Unpaid Invoices" value={stats.unpaidInvoices} icon="document" />
-                <StatCard title="Active Tasks" value={stats.activeTasks} icon="clipboard" />
+                <StatCard title="Outstanding Revenue" value={`$${(stats.unpaid_invoices_total || 0).toLocaleString()}`} icon="chart" />
+                <StatCard title="Active Projects" value={stats.active_projects || 0} icon="clipboard" />
+                <StatCard title="Hours Logged This Week" value={stats.hours_this_week || 0} icon="clock" />
+                <StatCard title="Total Contacts" value={stats.total_contacts || 0} icon="users" />
+                <StatCard title="Active Tasks" value={stats.active_tasks || 0} icon="clipboard" />
             </div>
 
             <Card>
                 <h3 className="text-2xl font-bold mb-4">Recent Activity</h3>
                 <div className="space-y-4">
-                    {sortedActivity.slice(0, 10).map(item => (
-                        <div key={item.id} className="flex items-center space-x-4 p-2 border-b-2 border-brand-light last:border-b-0">
-                            <div className="flex-shrink-0 w-10 h-10 bg-brand-light rounded-full flex items-center justify-center border-2 border-brand-dark">
-                                {activityIconMap[item.type]}
+                    {recentActivity.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8">No recent activity. Start by adding some contacts or projects!</p>
+                    ) : (
+                        recentActivity.map(item => (
+                            <div key={item.id} className="flex items-center space-x-4 p-2 border-b-2 border-brand-light last:border-b-0">
+                                <div className="flex-shrink-0 w-10 h-10 bg-brand-light rounded-full flex items-center justify-center border-2 border-brand-dark">
+                                    {activityIconMap[item.type]}
+                                </div>
+                                <div className="flex-grow">
+                                    <p className="font-semibold">{item.description}</p>
+                                </div>
+                                <div className="text-sm text-gray-500 font-medium">
+                                    {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
+                                </div>
                             </div>
-                            <div className="flex-grow">
-                                <p className="font-semibold">{item.description}</p>
-                            </div>
-                            <div className="text-sm text-gray-500 font-medium">
-                                {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </Card>
         </div>
