@@ -24,10 +24,9 @@ For example, if your backend is deployed at `https://my-barestask-backend.coolif
 const API_URL = 'https://my-barestask-backend.coolify.app/api';
 ```
 
-After making this change, you will need to rebuild the frontend application before deploying it. You can do this by running the following command in the root of the project:
+## Frontend
 
-```bash
-npm run build
-```
+These variables should be set for the frontend application during the build process in Coolify.
 
-This will create a `dist` directory with the production-ready static files that you can then deploy to your hosting service.
+- `VITE_API_URL`: The full URL of your deployed backend API.
+  - **Example:** If your backend is deployed at `https://my-backend.coolify.app`, you should set this variable to `https://my-backend.coolify.app/api`.
