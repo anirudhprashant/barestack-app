@@ -16,6 +16,17 @@ import Settings from './pages/Settings';
 
 
 
+const navItems = [
+    { href: '/', label: 'Overview', icon: 'grid' },
+    { href: '/crm', label: 'CRM', icon: 'users' },
+    { href: '/projects', label: 'Projects', icon: 'clipboard' },
+    { href: '/invoices', label: 'Invoicing', icon: 'document' },
+    { href: '/time-tracking', label: 'Time Tracking', icon: 'clock' },
+    { href: '/expenses', label: 'Expenses', icon: 'receipt' },
+    { href: '/reports', label: 'Reports', icon: 'chart' },
+    { href: '/settings', label: 'Settings', icon: 'settings' },
+];
+
 const Sidebar = () => {
     return (
         <div className="fixed top-0 left-0 h-full w-[200px] bg-white border-r-2 border-brand-dark flex flex-col p-4 z-20">
