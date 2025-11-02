@@ -1,0 +1,382 @@
+
+  VITE v6.4.1  ready in 207 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://192.168.0.2:3000/
+1:48:04 AM [vite] (client) Pre-transform error: /app/pages/Dashboard.tsx: Identifier 'Card' has already been declared. (5:9)
+
+  3 | import { Card, StatCard, Icon } from '../components/ui';
+  4 | import { useState, useEffect } from 'react';
+> 5 | import { Card, StatCard, Icon } from '../components/ui';
+    |          ^
+  6 | import { RecentActivity } from '../types';
+  7 | import { formatDistanceToNow } from 'date-fns';
+  8 | import api from '../services/api';
+  Plugin: vite:react-babel
+  File: /app/pages/Dashboard.tsx:5:9
+  3  |  import { Card, StatCard, Icon } from '../components/ui';
+  4  |  import { useState, useEffect } from 'react';
+  5  |  import { Card, StatCard, Icon } from '../components/ui';
+     |           ^
+  6  |  import { RecentActivity } from '../types';
+  7  |  import { formatDistanceToNow } from 'date-fns';
+1:48:05 AM [vite] (client) Pre-transform error: Failed to resolve import "./services/api" from "pages/RegisterPage.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/pages/RegisterPage.tsx:4:16
+  3  |  import { useState } from "react";
+  4  |  import { NavLink, useNavigate } from "react-router-dom";
+  5  |  import api from "./services/api";
+     |                   ^
+  6  |  const RegisterPage = () => {
+  7  |    _s();
+1:48:05 AM [vite] (client) Pre-transform error: Failed to resolve import "../historyStore" from "pages/Reports.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/pages/Reports.tsx:4:27
+  3  |  import React from "react";
+  4  |  import { Card, PageHeader } from "../components/ui";
+  5  |  import { useHistory } from "../historyStore";
+     |                              ^
+  6  |  import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+  7  |  import { subDays, formatISO } from "date-fns";
+1:48:05 AM [vite] Internal server error: /app/pages/Dashboard.tsx: Identifier 'Card' has already been declared. (5:9)
+
+  3 | import { Card, StatCard, Icon } from '../components/ui';
+  4 | import { useState, useEffect } from 'react';
+> 5 | import { Card, StatCard, Icon } from '../components/ui';
+    |          ^
+  6 | import { RecentActivity } from '../types';
+  7 | import { formatDistanceToNow } from 'date-fns';
+  8 | import api from '../services/api';
+  Plugin: vite:react-babel
+  File: /app/pages/Dashboard.tsx:5:9
+  3  |  import { Card, StatCard, Icon } from '../components/ui';
+  4  |  import { useState, useEffect } from 'react';
+  5  |  import { Card, StatCard, Icon } from '../components/ui';
+     |           ^
+  6  |  import { RecentActivity } from '../types';
+  7  |  import { formatDistanceToNow } from 'date-fns';
+      at constructor (/app/node_modules/@babel/parser/lib/index.js:367:19)
+      at TypeScriptParserMixin.raise (/app/node_modules/@babel/parser/lib/index.js:6624:19)
+      at TypeScriptScopeHandler.declareName (/app/node_modules/@babel/parser/lib/index.js:4895:21)
+      at TypeScriptParserMixin.declareNameFromIdentifier (/app/node_modules/@babel/parser/lib/index.js:7594:16)
+      at TypeScriptParserMixin.checkIdentifier (/app/node_modules/@babel/parser/lib/index.js:7590:12)
+      at TypeScriptParserMixin.checkLVal (/app/node_modules/@babel/parser/lib/index.js:7527:12)
+      at TypeScriptParserMixin.finishImportSpecifier (/app/node_modules/@babel/parser/lib/index.js:14342:10)
+      at TypeScriptParserMixin.parseImportSpecifier (/app/node_modules/@babel/parser/lib/index.js:14499:17)
+      at TypeScriptParserMixin.parseImportSpecifier (/app/node_modules/@babel/parser/lib/index.js:10205:18)
+      at TypeScriptParserMixin.parseNamedImportSpecifiers (/app/node_modules/@babel/parser/lib/index.js:14478:36)
+      at TypeScriptParserMixin.parseImportSpecifiersAndAfter (/app/node_modules/@babel/parser/lib/index.js:14318:37)
+      at TypeScriptParserMixin.parseImport (/app/node_modules/@babel/parser/lib/index.js:14311:17)
+      at TypeScriptParserMixin.parseImport (/app/node_modules/@babel/parser/lib/index.js:9412:26)
+      at TypeScriptParserMixin.parseStatementContent (/app/node_modules/@babel/parser/lib/index.js:12952:27)
+      at TypeScriptParserMixin.parseStatementContent (/app/node_modules/@babel/parser/lib/index.js:9569:18)
+      at TypeScriptParserMixin.parseStatementLike (/app/node_modules/@babel/parser/lib/index.js:12843:17)
+      at TypeScriptParserMixin.parseModuleItem (/app/node_modules/@babel/parser/lib/index.js:12820:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/app/node_modules/@babel/parser/lib/index.js:13392:36)
+      at TypeScriptParserMixin.parseBlockBody (/app/node_modules/@babel/parser/lib/index.js:13385:10)
+      at TypeScriptParserMixin.parseProgram (/app/node_modules/@babel/parser/lib/index.js:12698:10)
+      at TypeScriptParserMixin.parseTopLevel (/app/node_modules/@babel/parser/lib/index.js:12688:25)
+      at TypeScriptParserMixin.parse (/app/node_modules/@babel/parser/lib/index.js:14568:25)
+      at TypeScriptParserMixin.parse (/app/node_modules/@babel/parser/lib/index.js:10183:18)
+      at parse (/app/node_modules/@babel/parser/lib/index.js:14602:38)
+      at parser (/app/node_modules/@babel/core/lib/parser/index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (/app/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+      at normalizeFile.next (<anonymous>)
+      at run (/app/node_modules/@babel/core/lib/transformation/index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (/app/node_modules/@babel/core/lib/transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (/app/node_modules/gensync/index.js:261:32)
+      at /app/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/app/node_modules/gensync/index.js:223:11)
+      at /app/node_modules/gensync/index.js:189:28
+      at /app/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+      at /app/node_modules/gensync/index.js:113:33
+      at step (/app/node_modules/gensync/index.js:287:14)
+      at /app/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/app/node_modules/gensync/index.js:223:11)
+1:48:05 AM [vite] Internal server error: Failed to resolve import "../historyStore" from "pages/Reports.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/pages/Reports.tsx:4:27
+  3  |  import React from "react";
+  4  |  import { Card, PageHeader } from "../components/ui";
+  5  |  import { useHistory } from "../historyStore";
+     |                              ^
+  6  |  import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+  7  |  import { subDays, formatISO } from "date-fns";
+      at TransformPluginContext._formatLog (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 3)
+      at async TransformPluginContext.transform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+1:48:05 AM [vite] Internal server error: Failed to resolve import "./services/api" from "pages/RegisterPage.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/pages/RegisterPage.tsx:4:16
+  3  |  import { useState } from "react";
+  4  |  import { NavLink, useNavigate } from "react-router-dom";
+  5  |  import api from "./services/api";
+     |                   ^
+  6  |  const RegisterPage = () => {
+  7  |    _s();
+      at TransformPluginContext._formatLog (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 3)
+      at async TransformPluginContext.transform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+1:48:42 AM [vite] (client) hmr update /App.tsx
+1:48:42 AM [vite] (client) hmr update /pages/CRM.tsx
+1:48:42 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:48:42 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:48:42 AM [vite] (client) hmr update /pages/Projects.tsx
+1:48:42 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:48:42 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:48:42 AM [vite] (client) hmr update /App.tsx
+1:48:42 AM [vite] (client) hmr update /App.tsx
+1:49:02 AM [vite] (client) hmr update /App.tsx
+1:49:02 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:49:02 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:49:02 AM [vite] (client) hmr update /pages/CRM.tsx
+1:49:02 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:49:02 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:49:02 AM [vite] (client) hmr update /pages/Projects.tsx
+1:49:02 AM [vite] (client) hmr update /App.tsx
+1:49:09 AM [vite] (client) hmr update /App.tsx
+1:49:09 AM [vite] (client) hmr update /pages/CRM.tsx
+1:49:09 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:49:09 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:49:09 AM [vite] (client) hmr update /pages/Projects.tsx
+1:49:09 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:49:09 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:49:09 AM [vite] (client) hmr update /App.tsx
+1:49:14 AM [vite] (client) hmr update /App.tsx
+1:49:14 AM [vite] (client) hmr update /pages/CRM.tsx
+1:49:14 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:49:14 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:49:14 AM [vite] (client) hmr update /pages/Projects.tsx
+1:49:14 AM [vite] (client) hmr update /App.tsx
+1:49:14 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:49:14 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:49:16 AM [vite] (client) Pre-transform error: /app/pages/Dashboard.tsx: Identifier 'Card' has already been declared. (5:9)
+
+  3 | import { Card, StatCard, Icon } from '../components/ui';
+  4 | import { useState, useEffect } from 'react';
+> 5 | import { Card, StatCard, Icon } from '../components/ui';
+    |          ^
+  6 | import { RecentActivity } from '../types';
+  7 | import { formatDistanceToNow } from 'date-fns';
+  8 | import api from '../services/api';
+  Plugin: vite:react-babel
+  File: /app/pages/Dashboard.tsx:5:9
+  3  |  import { Card, StatCard, Icon } from '../components/ui';
+  4  |  import { useState, useEffect } from 'react';
+  5  |  import { Card, StatCard, Icon } from '../components/ui';
+     |           ^
+  6  |  import { RecentActivity } from '../types';
+  7  |  import { formatDistanceToNow } from 'date-fns';
+1:49:17 AM [vite] (client) Pre-transform error: Failed to resolve import "../historyStore" from "pages/Reports.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/pages/Reports.tsx:4:27
+  3  |  import React from "react";
+  4  |  import { Card, PageHeader } from "../components/ui";
+  5  |  import { useHistory } from "../historyStore";
+     |                              ^
+  6  |  import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+  7  |  import { subDays, formatISO } from "date-fns";
+1:49:17 AM [vite] (client) Pre-transform error: Failed to resolve import "./services/api" from "pages/RegisterPage.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/pages/RegisterPage.tsx:4:16
+  3  |  import { useState } from "react";
+  4  |  import { NavLink, useNavigate } from "react-router-dom";
+  5  |  import api from "./services/api";
+     |                   ^
+  6  |  const RegisterPage = () => {
+  7  |    _s();
+1:49:17 AM [vite] Internal server error: /app/pages/Dashboard.tsx: Identifier 'Card' has already been declared. (5:9)
+
+  3 | import { Card, StatCard, Icon } from '../components/ui';
+  4 | import { useState, useEffect } from 'react';
+> 5 | import { Card, StatCard, Icon } from '../components/ui';
+    |          ^
+  6 | import { RecentActivity } from '../types';
+  7 | import { formatDistanceToNow } from 'date-fns';
+  8 | import api from '../services/api';
+  Plugin: vite:react-babel
+  File: /app/pages/Dashboard.tsx:5:9
+  3  |  import { Card, StatCard, Icon } from '../components/ui';
+  4  |  import { useState, useEffect } from 'react';
+  5  |  import { Card, StatCard, Icon } from '../components/ui';
+     |           ^
+  6  |  import { RecentActivity } from '../types';
+  7  |  import { formatDistanceToNow } from 'date-fns';
+      at constructor (/app/node_modules/@babel/parser/lib/index.js:367:19)
+      at TypeScriptParserMixin.raise (/app/node_modules/@babel/parser/lib/index.js:6624:19)
+      at TypeScriptScopeHandler.declareName (/app/node_modules/@babel/parser/lib/index.js:4895:21)
+      at TypeScriptParserMixin.declareNameFromIdentifier (/app/node_modules/@babel/parser/lib/index.js:7594:16)
+      at TypeScriptParserMixin.checkIdentifier (/app/node_modules/@babel/parser/lib/index.js:7590:12)
+      at TypeScriptParserMixin.checkLVal (/app/node_modules/@babel/parser/lib/index.js:7527:12)
+      at TypeScriptParserMixin.finishImportSpecifier (/app/node_modules/@babel/parser/lib/index.js:14342:10)
+      at TypeScriptParserMixin.parseImportSpecifier (/app/node_modules/@babel/parser/lib/index.js:14499:17)
+      at TypeScriptParserMixin.parseImportSpecifier (/app/node_modules/@babel/parser/lib/index.js:10205:18)
+      at TypeScriptParserMixin.parseNamedImportSpecifiers (/app/node_modules/@babel/parser/lib/index.js:14478:36)
+      at TypeScriptParserMixin.parseImportSpecifiersAndAfter (/app/node_modules/@babel/parser/lib/index.js:14318:37)
+      at TypeScriptParserMixin.parseImport (/app/node_modules/@babel/parser/lib/index.js:14311:17)
+      at TypeScriptParserMixin.parseImport (/app/node_modules/@babel/parser/lib/index.js:9412:26)
+      at TypeScriptParserMixin.parseStatementContent (/app/node_modules/@babel/parser/lib/index.js:12952:27)
+      at TypeScriptParserMixin.parseStatementContent (/app/node_modules/@babel/parser/lib/index.js:9569:18)
+      at TypeScriptParserMixin.parseStatementLike (/app/node_modules/@babel/parser/lib/index.js:12843:17)
+      at TypeScriptParserMixin.parseModuleItem (/app/node_modules/@babel/parser/lib/index.js:12820:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/app/node_modules/@babel/parser/lib/index.js:13392:36)
+      at TypeScriptParserMixin.parseBlockBody (/app/node_modules/@babel/parser/lib/index.js:13385:10)
+      at TypeScriptParserMixin.parseProgram (/app/node_modules/@babel/parser/lib/index.js:12698:10)
+      at TypeScriptParserMixin.parseTopLevel (/app/node_modules/@babel/parser/lib/index.js:12688:25)
+      at TypeScriptParserMixin.parse (/app/node_modules/@babel/parser/lib/index.js:14568:25)
+      at TypeScriptParserMixin.parse (/app/node_modules/@babel/parser/lib/index.js:10183:18)
+      at parse (/app/node_modules/@babel/parser/lib/index.js:14602:38)
+      at parser (/app/node_modules/@babel/core/lib/parser/index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (/app/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+      at normalizeFile.next (<anonymous>)
+      at run (/app/node_modules/@babel/core/lib/transformation/index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (/app/node_modules/@babel/core/lib/transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (/app/node_modules/gensync/index.js:261:32)
+      at /app/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/app/node_modules/gensync/index.js:223:11)
+      at /app/node_modules/gensync/index.js:189:28
+      at /app/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+      at /app/node_modules/gensync/index.js:113:33
+      at step (/app/node_modules/gensync/index.js:287:14)
+      at /app/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/app/node_modules/gensync/index.js:223:11)
+1:49:17 AM [vite] Internal server error: Failed to resolve import "../historyStore" from "pages/Reports.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/pages/Reports.tsx:4:27
+  3  |  import React from "react";
+  4  |  import { Card, PageHeader } from "../components/ui";
+  5  |  import { useHistory } from "../historyStore";
+     |                              ^
+  6  |  import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+  7  |  import { subDays, formatISO } from "date-fns";
+      at TransformPluginContext._formatLog (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 3)
+      at async TransformPluginContext.transform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+1:49:17 AM [vite] Internal server error: Failed to resolve import "./services/api" from "pages/RegisterPage.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/pages/RegisterPage.tsx:4:16
+  3  |  import { useState } from "react";
+  4  |  import { NavLink, useNavigate } from "react-router-dom";
+  5  |  import api from "./services/api";
+     |                   ^
+  6  |  const RegisterPage = () => {
+  7  |    _s();
+      at TransformPluginContext._formatLog (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 3)
+      at async TransformPluginContext.transform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+1:49:24 AM [vite] (client) hmr update /App.tsx
+1:49:24 AM [vite] (client) hmr update /pages/CRM.tsx
+1:49:24 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:49:24 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:49:24 AM [vite] (client) hmr update /pages/Projects.tsx
+1:49:24 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:49:24 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:49:24 AM [vite] (client) hmr update /App.tsx
+1:49:24 AM [vite] (client) hmr update /App.tsx
+1:49:33 AM [vite] (client) hmr update /App.tsx
+1:49:33 AM [vite] (client) hmr update /pages/CRM.tsx
+1:49:33 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:49:33 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:49:33 AM [vite] (client) hmr update /pages/Projects.tsx
+1:49:33 AM [vite] (client) hmr update /App.tsx
+1:49:33 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:49:33 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:49:45 AM [vite] (client) hmr update /App.tsx
+1:49:45 AM [vite] (client) hmr update /pages/CRM.tsx
+1:49:45 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:49:45 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:49:45 AM [vite] (client) hmr update /pages/Projects.tsx
+1:49:45 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:49:45 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:49:46 AM [vite] (client) hmr update /App.tsx
+1:49:52 AM [vite] (client) hmr update /App.tsx
+1:49:52 AM [vite] (client) hmr update /pages/CRM.tsx
+1:49:52 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:49:52 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:49:52 AM [vite] (client) hmr update /pages/Projects.tsx
+1:49:52 AM [vite] (client) hmr update /App.tsx
+1:49:52 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:49:52 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:49:58 AM [vite] (client) hmr update /App.tsx
+1:49:58 AM [vite] (client) hmr update /pages/CRM.tsx
+1:49:58 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:49:58 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:49:58 AM [vite] (client) hmr update /pages/Projects.tsx
+1:49:58 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:49:58 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:49:58 AM [vite] (client) hmr update /App.tsx
+1:50:54 AM [vite] (client) hmr update /App.tsx
+1:50:54 AM [vite] (client) hmr update /pages/CRM.tsx
+1:50:54 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:50:54 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:50:54 AM [vite] (client) hmr update /pages/Projects.tsx
+1:50:54 AM [vite] (client) hmr update /App.tsx
+1:50:54 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:50:54 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:50:54 AM [vite] (client) hmr update /App.tsx
+1:51:01 AM [vite] (client) hmr update /App.tsx
+1:51:01 AM [vite] (client) hmr update /pages/CRM.tsx
+1:51:01 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:51:01 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:51:01 AM [vite] (client) hmr update /pages/Projects.tsx
+1:51:01 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:51:01 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:51:01 AM [vite] (client) hmr update /App.tsx
+1:51:07 AM [vite] (client) hmr update /App.tsx
+1:51:07 AM [vite] (client) hmr update /pages/CRM.tsx
+1:51:07 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:51:07 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:51:07 AM [vite] (client) hmr update /pages/Projects.tsx
+1:51:07 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:51:07 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:51:07 AM [vite] (client) hmr update /App.tsx
+1:51:15 AM [vite] (client) hmr update /App.tsx
+1:51:15 AM [vite] (client) hmr update /pages/CRM.tsx
+1:51:15 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:51:15 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:51:15 AM [vite] (client) hmr update /pages/Projects.tsx
+1:51:15 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:51:15 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
+1:51:16 AM [vite] (client) hmr update /App.tsx
+1:51:22 AM [vite] (client) hmr update /App.tsx
+1:51:22 AM [vite] (client) hmr update /pages/CRM.tsx
+1:51:22 AM [vite] (client) hmr update /pages/Expenses.tsx
+1:51:22 AM [vite] (client) hmr update /pages/Invoices.tsx
+1:51:22 AM [vite] (client) hmr update /pages/Projects.tsx
+1:51:22 AM [vite] (client) hmr update /App.tsx
+1:51:22 AM [vite] (client) hmr update /pages/TimeTracking.tsx
+1:51:22 AM [vite] (client) hmr update /App.tsx, /pages/CRM.tsx, /pages/Projects.tsx, /pages/Invoices.tsx, /pages/TimeTracking.tsx, /pages/Expenses.tsx
