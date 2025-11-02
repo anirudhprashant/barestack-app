@@ -1,7 +1,6 @@
 
 import React, { createContext, useReducer, useContext, ReactNode, useEffect } from 'react';
 import { AppState } from './types';
-import { createInitialData } from './services/api';
 
 // --- STATE AND ACTIONS ---
 
@@ -84,9 +83,19 @@ export const HistoryProvider = ({ children }: { children: ReactNode }) => {
             console.error("Failed to parse state from localStorage", error);
         }
         // If nothing in storage or format is wrong, create fresh state
+        const emptyState: AppState = {
+            contacts: [],
+            deals: [],
+            projects: [],
+            tasks: [],
+            invoices: [],
+            timeEntries: [],
+            expenses: [],
+            recentActivity: [],
+        };
         return {
             past: [],
-            present: createInitialData(),
+            present: emptyState,
             future: [],
         };
     };
