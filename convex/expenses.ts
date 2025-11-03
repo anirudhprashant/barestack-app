@@ -15,21 +15,19 @@ export const listExpenses = query({
     ),
   },
   handler: async (ctx, args) => {
-    const baseQuery = args.projectId
-      ? ctx.db
-          .query("expenses")
-          .withIndex("by_project", (q) =>
-            q.eq("projectId", args.projectId)
-          )
-      : ctx.db.query("expenses");
+    let q = ctx.db.query("expenses");
 
-    let results = await baseQuery.collect();
-
-    if (args.category) {
-      results = results.filter((expense) => expense.category === args.category);
+    if (args.projectId) {
+      q = q.withIndex("by_project", (q) =>
+        q.eq("projectId", args.projectId)
+      );
     }
 
-    return results;
+    if (args.category) {
+      q = q.withIndex("by_category", (q) => q.eq("category", args.category));
+    }
+
+    return await q.collect();
   },
 });
 

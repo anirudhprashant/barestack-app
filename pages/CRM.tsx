@@ -1,12 +1,10 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Card, PageHeader, Button, Icon, Input, Modal } from '../components/ui';
+import { DealStage } from '../types';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import type { Id } from '../convex/_generated/dataModel';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 interface Deal {
     _id: Id<"deals">;
@@ -26,47 +24,12 @@ interface Contact {
     tags: string[];
 }
 
-const DealCard: React.FC<{ 
-    deal: Deal; 
-    contactName: string; 
-    onEdit: () => void; 
-    onDelete: () => void;
-}> = ({ deal, contactName, onEdit, onDelete }) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
-        id: deal._id 
-    });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-    };
-
+const DealCard: React.FC<{ deal: Deal; contactName: string }> = ({ deal, contactName }) => {
     return (
-        <div 
-            ref={setNodeRef} 
-            style={style}
-            {...attributes} 
-            {...listeners}
-            className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-move hover:shadow-neo transition-all group relative"
-        >
+        <div className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing">
             <p className="font-bold">{contactName}</p>
             <p className="font-semibold text-green-600">${deal.value.toLocaleString()}</p>
             <p className="text-sm text-gray-500">{new Date(deal.lastInteraction).toLocaleDateString()}</p>
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex space-x-1 transition-opacity">
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onEdit(); }} 
-                    className="p-1 bg-white rounded border-2 border-brand-dark hover:bg-brand-light"
-                >
-                    <Icon name="edit" className="w-4 h-4"/>
-                </button>
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onDelete(); }} 
-                    className="p-1 bg-white rounded border-2 border-brand-dark hover:bg-brand-light"
-                >
-                    <Icon name="trash" className="w-4 h-4"/>
-                </button>
-            </div>
         </div>
     );
 };
@@ -75,205 +38,58 @@ const CRM: React.FC = () => {
     const contacts = useQuery(api.crm.listContacts) || [];
     const deals = useQuery(api.crm.listDeals) || [];
     const createContact = useMutation(api.crm.createContact);
-    const updateContact = useMutation(api.crm.updateContact);
-    const deleteContact = useMutation(api.crm.deleteContact);
     const createDeal = useMutation(api.crm.createDeal);
-    const updateDeal = useMutation(api.crm.updateDeal);
-    const deleteDeal = useMutation(api.crm.deleteDeal);
-    const importContacts = useMutation(api.crm.importContacts);
     
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [showContactModal, setShowContactModal] = useState(false);
-    const [editingContact, setEditingContact] = useState<Contact | null>(null);
     const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', company: '' });
     const [showDealModal, setShowDealModal] = useState(false);
-    const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
     const [dealForm, setDealForm] = useState<{ contactId: string; value: number }>({ 
         contactId: '', 
         value: 0 
     });
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, { 
-            activationConstraint: { 
-                distance: 8 
-            } 
-        })
-    );
-
-    const stages: Deal["stage"][] = ["Lead", "Qualified", "Proposal", "Won", "Lost"];
-
     const handleAddContact = () => {
-        setEditingContact(null);
         setContactForm({ name: '', email: '', phone: '', company: '' });
         setShowContactModal(true);
-    };
-
-    const handleEditContact = (contact: Contact) => {
-        setEditingContact(contact);
-        setContactForm({ 
-            name: contact.name, 
-            email: contact.email || '', 
-            phone: contact.phone || '', 
-            company: contact.company || '' 
-        });
-        setShowContactModal(true);
-    };
-
-    const handleDeleteContact = async (id: Id<"contacts">) => {
-        if (window.confirm("Are you sure you want to delete this contact?")) {
-            await deleteContact({ id });
-        }
     };
 
     const saveContact = async () => {
         const name = contactForm.name.trim();
         if (!name) return;
 
-        if (editingContact) {
-            await updateContact({
-                id: editingContact._id,
-                name,
-                email: contactForm.email.trim() || undefined,
-                phone: contactForm.phone.trim() || undefined,
-                company: contactForm.company.trim() || undefined,
-            });
-        } else {
-            await createContact({
-                name,
-                email: contactForm.email.trim() || undefined,
-                phone: contactForm.phone.trim() || undefined,
-                company: contactForm.company.trim() || undefined,
-                tags: ['New'],
-            });
-        }
+        await createContact({
+            name,
+            email: contactForm.email.trim() || undefined,
+            phone: contactForm.phone.trim() || undefined,
+            company: contactForm.company.trim() || undefined,
+            tags: ['New'],
+        });
 
         setShowContactModal(false);
         setContactForm({ name: '', email: '', phone: '', company: '' });
-        setEditingContact(null);
     };
-
+    
     const handleAddDeal = () => {
         if (contacts.length === 0) {
             alert("Please add a contact first.");
             return;
         }
-        setEditingDeal(null);
-        setDealForm({ contactId: String(contacts[0]._id), value: 0 });
+        setDealForm({ contactId: contacts[0]._id, value: 0 });
         setShowDealModal(true);
-    };
-
-    const handleEditDeal = (deal: Deal) => {
-        setEditingDeal(deal);
-        setDealForm({ 
-            contactId: String(deal.contactId), 
-            value: deal.value 
-        });
-        setShowDealModal(true);
-    };
-
-    const handleDeleteDeal = async (id: Id<"deals">) => {
-        if (window.confirm("Are you sure you want to delete this deal?")) {
-            await deleteDeal({ id });
-        }
     };
 
     const saveDeal = async () => {
         if (!dealForm.contactId) return;
         
-        if (editingDeal) {
-            await updateDeal({
-                id: editingDeal._id,
-                contactId: dealForm.contactId as Id<"contacts">,
-                value: dealForm.value || 0,
-            });
-        } else {
-            await createDeal({
-                contactId: dealForm.contactId as Id<"contacts">,
-                value: dealForm.value || 0,
-                stage: "Lead",
-            });
-        }
+        await createDeal({
+            contactId: dealForm.contactId as Id<"contacts">,
+            value: dealForm.value || 0,
+            stage: "Lead",
+        });
 
         setShowDealModal(false);
         setDealForm({ contactId: '', value: 0 });
-        setEditingDeal(null);
-    };
-
-    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        try {
-            const text = await file.text();
-            const lines = text
-                .split(/\r?\n/)
-                .map(line => line.trim())
-                .filter(Boolean);
-
-            if (lines.length === 0) {
-                alert("The selected CSV appears to be empty.");
-                return;
-            }
-
-            const headers = lines[0]
-                .split(',')
-                .map(h => h.trim().toLowerCase());
-
-            const contactsToImport = lines.slice(1)
-                .map(line => line.split(','))
-                .map(columns => {
-                    const contact: { name?: string; email?: string; phone?: string; company?: string; tags: string[] } = { tags: [] };
-
-                    headers.forEach((header, index) => {
-                        const value = columns[index]?.trim();
-                        if (!value) return;
-
-                        if (header.includes('email')) contact.email = value;
-                        else if (header.includes('name')) contact.name = value;
-                        else if (header.includes('phone')) contact.phone = value;
-                        else if (header.includes('company')) contact.company = value;
-                        else if (header.includes('tag')) contact.tags.push(value);
-                    });
-
-                    return (contact.email || contact.name) ? contact : null;
-                })
-                .filter((contact): contact is { name?: string; email?: string; phone?: string; company?: string; tags: string[] } => Boolean(contact));
-
-            if (contactsToImport.length === 0) {
-                alert("No valid contacts were found in the CSV.");
-                return;
-            }
-
-            await importContacts({ contacts: contactsToImport });
-            alert(`Imported ${contactsToImport.length} contacts successfully.`);
-        } catch (error) {
-            console.error('Error importing contacts', error);
-            alert('Something went wrong while importing contacts. Please try again.');
-        } finally {
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-        }
-    };
-
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
-        if (!over) return;
-
-        const dealId = active.id as Id<"deals">;
-        const activeDeal = deals.find(d => d._id === dealId);
-        if (!activeDeal) return;
-
-        const containerId = (over.data?.current as any)?.sortable?.containerId ?? over.id;
-        if (typeof containerId !== 'string') return;
-        if (!stages.includes(containerId as Deal["stage"])) return;
-
-        const nextStage = containerId as Deal["stage"];
-        if (activeDeal.stage === nextStage) return;
-
-        void updateDeal({ id: dealId, stage: nextStage });
     };
 
     const filteredContacts = contacts.filter(c => 
@@ -283,64 +99,34 @@ const CRM: React.FC = () => {
 
     const getContactName = (contactId: Id<"contacts">) => {
         return contacts.find(c => c._id === contactId)?.name || 'Unknown';
-    };
+    }
+
+    const stages = Object.values(DealStage);
 
     return (
         <div>
             <PageHeader title="Deal Pipeline">
                 <Button variant="primary" onClick={handleAddDeal}><Icon name="plus"/> Add Deal</Button>
             </PageHeader>
-            
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
-                    {stages.map(stage => {
-                        const stageDeals = deals.filter(d => d.stage === stage);
-                        return (
-                            <div key={stage} className="bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark">
-                                <h3 className="font-extrabold text-lg mb-4 text-center">
-                                    {stage} ({stageDeals.length})
-                                </h3>
-                                <SortableContext 
-                                    id={stage} 
-                                    items={stageDeals.map(d => d._id)} 
-                                    strategy={verticalListSortingStrategy}
-                                >
-                                    <div>
-                                        {stageDeals.map(deal => (
-                                            <DealCard 
-                                                key={deal._id} 
-                                                deal={deal} 
-                                                contactName={getContactName(deal.contactId)}
-                                                onEdit={() => handleEditDeal(deal)}
-                                                onDelete={() => handleDeleteDeal(deal._id)}
-                                            />
-                                        ))}
-                                    </div>
-                                </SortableContext>
-                            </div>
-                        );
-                    })}
-                </div>
-            </DndContext>
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+                {stages.map(stage => (
+                    <div key={stage} className="bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark">
+                        <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({deals.filter(d => d.stage === stage).length})</h3>
+                        <div>
+                            {deals.filter(d => d.stage === stage).map(deal => (
+                                <DealCard key={deal._id} deal={deal} contactName={getContactName(deal.contactId)} />
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
 
             <PageHeader title="Contacts">
                  <div className="w-full max-w-xs">
                     <Input label="" id="search" placeholder="Search contacts..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                 </div>
-                <div className="flex space-x-2">
-                    <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
-                        <Icon name="document" /> Import CSV
-                    </Button>
-                    <Button variant="primary" onClick={handleAddContact}><Icon name="plus"/> Add Contact</Button>
-                </div>
+                <Button variant="primary" onClick={handleAddContact}><Icon name="plus"/> Add Contact</Button>
             </PageHeader>
-            <input
-                type="file"
-                accept=".csv"
-                ref={fileInputRef}
-                onChange={handleImport}
-                hidden
-            />
             <Card>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
@@ -366,8 +152,8 @@ const CRM: React.FC = () => {
                                     </td>
                                     <td className="p-4">
                                         <div className="flex space-x-2">
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none" onClick={() => handleEditContact(contact)}><Icon name="edit"/></Button>
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none" onClick={() => handleDeleteContact(contact._id)}><Icon name="trash"/></Button>
+                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none"><Icon name="edit"/></Button>
+                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none"><Icon name="trash"/></Button>
                                         </div>
                                     </td>
                                 </tr>
@@ -378,27 +164,27 @@ const CRM: React.FC = () => {
             </Card>
 
             {showContactModal && (
-                <Modal title={editingContact ? "Edit Contact" : "Add Contact"} onClose={() => setShowContactModal(false)}
+                <Modal title="Add Contact" onClose={() => setShowContactModal(false)}
                     actions={
                         <>
                             <Button variant="secondary" onClick={() => setShowContactModal(false)}>Cancel</Button>
-                            <Button onClick={saveContact}>{editingContact ? "Update" : "Add"} Contact</Button>
+                            <Button onClick={saveContact}>Save Contact</Button>
                         </>
                     }
                 >
                     <Input label="Name" id="contact-name" value={contactForm.name} onChange={e => setContactForm({ ...contactForm, name: e.target.value })} />
-                    <Input label="Email" id="contact-email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })} />
+                    <Input label="Email" id="contact-email" type="email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })} />
                     <Input label="Phone" id="contact-phone" value={contactForm.phone} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })} />
                     <Input label="Company" id="contact-company" value={contactForm.company} onChange={e => setContactForm({ ...contactForm, company: e.target.value })} />
                 </Modal>
             )}
 
             {showDealModal && (
-                <Modal title={editingDeal ? "Edit Deal" : "Add Deal"} onClose={() => setShowDealModal(false)}
+                <Modal title="Add Deal" onClose={() => setShowDealModal(false)}
                     actions={
                         <>
                             <Button variant="secondary" onClick={() => setShowDealModal(false)}>Cancel</Button>
-                            <Button onClick={saveDeal}>{editingDeal ? "Update" : "Add"} Deal</Button>
+                            <Button onClick={saveDeal}>Save Deal</Button>
                         </>
                     }
                 >
@@ -410,7 +196,7 @@ const CRM: React.FC = () => {
                             ))}
                         </select>
                     </div>
-                    <Input label="Deal Value ($)" id="deal-value" type="number" value={String(dealForm.value)} onChange={e => setDealForm({ ...dealForm, value: parseFloat(e.target.value || '0') })} />
+                    <Input label="Deal Value ($)" id="deal-value" type="number" value={String(dealForm.value)} onChange={e => setDealForm({ ...dealForm, value: parseInt(e.target.value || '0') })} />
                 </Modal>
             )}
         </div>
