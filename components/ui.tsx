@@ -186,13 +186,13 @@ export const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
 
 // --- PAGE HEADER ---
 interface PageHeaderProps {
-    title?: string;
+    title: string;
     children?: React.ReactNode;
 }
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, children }) => {
     return (
         <div className="flex justify-between items-center mb-8">
-            {title && <h2 className="text-4xl font-extrabold text-brand-dark">{title}</h2>}
+            <h2 className="text-4xl font-extrabold text-brand-dark">{title}</h2>
             {children && <div className="flex space-x-2">{children}</div>}
         </div>
     );

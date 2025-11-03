@@ -5,7 +5,7 @@ import { Card, PageHeader, Button, Input } from '../components/ui';
 const Settings: React.FC = () => {
     return (
         <div>
-            <div className="mb-8"></div>
+            <PageHeader title="Settings" />
             <div className="space-y-8">
                 <Card>
                     <h3 className="text-2xl font-bold mb-6 border-b-2 border-brand-dark pb-2">User Profile</h3>
