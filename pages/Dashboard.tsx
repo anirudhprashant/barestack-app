@@ -1,22 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, StatCard, Icon } from '../components/ui';
 import { RecentActivity } from '../types';
 import { formatDistanceToNow } from 'date-fns';
-import { api } from '../services/api';
-import { useHistory } from '../historyStore';
+import { useQuery } from 'convex/react';
+import { api } from '../convex/_generated/api';
 
 const Dashboard: React.FC = () => {
-    const [stats, setStats] = useState({
-        total_contacts: 0,
-        active_projects: 0,
-        unpaid_invoices_total: 0,
-        hours_this_week: 0,
-        active_tasks: 0
-    });
-    const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
-    const [loading, setLoading] = useState(true);
-    const { state } = useHistory();
+    const stats = useQuery(api.dashboard.getStats);
+    const recentActivityData = useQuery(api.dashboard.getRecentActivity);
 
     const activityIconMap: Record<RecentActivity['type'], React.ReactNode> = {
         'CONTACT_ADDED': <Icon name="users" className="w-6 h-6 text-blue-500"/>,
@@ -27,45 +19,14 @@ const Dashboard: React.FC = () => {
         'EXPENSE_ADDED': <Icon name="receipt" className="w-6 h-6 text-orange-500"/>,
     };
 
-    useEffect(() => {
-        const loadDashboardData = async () => {
-            setLoading(true);
-            // Load stats, tolerate failures
-            try {
-                const statsData = await api.getStats();
-                setStats(statsData || {
-                    total_contacts: 0,
-                    active_projects: 0,
-                    unpaid_invoices_total: 0,
-                    hours_this_week: 0,
-                    active_tasks: 0
-                });
-            } catch (error) {
-                console.error('Error loading dashboard stats:', error);
-            }
+    const recentActivity: RecentActivity[] = (recentActivityData || []).map((item) => ({
+        id: item._id,
+        timestamp: item.createdAt,
+        type: item.action as RecentActivity['type'],
+        description: `${item.action.replace(/_/g, ' ')}: ${item.entityType} ${item.entityId}`
+    }));
 
-            // Load recent activity; if it fails or has different fields, fall back to local history
-            try {
-                const activityData = await api.getRecentActivity();
-                const normalized: RecentActivity[] = (activityData || []).map((item: any) => ({
-                    id: String(item.id),
-                    timestamp: item.timestamp || item.created_at || new Date().toISOString(),
-                    type: (item.type || 'CONTACT_ADDED') as RecentActivity['type'],
-                    description: item.description || item.action || 'Activity'
-                }));
-                setRecentActivity(normalized);
-            } catch (error) {
-                console.error('Error loading activity log, using local history:', error);
-                setRecentActivity(state.present.recentActivity || []);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadDashboardData();
-    }, []);
-
-    if (loading) {
+    if (stats === undefined) {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="text-brand-dark font-bold text-xl">Loading dashboard...</div>

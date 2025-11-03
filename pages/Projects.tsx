@@ -1,14 +1,35 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, PageHeader, Button, Icon, Input, Modal } from '../components/ui';
-import { Project, Task, TaskStatus, ProjectStatus } from '../types';
-import { useHistory } from '../historyStore';
+import { TaskStatus, ProjectStatus } from '../types';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
+import type { Id } from '../convex/_generated/dataModel';
+
+interface Project {
+    _id: Id<"projects">;
+    name: string;
+    clientId: Id<"contacts">;
+    status: ProjectStatus;
+    budget: number;
+    estimatedHours: number;
+}
+
+interface Task {
+    _id: Id<"tasks">;
+    projectId: Id<"projects">;
+    title: string;
+    assignedTo?: string;
+    dueDate?: string;
+    estimatedHours: number;
+    status: TaskStatus;
+}
 
 const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
     return (
         <div className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing">
             <p className="font-bold">{task.title}</p>
-            <p className="text-sm text-gray-500">Due: {new Date(task.dueDate).toLocaleDateString()}</p>
+            <p className="text-sm text-gray-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</p>
             <div className="flex justify-between items-center mt-2">
                 <span className="text-xs font-bold">{task.estimatedHours} hrs</span>
                 <div className="w-8 h-8 bg-brand-light rounded-full border-2 border-brand-dark"></div>
@@ -18,56 +39,57 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
 };
 
 const Projects: React.FC = () => {
-    const { state, setState } = useHistory();
-    const { projects, contacts, tasks } = state.present;
-    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-    const [showProjectModal, setShowProjectModal] = useState(false);
-    const [projectForm, setProjectForm] = useState({ name: '', clientId: '', budget: 0, estimatedHours: 0 });
-    const [showTaskModal, setShowTaskModal] = useState(false);
-    const [taskForm, setTaskForm] = useState({ title: '', dueDate: '', estimatedHours: 8 });
+    const contacts = useQuery(api.crm.listContacts) || [];
+    const projects = useQuery(api.projects.listProjects) || [];
+    const [selectedProjectId, setSelectedProjectId] = useState<Id<"projects"> | null>(null);
+    const tasks = useQuery(api.projects.listTasks, selectedProjectId ? { projectId: selectedProjectId } : undefined) || [];
+
+    const createProject = useMutation(api.projects.createProject);
+    const createTask = useMutation(api.projects.createTask);
 
     useEffect(() => {
         if (!selectedProjectId && projects.length > 0) {
-            setSelectedProjectId(projects[0].id);
+            setSelectedProjectId(projects[0]._id);
         }
     }, [projects, selectedProjectId]);
+
+    const [showProjectModal, setShowProjectModal] = useState(false);
+    const [projectForm, setProjectForm] = useState({ name: '', clientId: '' as string, budget: 0, estimatedHours: 0 });
+    const [showTaskModal, setShowTaskModal] = useState(false);
+    const [taskForm, setTaskForm] = useState({ title: '', dueDate: '', estimatedHours: 8 });
 
     const handleAddProject = () => {
         if (contacts.length === 0) {
             alert("Please create a contact first.");
             return;
         }
-        setProjectForm({ name: '', clientId: contacts[0].id, budget: 0, estimatedHours: 0 });
+        setProjectForm({ name: '', clientId: String(contacts[0]._id), budget: 0, estimatedHours: 0 });
         setShowProjectModal(true);
     };
 
-    const saveProject = () => {
+    const saveProject = async () => {
+        if (contacts.length === 0) return;
         const name = projectForm.name.trim();
         if (!name) return;
-        const clientId = projectForm.clientId || contacts[0].id;
-        const newProject: Project = {
-            id: `p${Date.now()}`,
+
+        const clientId = (projectForm.clientId || String(contacts[0]._id)) as Id<"contacts">;
+
+        await createProject({
             name,
             clientId,
-            status: ProjectStatus.Active,
+            status: "Active",
             budget: projectForm.budget || 0,
             estimatedHours: projectForm.estimatedHours || 0,
-        };
-
-        const newActivity = {
-            id: `ra${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            type: 'PROJECT_CREATED' as const,
-            description: `New project created: ${name}`
-        };
-
-        setState({
-            ...state.present,
-            projects: [...state.present.projects, newProject],
-            recentActivity: [...state.present.recentActivity, newActivity]
         });
+
         setShowProjectModal(false);
+        setProjectForm({ name: '', clientId: '', budget: 0, estimatedHours: 0 });
     };
+
+    const selectedProject = useMemo(() => {
+        if (!selectedProjectId) return null;
+        return projects.find(p => p._id === selectedProjectId) ?? null;
+    }, [projects, selectedProjectId]);
 
     const handleAddTask = () => {
         if (!selectedProject) return;
@@ -75,26 +97,24 @@ const Projects: React.FC = () => {
         setShowTaskModal(true);
     };
 
-    const saveTask = () => {
-        if (!selectedProject) return;
+    const saveTask = async () => {
+        if (!selectedProjectId) return;
         const title = taskForm.title.trim();
         if (!title) return;
-        const newTask: Task = {
-            id: `t${Date.now()}`,
-            projectId: selectedProject.id,
+
+        await createTask({
+            projectId: selectedProjectId,
             title,
-            assignedTo: 'u1',
-            dueDate: taskForm.dueDate || new Date().toISOString(),
             estimatedHours: taskForm.estimatedHours || 8,
-            status: TaskStatus.ToDo,
-        };
-        setState({ ...state.present, tasks: [...state.present.tasks, newTask] });
+            status: "To Do",
+            dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
+        });
+
         setShowTaskModal(false);
+        setTaskForm({ title: '', dueDate: '', estimatedHours: 8 });
     };
 
-    const getClientName = (clientId: string) => contacts.find(c => c.id === clientId)?.name || 'Unknown Client';
-    const selectedProject = projects.find(p => p.id === selectedProjectId);
-    const selectedProjectTasks = tasks.filter(t => t.projectId === selectedProjectId);
+    const getClientName = (clientId: Id<"contacts">) => contacts.find(c => c._id === clientId)?.name || 'Unknown Client';
     const taskStages = Object.values(TaskStatus);
 
     return (
@@ -116,7 +136,7 @@ const Projects: React.FC = () => {
                         </thead>
                         <tbody>
                             {projects.map(project => (
-                                <tr key={project.id} className={`border-b-2 border-brand-light last:border-b-0 cursor-pointer hover:bg-brand-light ${selectedProjectId === project.id ? 'bg-brand-light' : ''}`} onClick={() => setSelectedProjectId(project.id)}>
+                                <tr key={project._id} className={`border-b-2 border-brand-light last:border-b-0 cursor-pointer hover:bg-brand-light ${selectedProjectId === project._id ? 'bg-brand-light' : ''}`} onClick={() => setSelectedProjectId(project._id)}>
                                     <td className="p-4 font-bold">{project.name}</td>
                                     <td className="p-4">{getClientName(project.clientId)}</td>
                                     <td className="p-4">${project.budget.toLocaleString()}</td>
@@ -141,10 +161,10 @@ const Projects: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {taskStages.map(stage => (
                             <div key={stage} className="bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark">
-                                <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({selectedProjectTasks.filter(t => t.status === stage).length})</h3>
+                                <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({tasks.filter(t => t.status === stage).length})</h3>
                                 <div>
-                                    {selectedProjectTasks.filter(t => t.status === stage).map(task => (
-                                        <TaskCard key={task.id} task={task} />
+                                    {tasks.filter(t => t.status === stage).map(task => (
+                                        <TaskCard key={task._id} task={task} />
                                     ))}
                                 </div>
                             </div>
@@ -167,7 +187,7 @@ const Projects: React.FC = () => {
                         <label className="block text-brand-dark font-bold mb-2">Client</label>
                         <select className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark" value={projectForm.clientId} onChange={e => setProjectForm({ ...projectForm, clientId: e.target.value })}>
                             {contacts.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
+                                <option key={c._id} value={String(c._id)}>{c.name}</option>
                             ))}
                         </select>
                     </div>
