@@ -8,6 +8,16 @@ export const listInvoices = query({
   },
 });
 
+export const listLineItems = query({
+  args: { invoiceId: v.id("invoices") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("lineItems")
+      .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
+      .collect();
+  },
+});
+
 export const getInvoice = query({
   args: { id: v.id("invoices") },
   handler: async (ctx, args) => {
@@ -93,5 +103,21 @@ export const updateInvoice = mutation({
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
     await ctx.db.patch(id, updates);
+  },
+});
+
+export const deleteInvoice = mutation({
+  args: { id: v.id("invoices") },
+  handler: async (ctx, args) => {
+    const lineItems = await ctx.db
+      .query("lineItems")
+      .withIndex("by_invoice", (q) => q.eq("invoiceId", args.id))
+      .collect();
+
+    for (const item of lineItems) {
+      await ctx.db.delete(item._id);
+    }
+
+    await ctx.db.delete(args.id);
   },
 });

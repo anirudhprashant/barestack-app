@@ -49,7 +49,7 @@ const Reports: React.FC = () => {
 
     return (
         <div>
-            <PageHeader title="Reports" />
+            <div className="mb-8"></div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <Card className="col-span-1 lg:col-span-2">
                     <h3 className="text-2xl font-bold mb-4">Revenue Over Time</h3>

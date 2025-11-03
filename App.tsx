@@ -30,7 +30,7 @@ const navItems = [
 const Sidebar = () => {
     return (
         <div className="fixed top-0 left-0 h-full w-[200px] bg-white border-r-2 border-brand-dark flex flex-col p-4 z-20">
-            <div className="text-3xl font-black text-brand-dark mb-10">
+            <div className="text-3xl font-bold text-brand-dark mb-10">
                 BareStack
             </div>
             <nav className="flex flex-col space-y-2">

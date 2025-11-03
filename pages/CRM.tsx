@@ -38,36 +38,71 @@ const CRM: React.FC = () => {
     const contacts = useQuery(api.crm.listContacts) || [];
     const deals = useQuery(api.crm.listDeals) || [];
     const createContact = useMutation(api.crm.createContact);
+    const updateContact = useMutation(api.crm.updateContact);
+    const deleteContact = useMutation(api.crm.deleteContact);
     const createDeal = useMutation(api.crm.createDeal);
+    const updateDeal = useMutation(api.crm.updateDeal);
+    const deleteDeal = useMutation(api.crm.deleteDeal);
     
     const [searchTerm, setSearchTerm] = useState('');
     const [showContactModal, setShowContactModal] = useState(false);
+    const [editingContact, setEditingContact] = useState<Contact | null>(null);
     const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', company: '' });
     const [showDealModal, setShowDealModal] = useState(false);
+    const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
     const [dealForm, setDealForm] = useState<{ contactId: string; value: number }>({ 
         contactId: '', 
         value: 0 
     });
 
     const handleAddContact = () => {
+        setEditingContact(null);
         setContactForm({ name: '', email: '', phone: '', company: '' });
         setShowContactModal(true);
+    };
+
+    const handleEditContact = (contact: Contact) => {
+        setEditingContact(contact);
+        setContactForm({ 
+            name: contact.name, 
+            email: contact.email || '', 
+            phone: contact.phone || '', 
+            company: contact.company || '' 
+        });
+        setShowContactModal(true);
+    };
+
+    const handleDeleteContact = async (id: Id<"contacts">) => {
+        if (window.confirm("Are you sure you want to delete this contact?")) {
+            await deleteContact({ id });
+        }
     };
 
     const saveContact = async () => {
         const name = contactForm.name.trim();
         if (!name) return;
 
-        await createContact({
-            name,
-            email: contactForm.email.trim() || undefined,
-            phone: contactForm.phone.trim() || undefined,
-            company: contactForm.company.trim() || undefined,
-            tags: ['New'],
-        });
+        if (editingContact) {
+            await updateContact({
+                id: editingContact._id,
+                name,
+                email: contactForm.email.trim() || undefined,
+                phone: contactForm.phone.trim() || undefined,
+                company: contactForm.company.trim() || undefined,
+            });
+        } else {
+            await createContact({
+                name,
+                email: contactForm.email.trim() || undefined,
+                phone: contactForm.phone.trim() || undefined,
+                company: contactForm.company.trim() || undefined,
+                tags: ['New'],
+            });
+        }
 
         setShowContactModal(false);
         setContactForm({ name: '', email: '', phone: '', company: '' });
+        setEditingContact(null);
     };
     
     const handleAddDeal = () => {
@@ -75,21 +110,43 @@ const CRM: React.FC = () => {
             alert("Please add a contact first.");
             return;
         }
+        setEditingDeal(null);
         setDealForm({ contactId: contacts[0]._id, value: 0 });
         setShowDealModal(true);
+    };
+
+    const handleEditDeal = (deal: Deal) => {
+        setEditingDeal(deal);
+        setDealForm({ contactId: deal.contactId, value: deal.value });
+        setShowDealModal(true);
+    };
+
+    const handleDeleteDeal = async (id: Id<"deals">) => {
+        if (window.confirm("Are you sure you want to delete this deal?")) {
+            await deleteDeal({ id });
+        }
     };
 
     const saveDeal = async () => {
         if (!dealForm.contactId) return;
         
-        await createDeal({
-            contactId: dealForm.contactId as Id<"contacts">,
-            value: dealForm.value || 0,
-            stage: "Lead",
-        });
+        if (editingDeal) {
+            await updateDeal({
+                id: editingDeal._id,
+                contactId: dealForm.contactId as Id<"contacts">,
+                value: dealForm.value || 0,
+            });
+        } else {
+            await createDeal({
+                contactId: dealForm.contactId as Id<"contacts">,
+                value: dealForm.value || 0,
+                stage: "Lead",
+            });
+        }
 
         setShowDealModal(false);
         setDealForm({ contactId: '', value: 0 });
+        setEditingDeal(null);
     };
 
     const filteredContacts = contacts.filter(c => 
@@ -114,7 +171,13 @@ const CRM: React.FC = () => {
                         <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({deals.filter(d => d.stage === stage).length})</h3>
                         <div>
                             {deals.filter(d => d.stage === stage).map(deal => (
-                                <DealCard key={deal._id} deal={deal} contactName={getContactName(deal.contactId)} />
+                                <div key={deal._id} className="relative group">
+                                    <DealCard deal={deal} contactName={getContactName(deal.contactId)} />
+                                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex space-x-1 transition-opacity">
+                                        <button onClick={() => handleEditDeal(deal)} className="p-1 bg-white rounded border-2 border-brand-dark hover:bg-brand-light"><Icon name="edit" className="w-4 h-4"/></button>
+                                        <button onClick={() => handleDeleteDeal(deal._id)} className="p-1 bg-white rounded border-2 border-brand-dark hover:bg-brand-light"><Icon name="trash" className="w-4 h-4"/></button>
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -152,8 +215,8 @@ const CRM: React.FC = () => {
                                     </td>
                                     <td className="p-4">
                                         <div className="flex space-x-2">
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none"><Icon name="edit"/></Button>
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none"><Icon name="trash"/></Button>
+                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none" onClick={() => handleEditContact(contact)}><Icon name="edit"/></Button>
+                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none" onClick={() => handleDeleteContact(contact._id)}><Icon name="trash"/></Button>
                                         </div>
                                     </td>
                                 </tr>
@@ -164,11 +227,11 @@ const CRM: React.FC = () => {
             </Card>
 
             {showContactModal && (
-                <Modal title="Add Contact" onClose={() => setShowContactModal(false)}
+                <Modal title={editingContact ? "Edit Contact" : "Add Contact"} onClose={() => setShowContactModal(false)}
                     actions={
                         <>
                             <Button variant="secondary" onClick={() => setShowContactModal(false)}>Cancel</Button>
-                            <Button onClick={saveContact}>Save Contact</Button>
+                            <Button onClick={saveContact}>{editingContact ? "Update" : "Save"} Contact</Button>
                         </>
                     }
                 >
@@ -180,11 +243,11 @@ const CRM: React.FC = () => {
             )}
 
             {showDealModal && (
-                <Modal title="Add Deal" onClose={() => setShowDealModal(false)}
+                <Modal title={editingDeal ? "Edit Deal" : "Add Deal"} onClose={() => setShowDealModal(false)}
                     actions={
                         <>
                             <Button variant="secondary" onClick={() => setShowDealModal(false)}>Cancel</Button>
-                            <Button onClick={saveDeal}>Save Deal</Button>
+                            <Button onClick={saveDeal}>{editingDeal ? "Update" : "Save"} Deal</Button>
                         </>
                     }
                 >
