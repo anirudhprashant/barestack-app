@@ -1,57 +1,55 @@
 # Google OAuth Setup Instructions
 
-Google authentication has been fully implemented with @convex-dev/auth.
+Google authentication has been fully implemented with @convex-dev/auth and is now configured for the Convex Cloud deployment at `https://trustworthy-cat-479.convex.cloud`.
 
 ## Current Configuration
 
-The application is now properly configured with `ConvexAuthProvider` wrapping the entire app, which enables:
-- Google OAuth authentication
+The application wraps the entire React tree with `ConvexAuthProvider`, enabling:
+- Google OAuth authentication via Convex
 - `useAuthActions` hook for sign in/out
-- `Authenticated` and `Unauthenticated` components for conditional rendering
+- `Authenticated` and `Unauthenticated` components to gate routes
 
-## OAuth Setup Steps
+## Required Setup
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Create a new project or select an existing one
-3. Enable the "Google+ API" for your project
-4. Go to "Credentials" and create an OAuth 2.0 Client ID:
-   - Application type: Web application
-   - Authorized redirect URIs: `https://backendconvex.barestack.org/api/auth/callback/google`
-5. Copy the Client ID and Client Secret
+1. **Google Cloud Console**
+   - Navigate to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   - Locate the OAuth 2.0 Client ID: `738445027256-sjpha7ge93guf3c8cnhm9i7g7lobr0a9.apps.googleusercontent.com`
+   - Edit the client and ensure the following redirect URIs are listed:
+     - `https://trustworthy-cat-479.convex.site/api/auth/callback/google` *(required)*
+     - `https://crm.barestack.org/auth/callback` *(optional: frontend callback handler)*
+   - Save the client ID and secret. You'll need both for Convex environment variables.
 
-## Environment Variables
+2. **Convex Cloud Environment Variables**
+   Set the following variables on the Convex deployment (`https://trustworthy-cat-479.convex.cloud`). You can do this via the Convex dashboard or the CLI:
 
-The following environment variables have been configured in Convex:
+   ```bash
+   # Using the CLI (production deployment)
+   npx convex env set AUTH_GOOGLE_ID "738445027256-sjpha7ge93guf3c8cnhm9i7g7lobr0a9.apps.googleusercontent.com" --prod
+   npx convex env set AUTH_GOOGLE_SECRET "<your-google-client-secret>" --prod
+   npx convex env set SITE_URL "https://crm.barestack.org" --prod
+   ```
 
-```bash
-AUTH_GOOGLE_ID=738445027256-sjpha7ge93guf3c8cnhm9i7g7lobr0a9.apps.googleusercontent.com
-AUTH_GOOGLE_SECRET=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
-JWT_PRIVATE_KEY=(configured)
-SITE_URL=https://crm.barestack.org/
-```
+   Additional variables such as `JWT_PRIVATE_KEY` should already be provisioned. If not, generate and set them as required by your security policies.
 
-To update these values, use:
+3. **Deploy Convex Functions**
+   After updating configuration or backend code, deploy to Convex Cloud:
 
-```bash
-npx convex env set AUTH_GOOGLE_ID <your-google-client-id> --url https://backendconvex.barestack.org --admin-key "self-hosted-convex|01bd2c2d7b12d4d6604f183ad599e90673df251275eed514ece2c12a01a6205bac2b95b964"
+   ```bash
+   npx convex deploy --prod
+   ```
 
-npx convex env set AUTH_GOOGLE_SECRET <your-google-client-secret> --url https://backendconvex.barestack.org --admin-key "self-hosted-convex|01bd2c2d7b12d4d6604f183ad599e90673df251275eed514ece2c12a01a6205bac2b95b964"
-```
+## OAuth Flow Overview
 
-## Deploy
-
-After making changes, deploy with:
-
-```bash
-npx convex deploy --url https://backendconvex.barestack.org --admin-key "self-hosted-convex|01bd2c2d7b12d4d6604f183ad599e90673df251275eed514ece2c12a01a6205bac2b95b964"
-```
-
-## OAuth Flow
-
-1. User visits https://crm.barestack.org
+1. User visits `https://crm.barestack.org`
 2. Unauthenticated users see the Auth page
-3. Click "Sign in with Google"
-4. Redirect to Google OAuth consent screen
-5. After consent, Google redirects to: `https://backendconvex.barestack.org/api/auth/callback/google`
-6. Convex Auth processes the callback and authenticates the user
-7. User is redirected back to the app with authenticated session
+3. Clicking "Sign in with Google" triggers `signIn("google")`
+4. Convex redirects the user to the Google OAuth consent screen
+5. Google redirects back to `https://trustworthy-cat-479.convex.site/api/auth/callback/google`
+6. Convex processes the callback, creates a session, and redirects the browser back to `https://crm.barestack.org`
+7. The user is now authenticated and gains access to the dashboard
+
+## Troubleshooting Tips
+
+- **Server Error from `auth:signIn`**: Ensure all required environment variables are set on the Convex deployment.
+- **`redirect_uri_mismatch` from Google**: Verify the `.convex.site` callback URL is registered in Google Cloud Console.
+- **Still having issues?** See `CLOUD_DEPLOYMENT_SETUP.md` for a detailed troubleshooting guide.
