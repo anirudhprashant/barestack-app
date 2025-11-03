@@ -1,10 +1,12 @@
 
 import React, { useRef, useState } from 'react';
 import { Card, PageHeader, Button, Icon, Input, Modal } from '../components/ui';
-import { DealStage } from '../types';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import type { Id } from '../convex/_generated/dataModel';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Deal {
     _id: Id<"deals">;
@@ -24,12 +26,47 @@ interface Contact {
     tags: string[];
 }
 
-const DealCard: React.FC<{ deal: Deal; contactName: string }> = ({ deal, contactName }) => {
+const DealCard: React.FC<{ 
+    deal: Deal; 
+    contactName: string; 
+    onEdit: () => void; 
+    onDelete: () => void;
+}> = ({ deal, contactName, onEdit, onDelete }) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
+        id: deal._id 
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
     return (
-        <div className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing">
+        <div 
+            ref={setNodeRef} 
+            style={style}
+            {...attributes} 
+            {...listeners}
+            className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-move hover:shadow-neo transition-all group relative"
+        >
             <p className="font-bold">{contactName}</p>
             <p className="font-semibold text-green-600">${deal.value.toLocaleString()}</p>
             <p className="text-sm text-gray-500">{new Date(deal.lastInteraction).toLocaleDateString()}</p>
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex space-x-1 transition-opacity">
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onEdit(); }} 
+                    className="p-1 bg-white rounded border-2 border-brand-dark hover:bg-brand-light"
+                >
+                    <Icon name="edit" className="w-4 h-4"/>
+                </button>
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onDelete(); }} 
+                    className="p-1 bg-white rounded border-2 border-brand-dark hover:bg-brand-light"
+                >
+                    <Icon name="trash" className="w-4 h-4"/>
+                </button>
+            </div>
         </div>
     );
 };
@@ -56,6 +93,16 @@ const CRM: React.FC = () => {
         contactId: '', 
         value: 0 
     });
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { 
+            activationConstraint: { 
+                distance: 8 
+            } 
+        })
+    );
+
+    const stages: Deal["stage"][] = ["Lead", "Qualified", "Proposal", "Won", "Lost"];
 
     const handleAddContact = () => {
         setEditingContact(null);
@@ -106,20 +153,23 @@ const CRM: React.FC = () => {
         setContactForm({ name: '', email: '', phone: '', company: '' });
         setEditingContact(null);
     };
-    
+
     const handleAddDeal = () => {
         if (contacts.length === 0) {
             alert("Please add a contact first.");
             return;
         }
         setEditingDeal(null);
-        setDealForm({ contactId: contacts[0]._id, value: 0 });
+        setDealForm({ contactId: String(contacts[0]._id), value: 0 });
         setShowDealModal(true);
     };
 
     const handleEditDeal = (deal: Deal) => {
         setEditingDeal(deal);
-        setDealForm({ contactId: deal.contactId, value: deal.value });
+        setDealForm({ 
+            contactId: String(deal.contactId), 
+            value: deal.value 
+        });
         setShowDealModal(true);
     };
 
@@ -208,6 +258,24 @@ const CRM: React.FC = () => {
         }
     };
 
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over) return;
+
+        const dealId = active.id as Id<"deals">;
+        const activeDeal = deals.find(d => d._id === dealId);
+        if (!activeDeal) return;
+
+        const containerId = (over.data?.current as any)?.sortable?.containerId ?? over.id;
+        if (typeof containerId !== 'string') return;
+        if (!stages.includes(containerId as Deal["stage"])) return;
+
+        const nextStage = containerId as Deal["stage"];
+        if (activeDeal.stage === nextStage) return;
+
+        void updateDeal({ id: dealId, stage: nextStage });
+    };
+
     const filteredContacts = contacts.filter(c => 
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -215,33 +283,45 @@ const CRM: React.FC = () => {
 
     const getContactName = (contactId: Id<"contacts">) => {
         return contacts.find(c => c._id === contactId)?.name || 'Unknown';
-    }
-
-    const stages = Object.values(DealStage);
+    };
 
     return (
         <div>
             <PageHeader title="Deal Pipeline">
                 <Button variant="primary" onClick={handleAddDeal}><Icon name="plus"/> Add Deal</Button>
             </PageHeader>
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
-                {stages.map(stage => (
-                    <div key={stage} className="bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark">
-                        <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({deals.filter(d => d.stage === stage).length})</h3>
-                        <div>
-                            {deals.filter(d => d.stage === stage).map(deal => (
-                                <div key={deal._id} className="relative group">
-                                    <DealCard deal={deal} contactName={getContactName(deal.contactId)} />
-                                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex space-x-1 transition-opacity">
-                                        <button onClick={() => handleEditDeal(deal)} className="p-1 bg-white rounded border-2 border-brand-dark hover:bg-brand-light"><Icon name="edit" className="w-4 h-4"/></button>
-                                        <button onClick={() => handleDeleteDeal(deal._id)} className="p-1 bg-white rounded border-2 border-brand-dark hover:bg-brand-light"><Icon name="trash" className="w-4 h-4"/></button>
+            
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+                    {stages.map(stage => {
+                        const stageDeals = deals.filter(d => d.stage === stage);
+                        return (
+                            <div key={stage} className="bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark">
+                                <h3 className="font-extrabold text-lg mb-4 text-center">
+                                    {stage} ({stageDeals.length})
+                                </h3>
+                                <SortableContext 
+                                    id={stage} 
+                                    items={stageDeals.map(d => d._id)} 
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                    <div>
+                                        {stageDeals.map(deal => (
+                                            <DealCard 
+                                                key={deal._id} 
+                                                deal={deal} 
+                                                contactName={getContactName(deal.contactId)}
+                                                onEdit={() => handleEditDeal(deal)}
+                                                onDelete={() => handleDeleteDeal(deal._id)}
+                                            />
+                                        ))}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
+                                </SortableContext>
+                            </div>
+                        );
+                    })}
+                </div>
+            </DndContext>
 
             <PageHeader title="Contacts">
                  <div className="w-full max-w-xs">
@@ -302,12 +382,12 @@ const CRM: React.FC = () => {
                     actions={
                         <>
                             <Button variant="secondary" onClick={() => setShowContactModal(false)}>Cancel</Button>
-                            <Button onClick={saveContact}>{editingContact ? "Update" : "Save"} Contact</Button>
+                            <Button onClick={saveContact}>{editingContact ? "Update" : "Add"} Contact</Button>
                         </>
                     }
                 >
                     <Input label="Name" id="contact-name" value={contactForm.name} onChange={e => setContactForm({ ...contactForm, name: e.target.value })} />
-                    <Input label="Email" id="contact-email" type="email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })} />
+                    <Input label="Email" id="contact-email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })} />
                     <Input label="Phone" id="contact-phone" value={contactForm.phone} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })} />
                     <Input label="Company" id="contact-company" value={contactForm.company} onChange={e => setContactForm({ ...contactForm, company: e.target.value })} />
                 </Modal>
@@ -318,7 +398,7 @@ const CRM: React.FC = () => {
                     actions={
                         <>
                             <Button variant="secondary" onClick={() => setShowDealModal(false)}>Cancel</Button>
-                            <Button onClick={saveDeal}>{editingDeal ? "Update" : "Save"} Deal</Button>
+                            <Button onClick={saveDeal}>{editingDeal ? "Update" : "Add"} Deal</Button>
                         </>
                     }
                 >
@@ -330,7 +410,7 @@ const CRM: React.FC = () => {
                             ))}
                         </select>
                     </div>
-                    <Input label="Deal Value ($)" id="deal-value" type="number" value={String(dealForm.value)} onChange={e => setDealForm({ ...dealForm, value: parseInt(e.target.value || '0') })} />
+                    <Input label="Deal Value ($)" id="deal-value" type="number" value={String(dealForm.value)} onChange={e => setDealForm({ ...dealForm, value: parseFloat(e.target.value || '0') })} />
                 </Modal>
             )}
         </div>
