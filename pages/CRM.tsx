@@ -1,104 +1,75 @@
-
 import React, { useState } from 'react';
-import { Card, PageHeader, Button, Icon, Input, Modal } from '../components/ui';
-import { DealStage } from '../types';
-import { useQuery, useMutation } from 'convex/react';
-import { api } from '../convex/_generated/api';
-import type { Id } from '../convex/_generated/dataModel';
-
-interface Deal {
-    _id: Id<"deals">;
-    contactId: Id<"contacts">;
-    value: number;
-    stage: "Lead" | "Qualified" | "Proposal" | "Won" | "Lost";
-    lastInteraction: string;
-}
-
-interface Contact {
-    _id: Id<"contacts">;
-    name: string;
-    email?: string;
-    phone?: string;
-    company?: string;
-    notes?: string;
-    tags: string[];
-}
+import { Card, PageHeader, Button, Icon, Input } from '../components/ui';
+import { Contact, Deal, DealStage } from '../types';
+import { useData } from '../dataStore';
 
 const DealCard: React.FC<{ deal: Deal; contactName: string }> = ({ deal, contactName }) => {
     return (
         <div className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing">
             <p className="font-bold">{contactName}</p>
             <p className="font-semibold text-green-600">${deal.value.toLocaleString()}</p>
-            <p className="text-sm text-gray-500">{new Date(deal.lastInteraction).toLocaleDateString()}</p>
+            <p className="text-sm text-gray-500">{new Date(deal.last_interaction).toLocaleDateString()}</p>
         </div>
     );
 };
 
 const CRM: React.FC = () => {
-    const contacts = useQuery(api.crm.listContacts) || [];
-    const deals = useQuery(api.crm.listDeals) || [];
-    const createContact = useMutation(api.crm.createContact);
-    const createDeal = useMutation(api.crm.createDeal);
-    
+    const { data, addContact, addDeal, addRecentActivity } = useData();
+    const { contacts, deals } = data;
     const [searchTerm, setSearchTerm] = useState('');
-    const [showContactModal, setShowContactModal] = useState(false);
-    const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', company: '' });
-    const [showDealModal, setShowDealModal] = useState(false);
-    const [dealForm, setDealForm] = useState<{ contactId: string; value: number }>({ 
-        contactId: '', 
-        value: 0 
-    });
 
-    const handleAddContact = () => {
-        setContactForm({ name: '', email: '', phone: '', company: '' });
-        setShowContactModal(true);
-    };
-
-    const saveContact = async () => {
-        const name = contactForm.name.trim();
+    const handleAddContact = async () => {
+        const name = prompt("Enter contact name:", "New Client Inc.");
         if (!name) return;
 
-        await createContact({
+        const newContact: Omit<Contact, 'id' | 'user_id' | 'created_at'> = {
             name,
-            email: contactForm.email.trim() || undefined,
-            phone: contactForm.phone.trim() || undefined,
-            company: contactForm.company.trim() || undefined,
+            email: `${name.toLowerCase().replace(/\s/g, '')}@example.com`,
+            phone: '555-0101',
+            company: name,
+            notes: '',
             tags: ['New'],
-        });
+        };
 
-        setShowContactModal(false);
-        setContactForm({ name: '', email: '', phone: '', company: '' });
+        await addContact(newContact);
+        await addRecentActivity({
+            timestamp: new Date().toISOString(),
+            type: 'CONTACT_ADDED',
+            description: `Added new contact: ${name}`
+        });
     };
     
-    const handleAddDeal = () => {
+    const handleAddDeal = async () => {
         if (contacts.length === 0) {
             alert("Please add a contact first.");
             return;
         }
-        setDealForm({ contactId: contacts[0]._id, value: 0 });
-        setShowDealModal(true);
-    };
+        const value = prompt("Enter deal value:", "10000");
+        if (!value || isNaN(parseInt(value))) return;
 
-    const saveDeal = async () => {
-        if (!dealForm.contactId) return;
+        const randomContact = contacts[Math.floor(Math.random() * contacts.length)];
+        const newDeal: Omit<Deal, 'id' | 'user_id' | 'created_at'> = {
+            contact_id: randomContact.id!,
+            value: parseInt(value),
+            stage: DealStage.Lead,
+            last_interaction: new Date().toISOString()
+        };
         
-        await createDeal({
-            contactId: dealForm.contactId as Id<"contacts">,
-            value: dealForm.value || 0,
-            stage: "Lead",
+        await addDeal(newDeal);
+        await addRecentActivity({
+            timestamp: new Date().toISOString(),
+            type: 'DEAL_ADDED',
+            description: `Added new deal for ${randomContact.name} worth $${newDeal.value.toLocaleString()}`
         });
-
-        setShowDealModal(false);
-        setDealForm({ contactId: '', value: 0 });
-    };
+    }
 
     const filteredContacts = contacts.filter(c => 
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        c.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const getContactName = (contactId: Id<"contacts">) => {
-        return contacts.find(c => c._id === contactId)?.name || 'Unknown';
+    const getContactName = (contactId: string) => {
+        return contacts.find(c => c.id === contactId)?.name || 'Unknown';
     }
 
     const stages = Object.values(DealStage);
@@ -114,7 +85,7 @@ const CRM: React.FC = () => {
                         <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({deals.filter(d => d.stage === stage).length})</h3>
                         <div>
                             {deals.filter(d => d.stage === stage).map(deal => (
-                                <DealCard key={deal._id} deal={deal} contactName={getContactName(deal.contactId)} />
+                                <DealCard key={deal.id} deal={deal} contactName={getContactName(deal.contact_id)} />
                             ))}
                         </div>
                     </div>
@@ -141,10 +112,10 @@ const CRM: React.FC = () => {
                         </thead>
                         <tbody>
                             {filteredContacts.map(contact => (
-                                <tr key={contact._id} className="border-b-2 border-brand-light last:border-b-0">
+                                <tr key={contact.id} className="border-b-2 border-brand-light last:border-b-0">
                                     <td className="p-4 font-bold">{contact.name}</td>
-                                    <td className="p-4">{contact.email || '-'}</td>
-                                    <td className="p-4">{contact.company || '-'}</td>
+                                    <td className="p-4">{contact.email}</td>
+                                    <td className="p-4">{contact.company}</td>
                                     <td className="p-4 flex space-x-1">
                                         {contact.tags.map(tag => (
                                             <span key={tag} className="bg-brand-light text-brand-dark text-xs font-bold px-2 py-1 rounded-full border-2 border-brand-dark">{tag}</span>
@@ -162,43 +133,6 @@ const CRM: React.FC = () => {
                     </table>
                 </div>
             </Card>
-
-            {showContactModal && (
-                <Modal title="Add Contact" onClose={() => setShowContactModal(false)}
-                    actions={
-                        <>
-                            <Button variant="secondary" onClick={() => setShowContactModal(false)}>Cancel</Button>
-                            <Button onClick={saveContact}>Save Contact</Button>
-                        </>
-                    }
-                >
-                    <Input label="Name" id="contact-name" value={contactForm.name} onChange={e => setContactForm({ ...contactForm, name: e.target.value })} />
-                    <Input label="Email" id="contact-email" type="email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })} />
-                    <Input label="Phone" id="contact-phone" value={contactForm.phone} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })} />
-                    <Input label="Company" id="contact-company" value={contactForm.company} onChange={e => setContactForm({ ...contactForm, company: e.target.value })} />
-                </Modal>
-            )}
-
-            {showDealModal && (
-                <Modal title="Add Deal" onClose={() => setShowDealModal(false)}
-                    actions={
-                        <>
-                            <Button variant="secondary" onClick={() => setShowDealModal(false)}>Cancel</Button>
-                            <Button onClick={saveDeal}>Save Deal</Button>
-                        </>
-                    }
-                >
-                    <div>
-                        <label className="block text-brand-dark font-bold mb-2">Contact</label>
-                        <select className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark" value={dealForm.contactId} onChange={e => setDealForm({ ...dealForm, contactId: e.target.value })}>
-                            {contacts.map(c => (
-                                <option key={c._id} value={c._id}>{c.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <Input label="Deal Value ($)" id="deal-value" type="number" value={String(dealForm.value)} onChange={e => setDealForm({ ...dealForm, value: parseInt(e.target.value || '0') })} />
-                </Modal>
-            )}
         </div>
     );
 };

@@ -1,37 +1,15 @@
-
-import React, { useEffect, useMemo, useState } from 'react';
-import { Card, PageHeader, Button, Icon, Input, Modal } from '../components/ui';
-import { TaskStatus, ProjectStatus } from '../types';
-import { useQuery, useMutation } from 'convex/react';
-import { api } from '../convex/_generated/api';
-import type { Id } from '../convex/_generated/dataModel';
-
-interface Project {
-    _id: Id<"projects">;
-    name: string;
-    clientId: Id<"contacts">;
-    status: ProjectStatus;
-    budget: number;
-    estimatedHours: number;
-}
-
-interface Task {
-    _id: Id<"tasks">;
-    projectId: Id<"projects">;
-    title: string;
-    assignedTo?: string;
-    dueDate?: string;
-    estimatedHours: number;
-    status: TaskStatus;
-}
+import React, { useState, useEffect } from 'react';
+import { Card, PageHeader, Button, Icon } from '../components/ui';
+import { Project, Task, TaskStatus, ProjectStatus } from '../types';
+import { useData } from '../dataStore';
 
 const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
     return (
         <div className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing">
             <p className="font-bold">{task.title}</p>
-            <p className="text-sm text-gray-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</p>
+            <p className="text-sm text-gray-500">Due: {new Date(task.due_date).toLocaleDateString()}</p>
             <div className="flex justify-between items-center mt-2">
-                <span className="text-xs font-bold">{task.estimatedHours} hrs</span>
+                <span className="text-xs font-bold">{task.estimated_hours} hrs</span>
                 <div className="w-8 h-8 bg-brand-light rounded-full border-2 border-brand-dark"></div>
             </div>
         </div>
@@ -39,82 +17,60 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
 };
 
 const Projects: React.FC = () => {
-    const contacts = useQuery(api.crm.listContacts) || [];
-    const projects = useQuery(api.projects.listProjects) || [];
-    const [selectedProjectId, setSelectedProjectId] = useState<Id<"projects"> | null>(null);
-    const tasks = useQuery(api.projects.listTasks, selectedProjectId ? { projectId: selectedProjectId } : undefined) || [];
-
-    const createProject = useMutation(api.projects.createProject);
-    const createTask = useMutation(api.projects.createTask);
+    const { data, addProject, addTask, addRecentActivity } = useData();
+    const { projects, contacts, tasks } = data;
+    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!selectedProjectId && projects.length > 0) {
-            setSelectedProjectId(projects[0]._id);
+            setSelectedProjectId(projects[0].id!);
         }
     }, [projects, selectedProjectId]);
 
-    const [showProjectModal, setShowProjectModal] = useState(false);
-    const [projectForm, setProjectForm] = useState({ name: '', clientId: '' as string, budget: 0, estimatedHours: 0 });
-    const [showTaskModal, setShowTaskModal] = useState(false);
-    const [taskForm, setTaskForm] = useState({ title: '', dueDate: '', estimatedHours: 8 });
-
-    const handleAddProject = () => {
-        if (contacts.length === 0) {
-            alert("Please create a contact first.");
+    const handleAddProject = async () => {
+        const name = prompt("Enter project name:", "New Marketing Campaign");
+        if (!name || contacts.length === 0) {
+            if (contacts.length === 0) alert("Please create a contact first.");
             return;
         }
-        setProjectForm({ name: '', clientId: String(contacts[0]._id), budget: 0, estimatedHours: 0 });
-        setShowProjectModal(true);
-    };
-
-    const saveProject = async () => {
-        if (contacts.length === 0) return;
-        const name = projectForm.name.trim();
-        if (!name) return;
-
-        const clientId = (projectForm.clientId || String(contacts[0]._id)) as Id<"contacts">;
-
-        await createProject({
+        
+        const randomContact = contacts[Math.floor(Math.random() * contacts.length)];
+        const newProject: Omit<Project, 'id' | 'user_id' | 'created_at'> = {
             name,
-            clientId,
-            status: "Active",
-            budget: projectForm.budget || 0,
-            estimatedHours: projectForm.estimatedHours || 0,
+            client_id: randomContact.id!,
+            status: ProjectStatus.Active,
+            budget: 5000,
+            estimated_hours: 100,
+        };
+
+        await addProject(newProject);
+        await addRecentActivity({
+            timestamp: new Date().toISOString(),
+            type: 'PROJECT_CREATED',
+            description: `New project created: ${name}`
         });
-
-        setShowProjectModal(false);
-        setProjectForm({ name: '', clientId: '', budget: 0, estimatedHours: 0 });
     };
 
-    const selectedProject = useMemo(() => {
-        if (!selectedProjectId) return null;
-        return projects.find(p => p._id === selectedProjectId) ?? null;
-    }, [projects, selectedProjectId]);
-
-    const handleAddTask = () => {
+    const handleAddTask = async () => {
         if (!selectedProject) return;
-        setTaskForm({ title: '', dueDate: '', estimatedHours: 8 });
-        setShowTaskModal(true);
-    };
-
-    const saveTask = async () => {
-        if (!selectedProjectId) return;
-        const title = taskForm.title.trim();
+        const title = prompt("Enter task title:", "Draft initial designs");
         if (!title) return;
 
-        await createTask({
-            projectId: selectedProjectId,
+        const newTask: Omit<Task, 'id' | 'user_id' | 'created_at'> = {
+            project_id: selectedProject.id!,
             title,
-            estimatedHours: taskForm.estimatedHours || 8,
-            status: "To Do",
-            dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
-        });
+            assigned_to: 'u1',
+            due_date: new Date().toISOString(),
+            estimated_hours: 8,
+            status: TaskStatus.ToDo,
+        };
 
-        setShowTaskModal(false);
-        setTaskForm({ title: '', dueDate: '', estimatedHours: 8 });
+        await addTask(newTask);
     };
 
-    const getClientName = (clientId: Id<"contacts">) => contacts.find(c => c._id === clientId)?.name || 'Unknown Client';
+    const getClientName = (clientId: string) => contacts.find(c => c.id === clientId)?.name || 'Unknown Client';
+    const selectedProject = projects.find(p => p.id === selectedProjectId);
+    const selectedProjectTasks = tasks.filter(t => t.project_id === selectedProjectId);
     const taskStages = Object.values(TaskStatus);
 
     return (
@@ -136,9 +92,9 @@ const Projects: React.FC = () => {
                         </thead>
                         <tbody>
                             {projects.map(project => (
-                                <tr key={project._id} className={`border-b-2 border-brand-light last:border-b-0 cursor-pointer hover:bg-brand-light ${selectedProjectId === project._id ? 'bg-brand-light' : ''}`} onClick={() => setSelectedProjectId(project._id)}>
+                                <tr key={project.id} className={`border-b-2 border-brand-light last:border-b-0 cursor-pointer hover:bg-brand-light ${selectedProjectId === project.id ? 'bg-brand-light' : ''}`} onClick={() => setSelectedProjectId(project.id!)}>
                                     <td className="p-4 font-bold">{project.name}</td>
-                                    <td className="p-4">{getClientName(project.clientId)}</td>
+                                    <td className="p-4">{getClientName(project.client_id)}</td>
                                     <td className="p-4">${project.budget.toLocaleString()}</td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 text-xs font-bold rounded-full border-2 border-brand-dark text-brand-dark ${project.status === ProjectStatus.Active ? 'bg-green-300' : 'bg-gray-300'}`}>{project.status}</span>
@@ -161,57 +117,16 @@ const Projects: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {taskStages.map(stage => (
                             <div key={stage} className="bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark">
-                                <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({tasks.filter(t => t.status === stage).length})</h3>
+                                <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({selectedProjectTasks.filter(t => t.status === stage).length})</h3>
                                 <div>
-                                    {tasks.filter(t => t.status === stage).map(task => (
-                                        <TaskCard key={task._id} task={task} />
+                                    {selectedProjectTasks.filter(t => t.status === stage).map(task => (
+                                        <TaskCard key={task.id} task={task} />
                                     ))}
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
-            )}
-
-            {showProjectModal && (
-                <Modal title="Create Project" onClose={() => setShowProjectModal(false)}
-                    actions={
-                        <>
-                            <Button variant="secondary" onClick={() => setShowProjectModal(false)}>Cancel</Button>
-                            <Button onClick={saveProject}>Create Project</Button>
-                        </>
-                    }
-                >
-                    <Input label="Project Name" id="project-name" value={projectForm.name} onChange={e => setProjectForm({ ...projectForm, name: e.target.value })} />
-                    <div>
-                        <label className="block text-brand-dark font-bold mb-2">Client</label>
-                        <select className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark" value={projectForm.clientId} onChange={e => setProjectForm({ ...projectForm, clientId: e.target.value })}>
-                            {contacts.map(c => (
-                                <option key={c._id} value={String(c._id)}>{c.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <Input label="Budget ($)" id="project-budget" type="number" value={String(projectForm.budget)} onChange={e => setProjectForm({ ...projectForm, budget: parseInt(e.target.value || '0') })} />
-                    <Input label="Estimated Hours" id="project-hours" type="number" value={String(projectForm.estimatedHours)} onChange={e => setProjectForm({ ...projectForm, estimatedHours: parseInt(e.target.value || '0') })} />
-                </Modal>
-            )}
-
-            {showTaskModal && (
-                <Modal title="Add Task" onClose={() => setShowTaskModal(false)}
-                    actions={
-                        <>
-                            <Button variant="secondary" onClick={() => setShowTaskModal(false)}>Cancel</Button>
-                            <Button onClick={saveTask}>Add Task</Button>
-                        </>
-                    }
-                >
-                    <Input label="Title" id="task-title" value={taskForm.title} onChange={e => setTaskForm({ ...taskForm, title: e.target.value })} />
-                    <div>
-                        <label className="block text-brand-dark font-bold mb-2">Due Date</label>
-                        <input type="date" className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark" value={taskForm.dueDate} onChange={e => setTaskForm({ ...taskForm, dueDate: e.target.value })} />
-                    </div>
-                    <Input label="Estimated Hours" id="task-hours" type="number" value={String(taskForm.estimatedHours)} onChange={e => setTaskForm({ ...taskForm, estimatedHours: parseInt(e.target.value || '8') })} />
-                </Modal>
             )}
         </div>
     );
