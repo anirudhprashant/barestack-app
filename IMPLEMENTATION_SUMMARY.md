@@ -49,18 +49,12 @@ See `GOOGLE_AUTH_SETUP.md` for detailed instructions.
    ```
 3. Deploy: `npx convex deploy --url https://backendconvex.barestack.org --admin-key "<admin-key>"`
 
-## 📝 Environment Variables Set
+## 📝 Environment Variables Needed
 
-The following placeholder environment variables have been set in Convex (will need to be updated with real Google OAuth credentials):
+The following environment variables need to be set in Convex for Google OAuth to work:
 
-- `AUTH_SECRET` - Auth secret key
-- `AUTH_SECRET_1` through `AUTH_SECRET_10` - Additional auth secrets
-- `AUTH_REDIRECT_PROXY_URL` - Set to `https://backendconvex.barestack.org`
-- `AUTH_URL` - Set to `https://backendconvex.barestack.org`
-- `AUTH_GOOGLE_ID` - Placeholder (needs real Google Client ID)
-- `AUTH_GOOGLE_SECRET` - Placeholder (needs real Google Client Secret)
-- `AUTH_GOOGLE_ISSUER` - Set to `https://accounts.google.com`
-- `AUTH_GOOGLE_KEY` - Placeholder
+- `AUTH_GOOGLE_ID` - Your Google Client ID
+- `AUTH_GOOGLE_SECRET` - Your Google Client Secret
 
 ## 🎯 Current Status
 
