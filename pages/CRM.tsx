@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Card, PageHeader, Button, Icon, Input, Modal } from '../components/ui';
 import { DealStage } from '../types';
 import { useQuery, useMutation } from 'convex/react';
@@ -43,7 +43,9 @@ const CRM: React.FC = () => {
     const createDeal = useMutation(api.crm.createDeal);
     const updateDeal = useMutation(api.crm.updateDeal);
     const deleteDeal = useMutation(api.crm.deleteDeal);
+    const importContacts = useMutation(api.crm.importContacts);
     
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [showContactModal, setShowContactModal] = useState(false);
     const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -149,6 +151,63 @@ const CRM: React.FC = () => {
         setEditingDeal(null);
     };
 
+    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const lines = text
+                .split(/\r?\n/)
+                .map(line => line.trim())
+                .filter(Boolean);
+
+            if (lines.length === 0) {
+                alert("The selected CSV appears to be empty.");
+                return;
+            }
+
+            const headers = lines[0]
+                .split(',')
+                .map(h => h.trim().toLowerCase());
+
+            const contactsToImport = lines.slice(1)
+                .map(line => line.split(','))
+                .map(columns => {
+                    const contact: { name?: string; email?: string; phone?: string; company?: string; tags: string[] } = { tags: [] };
+
+                    headers.forEach((header, index) => {
+                        const value = columns[index]?.trim();
+                        if (!value) return;
+
+                        if (header.includes('email')) contact.email = value;
+                        else if (header.includes('name')) contact.name = value;
+                        else if (header.includes('phone')) contact.phone = value;
+                        else if (header.includes('company')) contact.company = value;
+                        else if (header.includes('tag')) contact.tags.push(value);
+                    });
+
+                    return (contact.email || contact.name) ? contact : null;
+                })
+                .filter((contact): contact is { name?: string; email?: string; phone?: string; company?: string; tags: string[] } => Boolean(contact));
+
+            if (contactsToImport.length === 0) {
+                alert("No valid contacts were found in the CSV.");
+                return;
+            }
+
+            await importContacts({ contacts: contactsToImport });
+            alert(`Imported ${contactsToImport.length} contacts successfully.`);
+        } catch (error) {
+            console.error('Error importing contacts', error);
+            alert('Something went wrong while importing contacts. Please try again.');
+        } finally {
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
     const filteredContacts = contacts.filter(c => 
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -188,8 +247,20 @@ const CRM: React.FC = () => {
                  <div className="w-full max-w-xs">
                     <Input label="" id="search" placeholder="Search contacts..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                 </div>
-                <Button variant="primary" onClick={handleAddContact}><Icon name="plus"/> Add Contact</Button>
+                <div className="flex space-x-2">
+                    <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                        <Icon name="document" /> Import CSV
+                    </Button>
+                    <Button variant="primary" onClick={handleAddContact}><Icon name="plus"/> Add Contact</Button>
+                </div>
             </PageHeader>
+            <input
+                type="file"
+                accept=".csv"
+                ref={fileInputRef}
+                onChange={handleImport}
+                hidden
+            />
             <Card>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
