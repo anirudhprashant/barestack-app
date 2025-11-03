@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@convex-dev/auth": "^0.0.90",
     "@supabase/supabase-js": "^2.78.0",
     "convex": "^1.28.2",
     "date-fns": "^4.1.0",

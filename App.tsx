@@ -1,10 +1,12 @@
 
 import React from 'react';
 import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { Authenticated, Unauthenticated } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { Icon, Button } from './components/ui';
 import { HistoryProvider, useHistory } from './historyStore';
 
-
+import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import CRM from './pages/CRM';
 import Projects from './pages/Projects';
@@ -28,6 +30,8 @@ const navItems = [
 ];
 
 const Sidebar = () => {
+    const { signOut } = useAuthActions();
+
     return (
         <div className="fixed top-0 left-0 h-full w-[200px] bg-white border-r-2 border-brand-dark flex flex-col p-4 z-20">
             <div className="text-3xl font-bold text-brand-dark mb-10">
@@ -47,11 +51,18 @@ const Sidebar = () => {
                     </NavLink>
                 ))}
             </nav>
-            <div className="mt-auto">
+            <div className="mt-auto space-y-4">
                 <div className="flex items-center space-x-3 p-2">
                     <div className="w-10 h-10 bg-brand-light rounded-full border-2 border-brand-dark"></div>
-                    <div className="font-bold text-brand-dark">User</div>
+                    <div className="font-bold text-brand-dark">You</div>
                 </div>
+                <Button 
+                    variant="secondary" 
+                    className="w-full" 
+                    onClick={() => signOut()}
+                >
+                    Sign Out
+                </Button>
             </div>
         </div>
     );
@@ -106,11 +117,18 @@ const AppLayout = () => {
 // --- APP ---
 const App = () => {
     return (
-        <HistoryProvider>
-            <HashRouter>
-                <AppLayout />
-            </HashRouter>
-        </HistoryProvider>
+        <>
+            <Authenticated>
+                <HistoryProvider>
+                    <HashRouter>
+                        <AppLayout />
+                    </HashRouter>
+                </HistoryProvider>
+            </Authenticated>
+            <Unauthenticated>
+                <Auth />
+            </Unauthenticated>
+        </>
     );
 };
 
