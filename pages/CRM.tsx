@@ -1,9 +1,28 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, PageHeader, Button, Icon, Input, Modal } from '../components/ui';
-import { Contact, Deal, DealStage } from '../types';
-import { useHistory } from '../historyStore';
-import { api } from '../services/api';
+import { DealStage } from '../types';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
+import type { Id } from '../convex/_generated/dataModel';
+
+interface Deal {
+    _id: Id<"deals">;
+    contactId: Id<"contacts">;
+    value: number;
+    stage: "Lead" | "Qualified" | "Proposal" | "Won" | "Lost";
+    lastInteraction: string;
+}
+
+interface Contact {
+    _id: Id<"contacts">;
+    name: string;
+    email?: string;
+    phone?: string;
+    company?: string;
+    notes?: string;
+    tags: string[];
+}
 
 const DealCard: React.FC<{ deal: Deal; contactName: string }> = ({ deal, contactName }) => {
     return (
@@ -16,28 +35,19 @@ const DealCard: React.FC<{ deal: Deal; contactName: string }> = ({ deal, contact
 };
 
 const CRM: React.FC = () => {
-    const { state, setState } = useHistory();
-    const { contacts, deals } = state.present;
+    const contacts = useQuery(api.crm.listContacts) || [];
+    const deals = useQuery(api.crm.listDeals) || [];
+    const createContact = useMutation(api.crm.createContact);
+    const createDeal = useMutation(api.crm.createDeal);
+    
     const [searchTerm, setSearchTerm] = useState('');
     const [showContactModal, setShowContactModal] = useState(false);
     const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', company: '' });
     const [showDealModal, setShowDealModal] = useState(false);
-    const [dealForm, setDealForm] = useState({ contactId: '', value: 0 });
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [fetchedContacts, fetchedDeals] = await Promise.all([
-                    api.getContacts(),
-                    api.getDeals(),
-                ]);
-                setState({ ...state.present, contacts: fetchedContacts, deals: fetchedDeals });
-            } catch (error) {
-                console.error("Error fetching CRM data:", error);
-            }
-        };
-        fetchData();
-    }, []);
+    const [dealForm, setDealForm] = useState<{ contactId: string; value: number }>({ 
+        contactId: '', 
+        value: 0 
+    });
 
     const handleAddContact = () => {
         setContactForm({ name: '', email: '', phone: '', company: '' });
@@ -47,34 +57,17 @@ const CRM: React.FC = () => {
     const saveContact = async () => {
         const name = contactForm.name.trim();
         if (!name) return;
-        const email = contactForm.email.trim() || `${name.toLowerCase().replace(/\s/g, '')}@example.com`;
-        const phone = contactForm.phone.trim() || '555-0101';
-        const company = contactForm.company.trim() || name;
 
-        const newContact: Omit<Contact, 'id'> = {
+        await createContact({
             name,
-            email,
-            phone,
-            company,
-            notes: '',
+            email: contactForm.email.trim() || undefined,
+            phone: contactForm.phone.trim() || undefined,
+            company: contactForm.company.trim() || undefined,
             tags: ['New'],
-        };
-
-        const savedContact = await api.createContact(newContact);
-
-        const newActivity = {
-            id: `ra${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            type: 'CONTACT_ADDED' as const,
-            description: `Added new contact: ${name}`
-        };
-
-        setState({
-            ...state.present,
-            contacts: [...state.present.contacts, savedContact],
-            recentActivity: [...state.present.recentActivity, newActivity]
         });
+
         setShowContactModal(false);
+        setContactForm({ name: '', email: '', phone: '', company: '' });
     };
     
     const handleAddDeal = () => {
@@ -82,43 +75,30 @@ const CRM: React.FC = () => {
             alert("Please add a contact first.");
             return;
         }
-        setDealForm({ contactId: contacts[0].id, value: 0 });
+        setDealForm({ contactId: contacts[0]._id, value: 0 });
         setShowDealModal(true);
     };
 
     const saveDeal = async () => {
-        const selectedContact = contacts.find(c => c.id === dealForm.contactId) || contacts[0];
-        const newDeal: Omit<Deal, 'id'> = {
-            contactId: selectedContact.id,
-            value: dealForm.value || 0,
-            stage: DealStage.Lead,
-            lastInteraction: new Date().toISOString()
-        };
-
-        const savedDeal = await api.createDeal(newDeal);
+        if (!dealForm.contactId) return;
         
-        const newActivity = {
-            id: `ra${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            type: 'DEAL_ADDED' as const,
-            description: `Added new deal for ${selectedContact.name} worth $${savedDeal.value.toLocaleString()}`
-        };
-
-        setState({
-            ...state.present,
-            deals: [...state.present.deals, savedDeal],
-            recentActivity: [...state.present.recentActivity, newActivity]
+        await createDeal({
+            contactId: dealForm.contactId as Id<"contacts">,
+            value: dealForm.value || 0,
+            stage: "Lead",
         });
+
         setShowDealModal(false);
+        setDealForm({ contactId: '', value: 0 });
     };
 
     const filteredContacts = contacts.filter(c => 
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    const getContactName = (contactId: string) => {
-        return contacts.find(c => c.id === contactId)?.name || 'Unknown';
+    const getContactName = (contactId: Id<"contacts">) => {
+        return contacts.find(c => c._id === contactId)?.name || 'Unknown';
     }
 
     const stages = Object.values(DealStage);
@@ -134,7 +114,7 @@ const CRM: React.FC = () => {
                         <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({deals.filter(d => d.stage === stage).length})</h3>
                         <div>
                             {deals.filter(d => d.stage === stage).map(deal => (
-                                <DealCard key={deal.id} deal={deal} contactName={getContactName(deal.contactId)} />
+                                <DealCard key={deal._id} deal={deal} contactName={getContactName(deal.contactId)} />
                             ))}
                         </div>
                     </div>
@@ -161,10 +141,10 @@ const CRM: React.FC = () => {
                         </thead>
                         <tbody>
                             {filteredContacts.map(contact => (
-                                <tr key={contact.id} className="border-b-2 border-brand-light last:border-b-0">
+                                <tr key={contact._id} className="border-b-2 border-brand-light last:border-b-0">
                                     <td className="p-4 font-bold">{contact.name}</td>
-                                    <td className="p-4">{contact.email}</td>
-                                    <td className="p-4">{contact.company}</td>
+                                    <td className="p-4">{contact.email || '-'}</td>
+                                    <td className="p-4">{contact.company || '-'}</td>
                                     <td className="p-4 flex space-x-1">
                                         {contact.tags.map(tag => (
                                             <span key={tag} className="bg-brand-light text-brand-dark text-xs font-bold px-2 py-1 rounded-full border-2 border-brand-dark">{tag}</span>
@@ -212,7 +192,7 @@ const CRM: React.FC = () => {
                         <label className="block text-brand-dark font-bold mb-2">Contact</label>
                         <select className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark" value={dealForm.contactId} onChange={e => setDealForm({ ...dealForm, contactId: e.target.value })}>
                             {contacts.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
+                                <option key={c._id} value={c._id}>{c.name}</option>
                             ))}
                         </select>
                     </div>
