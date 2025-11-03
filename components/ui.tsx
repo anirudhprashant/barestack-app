@@ -118,7 +118,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', className = '', ...props }) => {
-    const baseClasses = "font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center justify-center space-x-2";
+    const baseClasses = "font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center space-x-2";
     const variantClasses = variant === 'primary' 
         ? 'bg-brand-dark text-white' 
         : 'bg-white text-brand-dark';
@@ -194,36 +194,6 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ title, children }) => {
         <div className="flex justify-between items-center mb-8">
             <h2 className="text-4xl font-extrabold text-brand-dark">{title}</h2>
             {children && <div className="flex space-x-2">{children}</div>}
-        </div>
-    );
-};
-
-// --- MODAL COMPONENT ---
-interface ModalProps {
-    title: string;
-    children: React.ReactNode;
-    onClose: () => void;
-    actions?: React.ReactNode;
-}
-
-export const Modal: React.FC<ModalProps> = ({ title, children, onClose, actions }) => {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/30" onClick={onClose}></div>
-            <div className="relative bg-white w-full max-w-lg p-6 rounded-[10px] border-2 border-brand-dark shadow-neo">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-2xl font-bold text-brand-dark">{title}</h3>
-                    <button onClick={onClose} className="bg-white text-brand-dark font-bold py-1 px-3 rounded-[10px] border-2 border-brand-dark shadow-neo-sm">Close</button>
-                </div>
-                <div className="space-y-4">
-                    {children}
-                </div>
-                {actions && (
-                    <div className="mt-6 flex justify-end space-x-2">
-                        {actions}
-                    </div>
-                )}
-            </div>
         </div>
     );
 };

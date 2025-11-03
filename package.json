@@ -9,16 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.78.0",
-    "convex": "^1.28.2",
-    "date-fns": "^4.1.0",
-    "dotenv": "^16.4.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.5",
-    "recharts": "^3.3.0"
+    "recharts": "^3.3.0",
+    "date-fns": "^4.1.0",
+    "@supabase/supabase-js": "^2.78.0"
   },
   "devDependencies": {
+    "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
