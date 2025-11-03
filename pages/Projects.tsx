@@ -10,7 +10,7 @@ interface Project {
     _id: Id<"projects">;
     name: string;
     clientId: Id<"contacts">;
-    status: ProjectStatus;
+    status: "Active" | "Archived" | "Completed";
     budget: number;
     estimatedHours: number;
 }
@@ -22,17 +22,33 @@ interface Task {
     assignedTo?: string;
     dueDate?: string;
     estimatedHours: number;
-    status: TaskStatus;
+    status: "To Do" | "In Progress" | "Done";
 }
 
-const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
+const TaskCard: React.FC<{ 
+    task: Task; 
+    onEdit: () => void; 
+    onDelete: () => void; 
+    onToggleStatus: () => void;
+}> = ({ task, onEdit, onDelete, onToggleStatus }) => {
     return (
-        <div className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing">
-            <p className="font-bold">{task.title}</p>
+        <div className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3">
+            <div className="flex justify-between items-start mb-2">
+                <p className="font-bold flex-1">{task.title}</p>
+                <div className="flex space-x-1">
+                    <button onClick={onEdit} className="p-1 hover:bg-brand-light rounded"><Icon name="edit" className="w-4 h-4"/></button>
+                    <button onClick={onDelete} className="p-1 hover:bg-brand-light rounded"><Icon name="trash" className="w-4 h-4"/></button>
+                </div>
+            </div>
             <p className="text-sm text-gray-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</p>
             <div className="flex justify-between items-center mt-2">
                 <span className="text-xs font-bold">{task.estimatedHours} hrs</span>
-                <div className="w-8 h-8 bg-brand-light rounded-full border-2 border-brand-dark"></div>
+                <input 
+                    type="checkbox" 
+                    checked={task.status === "Done"} 
+                    onChange={onToggleStatus}
+                    className="w-5 h-5 rounded border-2 border-brand-dark cursor-pointer"
+                />
             </div>
         </div>
     );
@@ -45,7 +61,11 @@ const Projects: React.FC = () => {
     const tasks = useQuery(api.projects.listTasks, selectedProjectId ? { projectId: selectedProjectId } : undefined) || [];
 
     const createProject = useMutation(api.projects.createProject);
+    const updateProject = useMutation(api.projects.updateProject);
+    const deleteProject = useMutation(api.projects.deleteProject);
     const createTask = useMutation(api.projects.createTask);
+    const updateTask = useMutation(api.projects.updateTask);
+    const deleteTask = useMutation(api.projects.deleteTask);
 
     useEffect(() => {
         if (!selectedProjectId && projects.length > 0) {
@@ -54,8 +74,11 @@ const Projects: React.FC = () => {
     }, [projects, selectedProjectId]);
 
     const [showProjectModal, setShowProjectModal] = useState(false);
+    const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [projectForm, setProjectForm] = useState({ name: '', clientId: '' as string, budget: 0, estimatedHours: 0 });
+    
     const [showTaskModal, setShowTaskModal] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [taskForm, setTaskForm] = useState({ title: '', dueDate: '', estimatedHours: 8 });
 
     const handleAddProject = () => {
@@ -63,8 +86,29 @@ const Projects: React.FC = () => {
             alert("Please create a contact first.");
             return;
         }
+        setEditingProject(null);
         setProjectForm({ name: '', clientId: String(contacts[0]._id), budget: 0, estimatedHours: 0 });
         setShowProjectModal(true);
+    };
+
+    const handleEditProject = (project: Project) => {
+        setEditingProject(project);
+        setProjectForm({ 
+            name: project.name, 
+            clientId: String(project.clientId), 
+            budget: project.budget, 
+            estimatedHours: project.estimatedHours 
+        });
+        setShowProjectModal(true);
+    };
+
+    const handleDeleteProject = async (id: Id<"projects">) => {
+        if (window.confirm("Are you sure you want to delete this project?")) {
+            await deleteProject({ id });
+            if (selectedProjectId === id) {
+                setSelectedProjectId(null);
+            }
+        }
     };
 
     const saveProject = async () => {
@@ -74,16 +118,27 @@ const Projects: React.FC = () => {
 
         const clientId = (projectForm.clientId || String(contacts[0]._id)) as Id<"contacts">;
 
-        await createProject({
-            name,
-            clientId,
-            status: "Active",
-            budget: projectForm.budget || 0,
-            estimatedHours: projectForm.estimatedHours || 0,
-        });
+        if (editingProject) {
+            await updateProject({
+                id: editingProject._id,
+                name,
+                clientId,
+                budget: projectForm.budget || 0,
+                estimatedHours: projectForm.estimatedHours || 0,
+            });
+        } else {
+            await createProject({
+                name,
+                clientId,
+                status: "Active",
+                budget: projectForm.budget || 0,
+                estimatedHours: projectForm.estimatedHours || 0,
+            });
+        }
 
         setShowProjectModal(false);
         setProjectForm({ name: '', clientId: '', budget: 0, estimatedHours: 0 });
+        setEditingProject(null);
     };
 
     const selectedProject = useMemo(() => {
@@ -93,25 +148,58 @@ const Projects: React.FC = () => {
 
     const handleAddTask = () => {
         if (!selectedProject) return;
+        setEditingTask(null);
         setTaskForm({ title: '', dueDate: '', estimatedHours: 8 });
         setShowTaskModal(true);
     };
+
+    const handleEditTask = (task: Task) => {
+        setEditingTask(task);
+        setTaskForm({ 
+            title: task.title, 
+            dueDate: task.dueDate ? task.dueDate.substring(0, 10) : '', 
+            estimatedHours: task.estimatedHours 
+        });
+        setShowTaskModal(true);
+    };
+
+    const handleDeleteTask = async (id: Id<"tasks">) => {
+        if (window.confirm("Are you sure you want to delete this task?")) {
+            await deleteTask({ id });
+        }
+    };
+
+    const handleToggleTaskStatus = async (task: Task) => {
+        const newStatus: Task["status"] = task.status === "Done" ? "To Do" : "Done";
+        await updateTask({ id: task._id, status: newStatus });
+    };
+
 
     const saveTask = async () => {
         if (!selectedProjectId) return;
         const title = taskForm.title.trim();
         if (!title) return;
 
-        await createTask({
-            projectId: selectedProjectId,
-            title,
-            estimatedHours: taskForm.estimatedHours || 8,
-            status: "To Do",
-            dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
-        });
+        if (editingTask) {
+            await updateTask({
+                id: editingTask._id,
+                title,
+                estimatedHours: taskForm.estimatedHours || 8,
+                dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
+            });
+        } else {
+            await createTask({
+                projectId: selectedProjectId,
+                title,
+                estimatedHours: taskForm.estimatedHours || 8,
+                status: "To Do",
+                dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
+            });
+        }
 
         setShowTaskModal(false);
         setTaskForm({ title: '', dueDate: '', estimatedHours: 8 });
+        setEditingTask(null);
     };
 
     const getClientName = (clientId: Id<"contacts">) => contacts.find(c => c._id === clientId)?.name || 'Unknown Client';
@@ -119,7 +207,7 @@ const Projects: React.FC = () => {
 
     return (
         <div>
-            <PageHeader title="Projects">
+            <PageHeader>
                 <Button variant="primary" onClick={handleAddProject}><Icon name="plus"/> Add Project</Button>
             </PageHeader>
             <Card className="mb-8">
@@ -143,8 +231,11 @@ const Projects: React.FC = () => {
                                     <td className="p-4">
                                         <span className={`px-2 py-1 text-xs font-bold rounded-full border-2 border-brand-dark text-brand-dark ${project.status === ProjectStatus.Active ? 'bg-green-300' : 'bg-gray-300'}`}>{project.status}</span>
                                     </td>
-                                    <td className="p-4">
-                                        <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none"><Icon name="edit"/></Button>
+                                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex space-x-2">
+                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none" onClick={() => handleEditProject(project)}><Icon name="edit"/></Button>
+                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none" onClick={() => handleDeleteProject(project._id)}><Icon name="trash"/></Button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -164,7 +255,13 @@ const Projects: React.FC = () => {
                                 <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({tasks.filter(t => t.status === stage).length})</h3>
                                 <div>
                                     {tasks.filter(t => t.status === stage).map(task => (
-                                        <TaskCard key={task._id} task={task} />
+                                        <TaskCard 
+                                            key={task._id} 
+                                            task={task}
+                                            onEdit={() => handleEditTask(task)}
+                                            onDelete={() => handleDeleteTask(task._id)}
+                                            onToggleStatus={() => handleToggleTaskStatus(task)}
+                                        />
                                     ))}
                                 </div>
                             </div>
@@ -174,11 +271,11 @@ const Projects: React.FC = () => {
             )}
 
             {showProjectModal && (
-                <Modal title="Create Project" onClose={() => setShowProjectModal(false)}
+                <Modal title={editingProject ? "Edit Project" : "Create Project"} onClose={() => setShowProjectModal(false)}
                     actions={
                         <>
                             <Button variant="secondary" onClick={() => setShowProjectModal(false)}>Cancel</Button>
-                            <Button onClick={saveProject}>Create Project</Button>
+                            <Button onClick={saveProject}>{editingProject ? "Update" : "Create"} Project</Button>
                         </>
                     }
                 >
@@ -197,11 +294,11 @@ const Projects: React.FC = () => {
             )}
 
             {showTaskModal && (
-                <Modal title="Add Task" onClose={() => setShowTaskModal(false)}
+                <Modal title={editingTask ? "Edit Task" : "Add Task"} onClose={() => setShowTaskModal(false)}
                     actions={
                         <>
                             <Button variant="secondary" onClick={() => setShowTaskModal(false)}>Cancel</Button>
-                            <Button onClick={saveTask}>Add Task</Button>
+                            <Button onClick={saveTask}>{editingTask ? "Update" : "Add"} Task</Button>
                         </>
                     }
                 >
