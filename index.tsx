@@ -1,12 +1,10 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { ConvexReactClient } from 'convex/react';
-import { ConvexAuthProvider } from '@convex-dev/auth/react';
+import { ConvexProvider, ConvexReactClient } from 'convex/react';
 import App from './App';
 
-const convexUrl = import.meta.env.VITE_CONVEX_URL ?? 'https://backendconvex.barestack.org';
-const convex = new ConvexReactClient(convexUrl);
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL || 'https://backendconvex.barestack.org');
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -16,8 +14,8 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ConvexAuthProvider client={convex}>
+    <ConvexProvider client={convex}>
       <App />
-    </ConvexAuthProvider>
+    </ConvexProvider>
   </React.StrictMode>
 );

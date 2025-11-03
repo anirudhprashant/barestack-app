@@ -8,15 +8,15 @@ export const listTimeEntries = query({
     endDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const baseQuery = args.projectId
-      ? ctx.db
-          .query("timeEntries")
-          .withIndex("by_project", (q) =>
-            q.eq("projectId", args.projectId)
-          )
-      : ctx.db.query("timeEntries");
+    let q = ctx.db.query("timeEntries");
 
-    let entries = await baseQuery.collect();
+    if (args.projectId) {
+      q = q.withIndex("by_project", (q) =>
+        q.eq("projectId", args.projectId)
+      );
+    }
+
+    let entries = await q.collect();
 
     if (args.startDate || args.endDate) {
       entries = entries.filter((entry) => {

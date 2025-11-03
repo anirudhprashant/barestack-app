@@ -11,7 +11,6 @@
 import type * as crm from "../crm.js";
 import type * as dashboard from "../dashboard.js";
 import type * as expenses from "../expenses.js";
-import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
 import type * as projects from "../projects.js";
 import type * as seedData from "../seedData.js";
@@ -35,7 +34,6 @@ declare const fullApi: ApiFromModules<{
   crm: typeof crm;
   dashboard: typeof dashboard;
   expenses: typeof expenses;
-  http: typeof http;
   invoices: typeof invoices;
   projects: typeof projects;
   seedData: typeof seedData;
