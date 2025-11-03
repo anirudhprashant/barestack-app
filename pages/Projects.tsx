@@ -5,6 +5,9 @@ import { TaskStatus, ProjectStatus } from '../types';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import type { Id } from '../convex/_generated/dataModel';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Project {
     _id: Id<"projects">;
@@ -31,13 +34,39 @@ const TaskCard: React.FC<{
     onDelete: () => void; 
     onToggleStatus: () => void;
 }> = ({ task, onEdit, onDelete, onToggleStatus }) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
+        id: task._id 
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
     return (
-        <div className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3">
+        <div 
+            ref={setNodeRef} 
+            style={style}
+            {...attributes} 
+            {...listeners}
+            className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-move hover:shadow-neo transition-all"
+        >
             <div className="flex justify-between items-start mb-2">
                 <p className="font-bold flex-1">{task.title}</p>
                 <div className="flex space-x-1">
-                    <button onClick={onEdit} className="p-1 hover:bg-brand-light rounded"><Icon name="edit" className="w-4 h-4"/></button>
-                    <button onClick={onDelete} className="p-1 hover:bg-brand-light rounded"><Icon name="trash" className="w-4 h-4"/></button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onEdit(); }} 
+                        className="p-1 hover:bg-brand-light rounded"
+                    >
+                        <Icon name="edit" className="w-4 h-4"/>
+                    </button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onDelete(); }} 
+                        className="p-1 hover:bg-brand-light rounded"
+                    >
+                        <Icon name="trash" className="w-4 h-4"/>
+                    </button>
                 </div>
             </div>
             <p className="text-sm text-gray-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</p>
@@ -46,7 +75,8 @@ const TaskCard: React.FC<{
                 <input 
                     type="checkbox" 
                     checked={task.status === "Done"} 
-                    onChange={onToggleStatus}
+                    onChange={(e) => { e.stopPropagation(); onToggleStatus(); }}
+                    onClick={(e) => e.stopPropagation()}
                     className="w-5 h-5 rounded border-2 border-brand-dark cursor-pointer"
                 />
             </div>
@@ -66,6 +96,14 @@ const Projects: React.FC = () => {
     const createTask = useMutation(api.projects.createTask);
     const updateTask = useMutation(api.projects.updateTask);
     const deleteTask = useMutation(api.projects.deleteTask);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { 
+            activationConstraint: { 
+                distance: 8 
+            } 
+        })
+    );
 
     useEffect(() => {
         if (!selectedProjectId && projects.length > 0) {
@@ -205,6 +243,24 @@ const Projects: React.FC = () => {
     const getClientName = (clientId: Id<"contacts">) => contacts.find(c => c._id === clientId)?.name || 'Unknown Client';
     const taskStages = Object.values(TaskStatus);
 
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over) return;
+
+        const taskId = active.id as Id<"tasks">;
+        const task = tasks.find(t => t._id === taskId);
+        if (!task) return;
+
+        const containerId = (over.data?.current as any)?.sortable?.containerId ?? over.id;
+        if (typeof containerId !== 'string') return;
+        if (!taskStages.includes(containerId as TaskStatus)) return;
+
+        const nextStatus = containerId as Task["status"];
+        if (task.status === nextStatus) return;
+
+        void updateTask({ id: taskId, status: nextStatus });
+    };
+
     return (
         <div>
             <PageHeader>
@@ -249,24 +305,37 @@ const Projects: React.FC = () => {
                     <PageHeader title={`Tasks for ${selectedProject.name}`}>
                         <Button variant="primary" onClick={handleAddTask}><Icon name="plus"/> Add Task</Button>
                     </PageHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {taskStages.map(stage => (
-                            <div key={stage} className="bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark">
-                                <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({tasks.filter(t => t.status === stage).length})</h3>
-                                <div>
-                                    {tasks.filter(t => t.status === stage).map(task => (
-                                        <TaskCard 
-                                            key={task._id} 
-                                            task={task}
-                                            onEdit={() => handleEditTask(task)}
-                                            onDelete={() => handleDeleteTask(task._id)}
-                                            onToggleStatus={() => handleToggleTaskStatus(task)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {taskStages.map(stage => {
+                                const stageTasks = tasks.filter(t => t.status === stage);
+                                return (
+                                    <div key={stage} className="bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark">
+                                        <h3 className="font-extrabold text-lg mb-4 text-center">
+                                            {stage} ({stageTasks.length})
+                                        </h3>
+                                        <SortableContext 
+                                            id={stage} 
+                                            items={stageTasks.map(t => t._id)} 
+                                            strategy={verticalListSortingStrategy}
+                                        >
+                                            <div>
+                                                {stageTasks.map(task => (
+                                                    <TaskCard 
+                                                        key={task._id} 
+                                                        task={task}
+                                                        onEdit={() => handleEditTask(task)}
+                                                        onDelete={() => handleDeleteTask(task._id)}
+                                                        onToggleStatus={() => handleToggleTaskStatus(task)}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </SortableContext>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </DndContext>
                 </div>
             )}
 

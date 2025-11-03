@@ -4,7 +4,6 @@ import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-do
 import { Authenticated, Unauthenticated } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Icon, Button } from './components/ui';
-import { HistoryProvider, useHistory } from './historyStore';
 
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
@@ -71,16 +70,11 @@ const Sidebar = () => {
 // --- HEADER ---
 const Header = () => {
     const location = useLocation();
-    const { undo, redo, canUndo, canRedo } = useHistory();
     const currentPage = navItems.find(item => item.href === location.pathname)?.label || 'Dashboard';
 
     return (
         <header className="fixed top-0 left-[200px] right-0 h-20 bg-brand-light border-b-2 border-brand-dark flex items-center justify-between px-8 z-10">
             <h1 className="text-3xl font-extrabold text-brand-dark">{currentPage}</h1>
-            <div className="flex items-center space-x-2">
-                <Button variant="secondary" onClick={undo} disabled={!canUndo}>Undo</Button>
-                <Button variant="secondary" onClick={redo} disabled={!canRedo}>Redo</Button>
-            </div>
         </header>
     );
 };
@@ -119,11 +113,9 @@ const App = () => {
     return (
         <>
             <Authenticated>
-                <HistoryProvider>
-                    <HashRouter>
-                        <AppLayout />
-                    </HashRouter>
-                </HistoryProvider>
+                <HashRouter>
+                    <AppLayout />
+                </HashRouter>
             </Authenticated>
             <Unauthenticated>
                 <Auth />
