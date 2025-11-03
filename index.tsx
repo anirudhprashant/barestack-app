@@ -5,7 +5,8 @@ import { ConvexReactClient } from 'convex/react';
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
 import App from './App';
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL || 'https://backendconvex.barestack.org');
+const convexUrl = import.meta.env.VITE_CONVEX_URL ?? 'https://trustworthy-cat-479.convex.cloud';
+const convex = new ConvexReactClient(convexUrl);
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

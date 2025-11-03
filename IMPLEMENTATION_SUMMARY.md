@@ -42,12 +42,13 @@ See `GOOGLE_AUTH_SETUP.md` for detailed instructions.
 
 **Quick Setup:**
 1. Create OAuth credentials in Google Cloud Console
-2. Set environment variables in Convex:
+2. Set environment variables in Convex Cloud:
    ```bash
-   npx convex env set AUTH_GOOGLE_ID <your-client-id> --url https://backendconvex.barestack.org --admin-key "<admin-key>"
-   npx convex env set AUTH_GOOGLE_SECRET <your-client-secret> --url https://backendconvex.barestack.org --admin-key "<admin-key>"
+   npx convex env set AUTH_GOOGLE_ID <your-client-id> --prod
+   npx convex env set AUTH_GOOGLE_SECRET <your-client-secret> --prod
+   npx convex env set SITE_URL https://crm.barestack.org --prod
    ```
-3. Deploy: `npx convex deploy --url https://backendconvex.barestack.org --admin-key "<admin-key>"`
+3. Deploy: `npx convex deploy --prod`
 
 ## 📝 Environment Variables Needed
 

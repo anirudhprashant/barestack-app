@@ -40,7 +40,7 @@ A fast, no-bullshit business dashboard for solopreneurs, powered by Convex backe
    ```
    Update `.env` with your Convex deployment URL:
    ```
-   VITE_CONVEX_URL=https://backendconvex.barestack.org
+   VITE_CONVEX_URL=https://trustworthy-cat-479.convex.cloud
    ```
 
 ### Development
@@ -49,8 +49,8 @@ A fast, no-bullshit business dashboard for solopreneurs, powered by Convex backe
 # Start the Vite dev server
 npm run dev
 
-# Deploy Convex functions (in another terminal)
-npx convex dev --url https://backendconvex.barestack.org --admin-key YOUR_ADMIN_KEY
+# In another terminal, start Convex dev (or deploy to production)
+npx convex dev
 ```
 
 ### Production Build
@@ -61,18 +61,20 @@ npm run build
 
 ## Convex Backend
 
-This project uses Convex for its backend. The Convex functions are located in the `convex/` directory.
+This project uses Convex Cloud for its backend. The Convex functions are located in the `convex/` directory.
 
 ### Deploying Convex Functions
 
 ```bash
-npx convex deploy --url https://backendconvex.barestack.org --admin-key YOUR_ADMIN_KEY
+# Deploy to production
+npx convex deploy --prod
 ```
 
 ### Seeding the Database
 
 ```bash
-npx convex run seedData:seedDatabase --url https://backendconvex.barestack.org --admin-key YOUR_ADMIN_KEY
+# Run the seeding function (after deploying)
+npx convex run seedData:seedDatabase --prod
 ```
 
 ## Project Structure
