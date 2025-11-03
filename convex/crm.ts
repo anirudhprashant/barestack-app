@@ -111,3 +111,10 @@ export const updateDeal = mutation({
     });
   },
 });
+
+export const deleteDeal = mutation({
+  args: { id: v.id("deals") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
