@@ -43,7 +43,7 @@ Added environment file patterns to prevent sensitive credentials from being comm
 
 ### Frontend (index.tsx)
 - Uses `ConvexAuthProvider` to wrap the entire React app
-- Convex client initialized with backend URL: `https://backendconvex.barestack.org`
+- Convex client initialized with backend URL: `https://trustworthy-cat-479.convex.cloud`
 - Properly configured to support auth hooks and components
 
 ### Backend (convex/)
@@ -63,9 +63,9 @@ Added environment file patterns to prevent sensitive credentials from being comm
 3. User clicks "Sign in with Google"
 4. `signIn("google")` initiates OAuth flow
 5. Redirect to Google consent screen
-6. Google redirects to: `https://backendconvex.barestack.org/api/auth/callback/google`
-7. Convex Auth processes callback and creates session
-8. User redirected back to app with authenticated state
+6. Google redirects to: `https://trustworthy-cat-479.convex.site/api/auth/callback/google`
+7. Convex Auth processes the callback on Convex Cloud and creates a session
+8. User is redirected back to the app with an authenticated state
 9. App shows Dashboard and protected routes
 
 ## Verification Steps Completed
@@ -84,24 +84,30 @@ SITE_URL=https://crm.barestack.org/
 ```
 
 ## Google Cloud Console Configuration
-Authorized redirect URIs:
-- `https://backendconvex.barestack.org/api/auth/callback/google`
+Authorized redirect URIs must include:
+- `https://trustworthy-cat-479.convex.site/api/auth/callback/google` *(required for new cloud deployment)*
 - `https://crm.barestack.org/auth/callback` (additional, may not be used)
-- `https://crm.barestack.org/auth/callback/exchange` (additional, may not be used)
 
 ## Key Changes Summary
 1. ✅ Replaced `ConvexProvider` with `ConvexAuthProvider` in index.tsx
 2. ✅ Updated imports to use correct package exports
 3. ✅ Enhanced .gitignore to protect environment files
 4. ✅ Verified TypeScript types and build process
-5. ✅ Updated GOOGLE_AUTH_SETUP.md with current configuration
+5. ✅ Updated Convex URL to cloud deployment: `https://trustworthy-cat-479.convex.cloud`
+6. ✅ Updated documentation with cloud deployment configuration
 
 ## Next Steps
-The application is now ready to be deployed. To deploy:
+The application is now ready for cloud deployment. To deploy:
 
 ```bash
-npx convex deploy --url https://backendconvex.barestack.org --admin-key "self-hosted-convex|01bd2c2d7b12d4d6604f183ad599e90673df251275eed514ece2c12a01a6205bac2b95b964"
+# Deploy to Convex Cloud (production)
+npx convex deploy --prod
 ```
+
+**Before deploying**, ensure environment variables are set on the cloud deployment (see `CLOUD_DEPLOYMENT_SETUP.md`):
+- `AUTH_GOOGLE_ID`
+- `AUTH_GOOGLE_SECRET`
+- `SITE_URL`
 
 After deployment, users should be able to:
 - Access https://crm.barestack.org
