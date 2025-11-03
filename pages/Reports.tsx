@@ -1,14 +1,13 @@
-
 import React from 'react';
 import { Card, PageHeader } from '../components/ui';
-import { useHistory } from '../historyStore';
+import { useData } from '../dataStore';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { subDays, formatISO } from 'date-fns';
 import { InvoiceStatus } from '../types';
 
 const Reports: React.FC = () => {
-    const { state } = useHistory();
-    const { invoices, projects, timeEntries } = state.present;
+    const { data } = useData();
+    const { invoices, projects, timeEntries } = data;
 
     // --- Generate Chart Data ---
     const revenueData = React.useMemo(() => {
@@ -16,12 +15,12 @@ const Reports: React.FC = () => {
             const d = subDays(new Date(), (5 - i) * 30);
             return { name: formatISO(d, { representation: 'date' }).substring(0, 7), revenue: 0 };
         });
-        invoices.filter(i => i.status === InvoiceStatus.Paid && i.paidDate).forEach(inv => {
-            const month = formatISO(new Date(inv.paidDate!), { representation: 'date' }).substring(0, 7);
+        invoices.filter(i => i.status === InvoiceStatus.Paid && i.paid_date).forEach(inv => {
+            const month = formatISO(new Date(inv.paid_date!), { representation: 'date' }).substring(0, 7);
             const monthData = data.find(m => m.name === month);
             if (monthData) {
-                const subtotal = inv.lineItems.reduce((s, li) => s + li.quantity * li.rate, 0);
-                monthData.revenue += subtotal * (1 + inv.taxRate / 100);
+                const subtotal = inv.line_items.reduce((s, li) => s + li.quantity * li.rate, 0);
+                monthData.revenue += subtotal * (1 + inv.tax_rate / 100);
             }
         });
         return data;
@@ -30,7 +29,7 @@ const Reports: React.FC = () => {
     const projectProfitabilityData = React.useMemo(() => {
         return projects.map(p => {
             const loggedHours = timeEntries
-                .filter(te => te.projectId === p.id)
+                .filter(te => te.project_id === p.id)
                 .reduce((sum, te) => sum + te.hours, 0);
             // Assuming a simple cost calculation, e.g., $50/hour
             const actualCost = loggedHours * 50; 
@@ -41,7 +40,7 @@ const Reports: React.FC = () => {
     const timeBreakdownData = React.useMemo(() => {
         return projects.map(p => ({
             name: p.name,
-            hours: timeEntries.filter(te => te.projectId === p.id).reduce((sum, te) => sum + te.hours, 0)
+            hours: timeEntries.filter(te => te.project_id === p.id).reduce((sum, te) => sum + te.hours, 0)
         })).filter(p => p.hours > 0);
     }, [projects, timeEntries]);
     

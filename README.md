@@ -1,107 +1,20 @@
-# BareStack - Minimalist Business Dashboard
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-A fast, no-bullshit business dashboard for solopreneurs, powered by Convex backend.
+# Run and deploy your AI Studio app
 
-## Features
+This contains everything you need to run your app locally.
 
-- **CRM**: Manage contacts and deal pipeline
-- **Projects**: Track projects and tasks
-- **Dashboard**: Real-time business metrics
-- **Time Tracking**: Log hours (coming soon)
-- **Invoicing**: Generate invoices (coming soon)
-- **Expenses**: Track business expenses (coming soon)
-- **Reports**: Visualize your data (coming soon)
+View your app in AI Studio: https://ai.studio/apps/drive/1LDqawyu6_QgXHrAE7m8wINzLFGLMtfjq
 
-## Tech Stack
+## Run Locally
 
-- **Frontend**: React 19 + TypeScript + Vite
-- **Backend**: Convex Dev (serverless functions + real-time database)
-- **Styling**: Tailwind CSS (via CDN)
-- **Routing**: React Router (HashRouter)
-- **Charts**: Recharts
+**Prerequisites:**  Node.js
 
-## Getting Started
 
-### Prerequisites
-
-- Node.js 18+ and npm
-
-### Installation
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Set up your environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   Update `.env` with your Convex deployment URL:
-   ```
-   VITE_CONVEX_URL=https://backendconvex.barestack.org
-   ```
-
-### Development
-
-```bash
-# Start the Vite dev server
-npm run dev
-
-# Deploy Convex functions (in another terminal)
-npx convex dev --url https://backendconvex.barestack.org --admin-key YOUR_ADMIN_KEY
-```
-
-### Production Build
-
-```bash
-npm run build
-```
-
-## Convex Backend
-
-This project uses Convex for its backend. The Convex functions are located in the `convex/` directory.
-
-### Deploying Convex Functions
-
-```bash
-npx convex deploy --url https://backendconvex.barestack.org --admin-key YOUR_ADMIN_KEY
-```
-
-### Seeding the Database
-
-```bash
-npx convex run seedData:seedDatabase --url https://backendconvex.barestack.org --admin-key YOUR_ADMIN_KEY
-```
-
-## Project Structure
-
-```
-├── convex/              # Convex backend functions
-│   ├── schema.ts        # Database schema
-│   ├── dashboard.ts     # Dashboard queries
-│   ├── crm.ts           # CRM functions
-│   ├── projects.ts      # Project management
-│   ├── invoices.ts      # Invoice handling
-│   ├── timeTracking.ts  # Time tracking
-│   └── expenses.ts      # Expense tracking
-├── pages/               # React pages/routes
-├── components/          # Reusable UI components
-├── types.ts             # TypeScript type definitions
-└── App.tsx              # Main app component
-```
-
-## Philosophy
-
-BareStack is about doing **less, better**. Every feature is:
-- **Fast**: Sub-100ms queries
-- **Minimal**: No unnecessary complexity
-- **Readable**: Clean, obvious code
-- **Type-safe**: Full TypeScript coverage
-
-If you're unsure whether to add a feature, **don't add it**. We can always add more later.
-
-## License
-
-MIT
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
