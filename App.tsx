@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { Authenticated, Unauthenticated } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { Icon, Button } from './components/ui';
-import { HistoryProvider, useHistory } from './historyStore';
 
-
+import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import CRM from './pages/CRM';
 import Projects from './pages/Projects';
@@ -28,9 +29,11 @@ const navItems = [
 ];
 
 const Sidebar = () => {
+    const { signOut } = useAuthActions();
+
     return (
         <div className="fixed top-0 left-0 h-full w-[200px] bg-white border-r-2 border-brand-dark flex flex-col p-4 z-20">
-            <div className="text-3xl font-black text-brand-dark mb-10">
+            <div className="text-3xl font-bold text-brand-dark mb-10">
                 BareStack
             </div>
             <nav className="flex flex-col space-y-2">
@@ -47,11 +50,18 @@ const Sidebar = () => {
                     </NavLink>
                 ))}
             </nav>
-            <div className="mt-auto">
+            <div className="mt-auto space-y-4">
                 <div className="flex items-center space-x-3 p-2">
                     <div className="w-10 h-10 bg-brand-light rounded-full border-2 border-brand-dark"></div>
-                    <div className="font-bold text-brand-dark">User</div>
+                    <div className="font-bold text-brand-dark">You</div>
                 </div>
+                <Button 
+                    variant="secondary" 
+                    className="w-full" 
+                    onClick={() => signOut()}
+                >
+                    Sign Out
+                </Button>
             </div>
         </div>
     );
@@ -60,16 +70,11 @@ const Sidebar = () => {
 // --- HEADER ---
 const Header = () => {
     const location = useLocation();
-    const { undo, redo, canUndo, canRedo } = useHistory();
     const currentPage = navItems.find(item => item.href === location.pathname)?.label || 'Dashboard';
 
     return (
         <header className="fixed top-0 left-[200px] right-0 h-20 bg-brand-light border-b-2 border-brand-dark flex items-center justify-between px-8 z-10">
             <h1 className="text-3xl font-extrabold text-brand-dark">{currentPage}</h1>
-            <div className="flex items-center space-x-2">
-                <Button variant="secondary" onClick={undo} disabled={!canUndo}>Undo</Button>
-                <Button variant="secondary" onClick={redo} disabled={!canRedo}>Redo</Button>
-            </div>
         </header>
     );
 };
@@ -106,11 +111,16 @@ const AppLayout = () => {
 // --- APP ---
 const App = () => {
     return (
-        <HistoryProvider>
-            <HashRouter>
-                <AppLayout />
-            </HashRouter>
-        </HistoryProvider>
+        <>
+            <Authenticated>
+                <HashRouter>
+                    <AppLayout />
+                </HashRouter>
+            </Authenticated>
+            <Unauthenticated>
+                <Auth />
+            </Unauthenticated>
+        </>
     );
 };
 

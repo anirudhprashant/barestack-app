@@ -55,6 +55,13 @@ export const updateProject = mutation({
   },
 });
 
+export const deleteProject = mutation({
+  args: { id: v.id("projects") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
+
 export const listTasks = query({
   args: { projectId: v.optional(v.id("projects")) },
   handler: async (ctx, args) => {
@@ -113,5 +120,12 @@ export const updateTask = mutation({
         createdAt: new Date().toISOString(),
       });
     }
+  },
+});
+
+export const deleteTask = mutation({
+  args: { id: v.id("tasks") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
   },
 });
