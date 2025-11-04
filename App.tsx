@@ -1,5 +1,5 @@
 import React, { useState, createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
-import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { Icon, Button } from './components/ui';
 import { DataProvider, useData } from './dataStore';
 import { supabase } from './services/supabaseClient';
@@ -240,13 +240,13 @@ function AppLayout() {
 function AppContent() {
     const { isAuthenticated } = useAuth();
     return (
-        <HashRouter>
+        <BrowserRouter>
             {isAuthenticated ? (
                 <DataProvider>
                     <AppLayout />
                 </DataProvider>
             ) : <LoginPage />}
-        </HashRouter>
+        </BrowserRouter>
     );
 }
 
