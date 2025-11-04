@@ -221,7 +221,7 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, icon }) => {
                     <h3 className="text-lg font-bold text-brand-dark">{title}</h3>
                     <Icon name={icon} className="w-8 h-8 text-brand-dark" />
                 </div>
-                <p className="text-5xl font-black text-brand-dark mt-4">{value}</p>
+                <p className="text-5xl font-extrabold text-brand-dark mt-4">{value}</p>
             </div>
         </Card>
     );
