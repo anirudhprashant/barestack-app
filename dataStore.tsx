@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { AppState, Contact, Deal, Expense, Invoice, Project, RecentActivity, Task, TimeEntry } from './types';
 import { supabase } from './services/supabaseClient';
@@ -32,7 +33,8 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | null>(null);
 
 // --- PROVIDER ---
-export const DataProvider = ({ children }: { children: ReactNode }) => {
+// FIX: Explicitly type DataProvider as React.FC to resolve a potential TypeScript inference issue causing a false positive 'children' prop error.
+export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { session } = useAuth();
     const [data, setData] = useState<AppState>(initialState);
     const [loading, setLoading] = useState(true);
