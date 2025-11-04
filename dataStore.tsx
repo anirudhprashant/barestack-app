@@ -10,10 +10,10 @@ import {
     Invoice,
     TimeEntry,
     Expense,
-    RecentActivity
+    RecentActivity,
+    Note,
+    Creatable,
 } from './types';
-
-type Creatable<T> = Omit<T, 'id' | 'user_id' | 'created_at'>;
 
 interface DataContextType {
     data: AppState;
@@ -37,6 +37,7 @@ interface DataContextType {
     addTimeEntry: (timeEntry: Creatable<TimeEntry>) => Promise<void>;
     addExpense: (expense: Creatable<Expense>) => Promise<void>;
     addRecentActivity: (activity: Omit<RecentActivity, 'id' | 'user_id'>) => Promise<void>;
+    addNote: (note: Creatable<Note>) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -50,6 +51,7 @@ const initialState: AppState = {
     timeEntries: [],
     expenses: [],
     recentActivity: [],
+    notes: [],
 };
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -70,7 +72,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const [
                 contacts, deals, projects, tasks, invoices,
-                timeEntries, expenses, recentActivity,
+                timeEntries, expenses, recentActivity, notes,
             ] = await Promise.all([
                 supabase.from('contacts').select('*').eq('user_id', session.user.id),
                 supabase.from('deals').select('*').eq('user_id', session.user.id),
@@ -80,9 +82,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 supabase.from('time_entries').select('*').eq('user_id', session.user.id),
                 supabase.from('expenses').select('*').eq('user_id', session.user.id),
                 supabase.from('recent_activity').select('*').eq('user_id', session.user.id).order('timestamp', { ascending: false }).limit(20),
+                supabase.from('notes').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }),
             ]);
             
-            const responses = [contacts, deals, projects, tasks, invoices, timeEntries, expenses, recentActivity];
+            const responses = [contacts, deals, projects, tasks, invoices, timeEntries, expenses, recentActivity, notes];
             for (const res of responses) {
                 if (res.error) throw res.error;
             }
@@ -96,6 +99,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 timeEntries: timeEntries.data || [],
                 expenses: expenses.data || [],
                 recentActivity: recentActivity.data || [],
+                notes: notes.data || [],
             });
         } catch (err: any) {
             setError(err.message);
@@ -108,7 +112,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         fetchData();
     }, [fetchData]);
 
-    const createApiHandler = useCallback(<T extends { id: string }>(table: string, stateKey: keyof AppState) => {
+    const createApiHandler = useCallback(<T extends { id?: string }>(table: string, stateKey: keyof AppState) => {
         const add = async (item: Omit<T, 'id' | 'user_id' | 'created_at'>): Promise<void> => {
             if (!session?.user) throw new Error("User not authenticated");
             const itemWithUser = { ...item, user_id: session.user.id };
@@ -151,6 +155,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const invoicesApi = createApiHandler<Invoice>('invoices', 'invoices');
     const timeEntriesApi = createApiHandler<TimeEntry>('time_entries', 'timeEntries');
     const expensesApi = createApiHandler<Expense>('expenses', 'expenses');
+    const notesApi = createApiHandler<Note>('notes', 'notes');
 
     const addRecentActivity = async (activity: Omit<RecentActivity, 'id' | 'user_id'>) => {
         if (!session?.user) throw new Error("User not authenticated");
@@ -160,13 +165,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setData(prev => ({ ...prev, recentActivity: [newData, ...prev.recentActivity] }));
     };
 
+    const deleteContact = async (id: string) => {
+        await contactsApi.del(id);
+        // Also remove associated deals and notes from local state for immediate UI update
+        setData(prev => ({
+            ...prev,
+            deals: prev.deals.filter(d => d.contact_id !== id),
+            notes: prev.notes.filter(n => n.contact_id !== id),
+        }));
+    };
+
     const value: DataContextType = {
         data,
         loading,
         error,
         addContact: contactsApi.add,
         updateContact: contactsApi.update,
-        deleteContact: contactsApi.del,
+        deleteContact: deleteContact,
         addDeal: dealsApi.add,
         updateDeal: dealsApi.update,
         deleteDeal: dealsApi.del,
@@ -181,7 +196,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteInvoice: invoicesApi.del,
         addTimeEntry: timeEntriesApi.add,
         addExpense: expensesApi.add,
-        addRecentActivity
+        addRecentActivity,
+        addNote: notesApi.add,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

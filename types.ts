@@ -1,3 +1,5 @@
+export type Creatable<T> = Omit<T, 'id' | 'user_id' | 'created_at'>;
+
 export interface Contact {
   id?: string;
   user_id?: string;
@@ -131,6 +133,14 @@ export interface RecentActivity {
   description: string;
 }
 
+export interface Note {
+  id: string;
+  user_id: string;
+  contact_id: string;
+  content: string;
+  created_at: string;
+}
+
 export interface AppState {
     contacts: Contact[];
     deals: Deal[];
@@ -140,4 +150,5 @@ export interface AppState {
     timeEntries: TimeEntry[];
     expenses: Expense[];
     recentActivity: RecentActivity[];
+    notes: Note[];
 }

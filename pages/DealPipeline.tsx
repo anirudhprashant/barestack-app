@@ -1,4 +1,4 @@
-import React, { useState, FC } from 'react';
+import React, { useState, FC, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { PageHeader, Button, Icon, Modal, Input, Select } from '../components/ui';
 import { Deal, DealStage } from '../types';
@@ -9,7 +9,8 @@ import { useData } from '../dataStore';
 const CrmNav = () => {
     const navLinks = [
         { href: '/crm', label: 'Contacts' },
-        { href: '/crm/pipeline', label: 'Pipeline' }
+        { href: '/crm/pipeline', label: 'Pipeline' },
+        { href: '/crm/activities', label: 'Activities' },
     ];
     return (
         <div className="flex space-x-2 border-b-2 border-brand-dark mb-8">
@@ -84,14 +85,14 @@ const AddDealForm: FC<{ onClose: () => void; initialContactId?: string; initialS
 };
 
 // --- Deal Card ---
-const DealCard: FC<{ deal: Deal, contactName: string, onDragStart: (e: React.DragEvent, dealId: string) => void }> = ({ deal, contactName, onDragStart }) => {
+const DealCard: FC<{ deal: Deal, contactName: string, onDragStart: (e: React.DragEvent, deal: Deal) => void }> = ({ deal, contactName, onDragStart }) => {
     return (
         <div 
             draggable 
-            onDragStart={(e) => onDragStart(e, deal.id!)}
+            onDragStart={(e) => onDragStart(e, deal)}
             className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing transition-opacity duration-200"
         >
-            <p className="font-bold">{contactName}</p>
+            <p className="font-bold text-lg">{contactName}</p>
             <p className="text-xl font-black text-brand-dark">${deal.value.toLocaleString()}</p>
             <p className="text-sm text-gray-500">Last interaction: {new Date(deal.last_interaction).toLocaleDateString()}</p>
         </div>
@@ -105,21 +106,24 @@ const DealPipeline: React.FC = () => {
     const [isAddDealModalOpen, setIsAddDealModalOpen] = useState(false);
     
     // Drag and Drop state
-    const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
+    const [draggedDeal, setDraggedDeal] = useState<Deal | null>(null);
     const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
 
     const getContactName = (contactId: string) => contacts.find(c => c.id === contactId)?.name || 'Unknown Contact';
-    const dealStages = Object.values(DealStage);
+    const dealStages = Object.values(DealStage).filter(s => s !== DealStage.Lead);
 
     // --- Drag and Drop Handlers ---
-    const handleDragStart = (e: React.DragEvent, dealId: string) => {
-        setDraggedDealId(dealId);
+    const handleDragStart = (e: React.DragEvent, deal: Deal) => {
+        setDraggedDeal(deal);
         e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', deal.id!);
     };
 
     const handleDragOver = (e: React.DragEvent, stage: DealStage) => {
         e.preventDefault();
-        setDragOverStage(stage);
+        if (draggedDeal?.stage !== stage) {
+            setDragOverStage(stage);
+        }
     };
     
     const handleDragLeave = () => {
@@ -128,15 +132,21 @@ const DealPipeline: React.FC = () => {
 
     const handleDrop = async (e: React.DragEvent, newStage: DealStage) => {
         e.preventDefault();
-        if (draggedDealId) {
-            const dealToUpdate = deals.find(d => d.id === draggedDealId);
-            if (dealToUpdate && dealToUpdate.stage !== newStage) {
-                await updateDeal({ ...dealToUpdate, stage: newStage, last_interaction: new Date().toISOString() });
-            }
+        if (draggedDeal && draggedDeal.stage !== newStage) {
+            await updateDeal({ ...draggedDeal, stage: newStage, last_interaction: new Date().toISOString() });
         }
-        setDraggedDealId(null);
+        setDraggedDeal(null);
         setDragOverStage(null);
     };
+
+    const stageData = useMemo(() => {
+        return dealStages.map(stage => {
+            const stageDeals = deals.filter(d => d.stage === stage);
+            const stageValue = stageDeals.reduce((sum, deal) => sum + deal.value, 0);
+            return { stage, deals: stageDeals, value: stageValue, count: stageDeals.length };
+        });
+    }, [deals, dealStages]);
+
 
     return (
         <div>
@@ -147,19 +157,30 @@ const DealPipeline: React.FC = () => {
                 </Button>
             </PageHeader>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {dealStages.filter(s => s !== DealStage.Lead).map(stage => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                {stageData.map(({ stage, deals: stageDeals, value, count }) => (
                     <div key={stage} 
                         onDragOver={(e) => handleDragOver(e, stage)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, stage)}
-                        className={`bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark transition-colors duration-300 ${dragOverStage === stage ? 'bg-blue-200' : ''}`}
+                        className={`bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark transition-colors duration-300 h-full`}
                     >
-                        <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({deals.filter(d => d.stage === stage).length})</h3>
-                        <div className="min-h-[200px]">
-                            {deals.filter(d => d.stage === stage).map(deal => (
-                                <DealCard key={deal.id} deal={deal} contactName={getContactName(deal.contact_id)} onDragStart={handleDragStart} />
-                            ))}
+                        <div className="text-center mb-4 pb-2 border-b-2 border-brand-dark">
+                            <h3 className="font-extrabold text-lg">{stage}</h3>
+                            <p className="font-bold text-brand-dark">${value.toLocaleString()} ({count})</p>
+                        </div>
+                        <div className={`min-h-[300px] p-2 rounded-[10px] transition-all ${dragOverStage === stage ? 'border-2 border-dashed border-brand-dark bg-white/50' : ''}`}>
+                            {stageDeals.length > 0 ? (
+                                stageDeals.map(deal => (
+                                    <div key={deal.id} style={{ opacity: draggedDeal?.id === deal.id ? 0.5 : 1 }}>
+                                        <DealCard deal={deal} contactName={getContactName(deal.contact_id)} onDragStart={handleDragStart} />
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-center text-gray-500 font-semibold">
+                                    No deals in this stage.
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
