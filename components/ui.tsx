@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 
@@ -254,7 +255,7 @@ interface PageHeaderProps {
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, children }) => {
     return (
         <div className="flex justify-between items-center mb-8">
-            <h2 className="text-4xl font-extrabold text-brand-dark">{title}</h2>
+            <h2 className="text-3xl font-extrabold text-brand-dark">{title}</h2>
             {children && <div className="flex space-x-2">{children}</div>}
         </div>
     );
