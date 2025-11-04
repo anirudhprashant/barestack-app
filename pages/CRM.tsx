@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, PageHeader, Button, Icon, Input } from '../components/ui';
+import { Card, PageHeader, Button, Icon, Input, Modal, Select } from '../components/ui';
 import { Contact, Deal, DealStage } from '../types';
 import { useData } from '../dataStore';
 
@@ -13,22 +13,29 @@ const DealCard: React.FC<{ deal: Deal; contactName: string }> = ({ deal, contact
     );
 };
 
-const CRM: React.FC = () => {
-    const { data, addContact, addDeal, addRecentActivity } = useData();
-    const { contacts, deals } = data;
-    const [searchTerm, setSearchTerm] = useState('');
+// --- Add Contact Form ---
+const AddContactForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const { addContact, addRecentActivity } = useData();
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [company, setCompany] = useState('');
+    const [tags, setTags] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleAddContact = async () => {
-        const name = prompt("Enter contact name:", "New Client Inc.");
-        if (!name) return;
-
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!name || !email) {
+            alert("Name and email are required.");
+            return;
+        }
+        setLoading(true);
         const newContact: Omit<Contact, 'id' | 'user_id' | 'created_at'> = {
             name,
-            email: `${name.toLowerCase().replace(/\s/g, '')}@example.com`,
-            phone: '555-0101',
-            company: name,
-            notes: '',
-            tags: ['New'],
+            email,
+            phone,
+            company,
+            tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
         };
 
         await addContact(newContact);
@@ -37,32 +44,83 @@ const CRM: React.FC = () => {
             type: 'CONTACT_ADDED',
             description: `Added new contact: ${name}`
         });
+        setLoading(false);
+        onClose();
     };
-    
-    const handleAddDeal = async () => {
-        if (contacts.length === 0) {
-            alert("Please add a contact first.");
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <Input label="Full Name" id="name" value={name} onChange={e => setName(e.target.value)} required />
+            <Input label="Email" id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+            <Input label="Phone" id="phone" value={phone} onChange={e => setPhone(e.target.value)} />
+            <Input label="Company" id="company" value={company} onChange={e => setCompany(e.target.value)} />
+            <Input label="Tags (comma-separated)" id="tags" value={tags} onChange={e => setTags(e.target.value)} />
+            <div className="flex justify-end space-x-2 pt-4">
+                <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+                <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : 'Save Contact'}</Button>
+            </div>
+        </form>
+    );
+};
+
+// --- Add Deal Form ---
+const AddDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const { data, addDeal, addRecentActivity } = useData();
+    const [contactId, setContactId] = useState(data.contacts[0]?.id || '');
+    const [value, setValue] = useState('');
+    const [stage, setStage] = useState(DealStage.Lead);
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!contactId || !value) {
+            alert("Contact and value are required.");
             return;
         }
-        const value = prompt("Enter deal value:", "10000");
-        if (!value || isNaN(parseInt(value))) return;
-
-        const randomContact = contacts[Math.floor(Math.random() * contacts.length)];
+        setLoading(true);
         const newDeal: Omit<Deal, 'id' | 'user_id' | 'created_at'> = {
-            contact_id: randomContact.id!,
+            contact_id: contactId,
             value: parseInt(value),
-            stage: DealStage.Lead,
+            stage: stage,
             last_interaction: new Date().toISOString()
         };
         
         await addDeal(newDeal);
+        const contactName = data.contacts.find(c => c.id === contactId)?.name;
         await addRecentActivity({
             timestamp: new Date().toISOString(),
             type: 'DEAL_ADDED',
-            description: `Added new deal for ${randomContact.name} worth $${newDeal.value.toLocaleString()}`
+            description: `Added new deal for ${contactName} worth $${newDeal.value.toLocaleString()}`
         });
+        setLoading(false);
+        onClose();
     }
 
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <Select label="Contact" id="contact" value={contactId} onChange={e => setContactId(e.target.value)} required>
+                {data.contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </Select>
+            <Input label="Value ($)" id="value" type="number" value={value} onChange={e => setValue(e.target.value)} required />
+            <Select label="Stage" id="stage" value={stage} onChange={e => setStage(e.target.value as DealStage)} required>
+                {Object.values(DealStage).map(s => <option key={s} value={s}>{s}</option>)}
+            </Select>
+            <div className="flex justify-end space-x-2 pt-4">
+                <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+                <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : 'Save Deal'}</Button>
+            </div>
+        </form>
+    );
+};
+
+// --- CRM Page Component ---
+const CRM: React.FC = () => {
+    const { data } = useData();
+    const { contacts, deals } = data;
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
+    const [isAddDealModalOpen, setIsAddDealModalOpen] = useState(false);
+    
     const filteredContacts = contacts.filter(c => 
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -77,7 +135,9 @@ const CRM: React.FC = () => {
     return (
         <div>
             <PageHeader title="Deal Pipeline">
-                <Button variant="primary" onClick={handleAddDeal}><Icon name="plus"/> Add Deal</Button>
+                <Button variant="primary" onClick={() => setIsAddDealModalOpen(true)} disabled={contacts.length === 0}>
+                    <Icon name="plus"/> Add Deal
+                </Button>
             </PageHeader>
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
                 {stages.map(stage => (
@@ -96,7 +156,7 @@ const CRM: React.FC = () => {
                  <div className="w-full max-w-xs">
                     <Input label="" id="search" placeholder="Search contacts..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                 </div>
-                <Button variant="primary" onClick={handleAddContact}><Icon name="plus"/> Add Contact</Button>
+                <Button variant="primary" onClick={() => setIsAddContactModalOpen(true)}><Icon name="plus"/> Add Contact</Button>
             </PageHeader>
             <Card>
                 <div className="overflow-x-auto">
@@ -133,6 +193,14 @@ const CRM: React.FC = () => {
                     </table>
                 </div>
             </Card>
+
+            <Modal isOpen={isAddContactModalOpen} onClose={() => setIsAddContactModalOpen(false)} title="Add New Contact">
+                <AddContactForm onClose={() => setIsAddContactModalOpen(false)} />
+            </Modal>
+            
+            <Modal isOpen={isAddDealModalOpen} onClose={() => setIsAddDealModalOpen(false)} title="Add New Deal">
+                <AddDealForm onClose={() => setIsAddDealModalOpen(false)} />
+            </Modal>
         </div>
     );
 };

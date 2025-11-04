@@ -1,8 +1,9 @@
 
 import React from 'react';
+import ReactDOM from 'react-dom';
 
 // --- ICON COMPONENT ---
-type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt' | 'chart' | 'settings' | 'plus' | 'search' | 'trash' | 'edit' | 'chevron-down';
+type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt' | 'chart' | 'settings' | 'plus' | 'search' | 'trash' | 'edit' | 'chevron-down' | 'x';
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
     name: IconName;
@@ -75,7 +76,8 @@ export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </>
         ),
-        'chevron-down': <polyline points="6 9 12 15 18 9" />
+        'chevron-down': <polyline points="6 9 12 15 18 9" />,
+        x: <line x1="18" y1="6" x2="6" y2="18" />,
     };
 
     return (
@@ -118,7 +120,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', className = '', ...props }) => {
-    const baseClasses = "font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center space-x-2";
+    const baseClasses = "font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed";
     const variantClasses = variant === 'primary' 
         ? 'bg-brand-dark text-white' 
         : 'bg-white text-brand-dark';
@@ -143,6 +145,66 @@ export const Input: React.FC<InputProps> = ({ label, id, ...props }) => {
         </div>
     );
 }
+
+// --- TEXTAREA COMPONENT ---
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+    label: string;
+}
+export const Textarea: React.FC<TextareaProps> = ({ label, id, ...props }) => {
+    return (
+        <div>
+            <label htmlFor={id} className="block text-brand-dark font-bold mb-2">{label}</label>
+            <textarea id={id} {...props} className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark" />
+        </div>
+    );
+};
+
+// --- SELECT COMPONENT ---
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+    label: string;
+    children: React.ReactNode;
+}
+export const Select: React.FC<SelectProps> = ({ label, id, children, ...props }) => {
+    return (
+        <div>
+            <label htmlFor={id} className="block text-brand-dark font-bold mb-2">{label}</label>
+            <select id={id} {...props} className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark appearance-none bg-no-repeat bg-right pr-8" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%232B2B2B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`}}>
+                {children}
+            </select>
+        </div>
+    );
+};
+
+// --- MODAL COMPONENT ---
+interface ModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string;
+    children: React.ReactNode;
+}
+
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+    if (!isOpen) return null;
+
+    return ReactDOM.createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4" onClick={onClose}>
+            <div 
+                className="bg-white p-8 rounded-[10px] border-2 border-brand-dark shadow-neo w-full max-w-lg relative"
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-3xl font-extrabold text-brand-dark">{title}</h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-brand-light">
+                        <Icon name="x" className="w-8 h-8 text-brand-dark"/>
+                    </button>
+                </div>
+                {children}
+            </div>
+        </div>,
+        document.body
+    );
+};
+
 
 // --- STAT CARD COMPONENT ---
 interface StatCardProps {
