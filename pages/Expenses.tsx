@@ -1,24 +1,27 @@
-import React from 'react';
-import { Card, PageHeader, Button, Icon } from '../components/ui';
+import React, { useState } from 'react';
+import { Card, PageHeader, Button, Icon, Modal, Input, Select, Textarea } from '../components/ui';
 import { Expense, ExpenseCategory } from '../types';
 import { useData } from '../dataStore';
 
-const Expenses: React.FC = () => {
+// --- Add Expense Form ---
+const AddExpenseForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { data, addExpense, addRecentActivity } = useData();
-    const { expenses, projects } = data;
+    const [description, setDescription] = useState('');
+    const [amount, setAmount] = useState('');
+    const [category, setCategory] = useState<ExpenseCategory>(ExpenseCategory.Other);
+    const [projectId, setProjectId] = useState<string | undefined>(undefined);
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [loading, setLoading] = useState(false);
 
-    const handleAddExpense = async () => {
-        const description = prompt("Enter expense description:", "New Software Subscription");
-        if (!description) return;
-        
-        const amount = prompt("Enter amount:", "50");
-        if (!amount || isNaN(parseFloat(amount))) return;
-
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
         const newExpense: Omit<Expense, 'id' | 'user_id' | 'created_at'> = {
-            date: new Date().toISOString(),
-            category: ExpenseCategory.Software,
-            amount: parseFloat(amount),
-            description: description,
+            date: new Date(date).toISOString(),
+            category,
+            amount: parseFloat(amount) || 0,
+            description,
+            project_id: projectId,
         };
         
         await addExpense(newExpense);
@@ -27,8 +30,36 @@ const Expenses: React.FC = () => {
             type: 'EXPENSE_ADDED',
             description: `Added expense: ${description} for $${newExpense.amount}`
         });
+        setLoading(false);
+        onClose();
     };
-    
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <Input label="Description" id="description" value={description} onChange={e => setDescription(e.target.value)} required />
+            <Input label="Amount ($)" id="amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} required />
+            <Input label="Date" id="date" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+            <Select label="Category" id="category" value={category} onChange={e => setCategory(e.target.value as ExpenseCategory)}>
+                {Object.values(ExpenseCategory).map(c => <option key={c} value={c}>{c}</option>)}
+            </Select>
+            <Select label="Project (Optional)" id="project" value={projectId} onChange={e => setProjectId(e.target.value)}>
+                <option value="">None</option>
+                {data.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </Select>
+            <div className="flex justify-end space-x-2 pt-4">
+                <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+                <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : 'Save Expense'}</Button>
+            </div>
+        </form>
+    );
+};
+
+
+const Expenses: React.FC = () => {
+    const { data } = useData();
+    const { expenses, projects } = data;
+    const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false);
+
     const getProjectName = (projectId?: string) => {
         if (!projectId) return '-';
         return projects.find(p => p.id === projectId)?.name || 'Unknown Project';
@@ -45,7 +76,7 @@ const Expenses: React.FC = () => {
     return (
         <div>
             <PageHeader title="Expenses">
-                <Button variant="primary" onClick={handleAddExpense}><Icon name="plus"/> Add Expense</Button>
+                <Button variant="primary" onClick={() => setIsAddExpenseModalOpen(true)}><Icon name="plus"/> Add Expense</Button>
             </PageHeader>
             <Card>
                 <div className="overflow-x-auto">
@@ -82,6 +113,10 @@ const Expenses: React.FC = () => {
                     </table>
                 </div>
             </Card>
+
+            <Modal isOpen={isAddExpenseModalOpen} onClose={() => setIsAddExpenseModalOpen(false)} title="Add New Expense">
+                <AddExpenseForm onClose={() => setIsAddExpenseModalOpen(false)} />
+            </Modal>
         </div>
     );
 };
