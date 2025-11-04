@@ -149,6 +149,9 @@ function LoginPage() {
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
+                options: {
+                    redirectTo: window.location.href,
+                },
             });
             if (error) throw error;
         } catch (err: any) {
