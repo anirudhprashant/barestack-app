@@ -8,6 +8,7 @@ import type { AuthSession } from '@supabase/supabase-js';
 import Dashboard from './pages/Dashboard';
 import CRM from './pages/CRM';
 import DealPipeline from './pages/DealPipeline';
+import Activities from './pages/Activities';
 import Projects from './pages/Projects';
 import Invoices from './pages/Invoices';
 import TimeTracking from './pages/TimeTracking';
@@ -218,6 +219,7 @@ function AppLayout() {
                                 <Route path="/" element={<Dashboard />} />
                                 <Route path="/crm" element={<CRM />} />
                                 <Route path="/crm/pipeline" element={<DealPipeline />} />
+                                <Route path="/crm/activities" element={<Activities />} />
                                 <Route path="/projects" element={<Projects />} />
                                 <Route path="/invoices" element={<Invoices />} />
                                 <Route path="/time-tracking" element={<TimeTracking />} />
