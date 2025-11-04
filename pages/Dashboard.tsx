@@ -43,7 +43,7 @@ const Dashboard: React.FC = () => {
 
     return (
         <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <StatCard title="Outstanding Revenue" value={`$${stats.outstandingRevenue.toLocaleString()}`} icon="chart" />
                 <StatCard title="Active Projects" value={stats.activeProjects} icon="clipboard" />
                 <StatCard title="Hours Logged This Week" value={stats.hoursLoggedThisWeek} icon="clock" />
