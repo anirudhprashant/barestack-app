@@ -1,4 +1,3 @@
-
 import React, { useState, createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { Icon, Button } from './components/ui';
@@ -8,6 +7,7 @@ import type { AuthSession } from '@supabase/supabase-js';
 
 import Dashboard from './pages/Dashboard';
 import CRM from './pages/CRM';
+import DealPipeline from './pages/DealPipeline';
 import Projects from './pages/Projects';
 import Invoices from './pages/Invoices';
 import TimeTracking from './pages/TimeTracking';
@@ -121,7 +121,13 @@ function Sidebar() {
 function Header() {
     const location = useLocation();
     const { logout } = useAuth();
-    const currentPage = navItems.find(item => item.href === location.pathname)?.label || 'Dashboard';
+    
+    const getPageTitle = (pathname: string) => {
+        if (pathname.startsWith('/crm')) return 'CRM';
+        const item = navItems.find(i => i.href === pathname);
+        return item?.label || 'Overview';
+    };
+    const currentPage = getPageTitle(location.pathname);
 
     return (
         <header className="fixed top-0 left-[200px] right-0 h-20 bg-brand-light border-b-2 border-brand-dark flex items-center justify-between px-8 z-10">
@@ -211,6 +217,7 @@ function AppLayout() {
                             <Routes>
                                 <Route path="/" element={<Dashboard />} />
                                 <Route path="/crm" element={<CRM />} />
+                                <Route path="/crm/pipeline" element={<DealPipeline />} />
                                 <Route path="/projects" element={<Projects />} />
                                 <Route path="/invoices" element={<Invoices />} />
                                 <Route path="/time-tracking" element={<TimeTracking />} />
