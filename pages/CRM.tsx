@@ -1,8 +1,11 @@
-import React, { useState, useMemo, FC, useEffect } from 'react';
+import React, { useState, useMemo, FC, useEffect, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Card, Button, Icon, Modal, Input, Textarea } from '../components/ui';
-import { Contact, Deal, DealStage, Note, Creatable } from '../types';
+import { Contact, Deal, DealStage, Note, Creatable, ImportBatch } from '../types';
 import { useData } from '../dataStore';
+
+// @ts-ignore - XLSX is loaded from CDN in index.html
+const XLSX = window.XLSX;
 
 const ITEMS_PER_PAGE = 10;
 
@@ -20,6 +23,7 @@ const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
         { href: '/crm', label: 'Contacts' },
         { href: '/crm/pipeline', label: 'Pipeline' },
         { href: '/crm/activities', label: 'Activities' },
+        { href: '/crm/imports', label: 'Imports' },
     ];
 
     return (
@@ -41,7 +45,7 @@ const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
                     </NavLink>
                 ))}
             </div>
-            <div>
+            <div className="flex items-center space-x-2">
                 {children}
             </div>
         </div>
@@ -110,56 +114,122 @@ const ContactForm: FC<{ contact?: Contact; onClose: () => void }> = ({ contact, 
     );
 };
 
-
-const AddDealForm: FC<{ onClose: () => void; initialContactId?: string; initialStage?: DealStage }> = ({ onClose, initialContactId, initialStage }) => {
-    const { data, addDeal, addRecentActivity } = useData();
-    const [contactId, setContactId] = useState(initialContactId || data.contacts[0]?.id || '');
-    const [value, setValue] = useState('');
-    const [stage, setStage] = useState(initialStage || DealStage.Qualified);
+// --- Import Modal ---
+const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
+    const { addMultipleContacts } = useData();
+    const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+            setError(null);
+        }
+    };
+    
+    const handleImport = async () => {
+        if (!file) {
+            setError("Please select a file.");
+            return;
+        }
         setLoading(true);
-        try {
-            const newDeal: Omit<Deal, 'id' | 'user_id' | 'created_at'> = {
-                contact_id: contactId,
-                value: parseInt(value) || 0,
-                stage,
-                last_interaction: new Date().toISOString(),
-            };
+        setError(null);
 
-            await addDeal(newDeal);
-            const contactName = data.contacts.find(c => c.id === contactId)?.name || 'a contact';
-            await addRecentActivity({
-                timestamp: new Date().toISOString(),
-                type: 'DEAL_ADDED',
-                description: `New deal worth $${newDeal.value} added for ${contactName}`
-            });
-            onClose();
-        } catch (error) {
-            console.error("Failed to add deal:", error);
-        } finally {
+        try {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = e.target?.result;
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                    if (json.length === 0) {
+                        throw new Error("The file is empty or in an unsupported format.");
+                    }
+
+                    // Flexible column mapping
+                    // FIX: Correctly type fieldMap to have specific keys from Creatable<Contact> and string array values.
+                    const fieldMap: Record<keyof Pick<Creatable<Contact>, 'name' | 'email' | 'phone' | 'company'>, string[]> = {
+                        name: ['name', 'full name', 'contact name'],
+                        email: ['email', 'email address'],
+                        phone: ['phone', 'phone number'],
+                        company: ['company', 'company name'],
+                    };
+
+                    const newContacts: Creatable<Contact>[] = json.map((row: any) => {
+                        const contact: Creatable<Contact> = { name: '', email: '', phone: '', company: '', tags: [] };
+                        for (const key in row) {
+                            const lowerKey = key.toLowerCase().trim();
+                            // FIX: Use Object.keys() on the typed fieldMap to ensure 'field' is a valid key of Creatable<Contact>.
+                            for (const field of Object.keys(fieldMap) as Array<keyof typeof fieldMap>) {
+                                if (fieldMap[field].includes(lowerKey)) {
+                                    contact[field] = String(row[key]).trim();
+                                    break;
+                                }
+                            }
+                        }
+                        // Skip if no useful data was found
+                        if (!contact.name && !contact.email && !contact.company) {
+                            return null;
+                        }
+                        return contact;
+                    }).filter((c): c is Creatable<Contact> => c !== null);
+
+                    if (newContacts.length === 0) {
+                        throw new Error("No valid contacts found in the file. Please check your column headers.");
+                    }
+                    
+                    const batchDetails: Creatable<ImportBatch> = {
+                        file_name: file.name,
+                        contact_count: newContacts.length,
+                    };
+
+                    await addMultipleContacts(newContacts, batchDetails);
+                    onClose();
+
+                } catch (err: any) {
+                    setError(err.message || "Failed to process the file.");
+                    setLoading(false);
+                }
+            };
+            reader.onerror = () => {
+                 setError("Failed to read the file.");
+                 setLoading(false);
+            }
+            reader.readAsBinaryString(file);
+        } catch (err: any) {
+            setError(err.message);
             setLoading(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <select id="contact" value={contactId} onChange={e => setContactId(e.target.value)} required className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark">
-                {data.contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <Input label="Deal Value ($)" id="value" type="number" value={value} onChange={e => setValue(e.target.value)} required />
-            <select id="stage" value={stage} onChange={e => setStage(e.target.value as DealStage)} className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark">
-                {Object.values(DealStage).filter(s => s !== DealStage.Lead).map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-                <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : 'Save Deal'}</Button>
+        <div className="space-y-4">
+            <p>Upload a CSV, XLS, or XLSX file to import contacts. No specific columns are required, but we'll look for headers like 'Name', 'Email', 'Phone', and 'Company'.</p>
+            <div>
+                <label className="block text-brand-dark font-bold mb-2">Select File</label>
+                <input 
+                    type="file" 
+                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                    onChange={handleFileChange}
+                    className="w-full text-brand-dark file:mr-4 file:py-2 file:px-4 file:rounded-[10px] file:border-2 file:border-brand-dark file:text-sm file:font-semibold file:bg-white file:text-brand-dark hover:file:bg-brand-light"
+                />
             </div>
-        </form>
+            {file && <p className="font-bold">Selected: {file.name}</p>}
+            {error && <p className="text-red-600 font-bold">{error}</p>}
+            <div className="flex justify-end space-x-2 pt-4">
+                <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
+                <Button type="button" variant="primary" onClick={handleImport} disabled={loading || !file}>
+                    {loading ? 'Importing...' : 'Start Import'}
+                </Button>
+            </div>
+        </div>
     );
 };
+
 
 const AddNoteForm: FC<{ contact: Contact; onClose: () => void }> = ({ contact, onClose }) => {
     const { addNote } = useData();
@@ -200,12 +270,11 @@ const CRM: React.FC = () => {
     const { data, updateDeal, deleteContact } = useData();
     const { contacts, deals } = data;
     const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
-    const [isAddDealModalOpen, setIsAddDealModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
     const [editingContact, setEditingContact] = useState<Contact | null>(null);
     const [deletingContact, setDeletingContact] = useState<Contact | null>(null);
     const [notingContact, setNotingContact] = useState<Contact | null>(null);
-    const [newDealProps, setNewDealProps] = useState<{ contactId: string, stage: DealStage } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     
@@ -241,11 +310,8 @@ const CRM: React.FC = () => {
             // Update the most recent deal
             const latestDeal = contactDeals[0];
             await updateDeal({ ...latestDeal, stage: newStage });
-        } else if (newStage !== DealStage.Lead) {
-            // This was a Lead, prompt to create a new deal
-            setNewDealProps({ contactId: contact.id!, stage: newStage });
-            setIsAddDealModalOpen(true);
         }
+        // If it's a lead and changed, the deal creation is handled on other pages now
     };
 
     const handleDeleteConfirm = async () => {
@@ -263,6 +329,9 @@ const CRM: React.FC = () => {
     return (
         <div>
             <CrmHeader>
+                <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
+                    Import Contacts
+                </Button>
                 <Button variant="primary" onClick={() => setIsAddContactModalOpen(true)}>
                     <Icon name="plus" /> Add Contact
                 </Button>
@@ -354,18 +423,14 @@ const CRM: React.FC = () => {
                 <ContactForm onClose={() => setIsAddContactModalOpen(false)} />
             </Modal>
             
+            <Modal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} title="Import Contacts">
+                <ImportModal onClose={() => setIsImportModalOpen(false)} />
+            </Modal>
+            
             <Modal isOpen={!!editingContact} onClose={() => setEditingContact(null)} title="Edit Contact">
                 {editingContact && <ContactForm contact={editingContact} onClose={() => setEditingContact(null)} />}
             </Modal>
-            
-            <Modal isOpen={isAddDealModalOpen} onClose={() => { setIsAddDealModalOpen(false); setNewDealProps(null); }} title="Add New Deal">
-                <AddDealForm 
-                    onClose={() => { setIsAddDealModalOpen(false); setNewDealProps(null); }} 
-                    initialContactId={newDealProps?.contactId}
-                    initialStage={newDealProps?.stage}
-                />
-            </Modal>
-            
+
             <Modal isOpen={isAddNoteModalOpen} onClose={() => setIsAddNoteModalOpen(false)} title="Add a Note">
                 {notingContact && <AddNoteForm contact={notingContact} onClose={() => setIsAddNoteModalOpen(false)} />}
             </Modal>
