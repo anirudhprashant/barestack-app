@@ -1,34 +1,40 @@
 import React, { useState, FC, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { PageHeader, Button, Icon, Modal, Input, Select } from '../components/ui';
+import { Button, Icon, Modal, Input, Select } from '../components/ui';
 import { Deal, DealStage } from '../types';
 import { useData } from '../dataStore';
 
 
-// --- Sub-navigation for CRM section ---
-const CrmNav = () => {
+// --- Shared CRM Header Component ---
+const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
     const navLinks = [
         { href: '/crm', label: 'Contacts' },
         { href: '/crm/pipeline', label: 'Pipeline' },
         { href: '/crm/activities', label: 'Activities' },
     ];
+
     return (
-        <div className="flex space-x-2 border-b-2 border-brand-dark mb-8">
-            {navLinks.map(link => (
-                <NavLink
-                    key={link.href}
-                    to={link.href}
-                    end
-                    className={({ isActive }) => 
-                        `py-2 px-4 font-bold text-lg rounded-t-[10px] border-brand-dark -mb-px
-                        ${isActive 
-                            ? 'bg-white border-2 border-b-white' 
-                            : 'bg-brand-light border-x-2 border-t-2 border-transparent hover:bg-white/60'}`
-                    }
-                >
-                    {link.label}
-                </NavLink>
-            ))}
+        <div className="flex justify-between items-center mb-8">
+            <div className="flex space-x-2">
+                {navLinks.map(link => (
+                    <NavLink
+                        key={link.href}
+                        to={link.href}
+                        end
+                        className={({ isActive }) => 
+                            `font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
+                            ${isActive 
+                                ? 'bg-brand-dark text-white' 
+                                : 'bg-white text-brand-dark'}`
+                        }
+                    >
+                        {link.label}
+                    </NavLink>
+                ))}
+            </div>
+            <div>
+                {children}
+            </div>
         </div>
     );
 };
@@ -150,12 +156,11 @@ const DealPipeline: React.FC = () => {
 
     return (
         <div>
-            <CrmNav />
-            <PageHeader title="Deal Pipeline">
+            <CrmHeader>
                 <Button variant="primary" onClick={() => setIsAddDealModalOpen(true)} disabled={contacts.length === 0}>
                     <Icon name="plus" /> Add Deal
                 </Button>
-            </PageHeader>
+            </CrmHeader>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
                 {stageData.map(({ stage, deals: stageDeals, value, count }) => (
