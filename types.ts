@@ -9,6 +9,7 @@ export interface Contact {
   company: string;
   tags: string[];
   created_at?: string;
+  import_batch_id?: string;
 }
 
 export enum DealStage {
@@ -141,6 +142,14 @@ export interface Note {
   created_at: string;
 }
 
+export interface ImportBatch {
+    id: string;
+    user_id: string;
+    created_at: string;
+    contact_count: number;
+    file_name: string;
+}
+
 export interface AppState {
     contacts: Contact[];
     deals: Deal[];
@@ -151,4 +160,5 @@ export interface AppState {
     expenses: Expense[];
     recentActivity: RecentActivity[];
     notes: Note[];
+    importBatches: ImportBatch[];
 }

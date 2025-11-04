@@ -12,6 +12,7 @@ import {
     Expense,
     RecentActivity,
     Note,
+    ImportBatch,
     Creatable,
 } from './types';
 
@@ -20,6 +21,7 @@ interface DataContextType {
     loading: boolean;
     error: string | null;
     addContact: (contact: Creatable<Contact>) => Promise<void>;
+    addMultipleContacts: (contacts: Creatable<Contact>[], batchDetails: Creatable<ImportBatch>) => Promise<void>;
     updateContact: (contact: Contact) => Promise<void>;
     deleteContact: (id: string) => Promise<void>;
     addDeal: (deal: Creatable<Deal>) => Promise<void>;
@@ -38,6 +40,7 @@ interface DataContextType {
     addExpense: (expense: Creatable<Expense>) => Promise<void>;
     addRecentActivity: (activity: Omit<RecentActivity, 'id' | 'user_id'>) => Promise<void>;
     addNote: (note: Creatable<Note>) => Promise<void>;
+    undoImport: (batchId: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -52,6 +55,7 @@ const initialState: AppState = {
     expenses: [],
     recentActivity: [],
     notes: [],
+    importBatches: [],
 };
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -72,7 +76,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const [
                 contacts, deals, projects, tasks, invoices,
-                timeEntries, expenses, recentActivity, notes,
+                timeEntries, expenses, recentActivity, notes, importBatches
             ] = await Promise.all([
                 supabase.from('contacts').select('*').eq('user_id', session.user.id),
                 supabase.from('deals').select('*').eq('user_id', session.user.id),
@@ -83,9 +87,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 supabase.from('expenses').select('*').eq('user_id', session.user.id),
                 supabase.from('recent_activity').select('*').eq('user_id', session.user.id).order('timestamp', { ascending: false }).limit(20),
                 supabase.from('notes').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }),
+                supabase.from('import_batches').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }),
             ]);
             
-            const responses = [contacts, deals, projects, tasks, invoices, timeEntries, expenses, recentActivity, notes];
+            const responses = [contacts, deals, projects, tasks, invoices, timeEntries, expenses, recentActivity, notes, importBatches];
             for (const res of responses) {
                 if (res.error) throw res.error;
             }
@@ -100,6 +105,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 expenses: expenses.data || [],
                 recentActivity: recentActivity.data || [],
                 notes: notes.data || [],
+                importBatches: importBatches.data || [],
             });
         } catch (err: any) {
             setError(err.message);
@@ -131,10 +137,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const { error } = await supabase.from(table).update(updateData).eq('id', id);
             if (error) throw error;
             setData(prev => {
-                const items = prev[stateKey] as T[];
+                // FIX: Cast to 'unknown' before 'T[]' to resolve strict TypeScript conversion error.
+                const items = prev[stateKey] as unknown as T[];
                 const index = items.findIndex(i => i.id === id);
-                if (index > -1) items[index] = item;
-                return { ...prev, [stateKey]: [...items] };
+                if (index > -1) {
+                    // FIX: Ensure immutability by creating a new array for the update.
+                    const newItems = [...items];
+                    newItems[index] = item;
+                    return { ...prev, [stateKey]: newItems };
+                }
+                return prev;
             });
         };
 
@@ -142,7 +154,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (!session?.user) throw new Error("User not authenticated");
             const { error } = await supabase.from(table).delete().eq('id', id);
             if (error) throw error;
-            setData(prev => ({ ...prev, [stateKey]: (prev[stateKey] as T[]).filter(item => item.id !== id) }));
+            // FIX: Cast to 'unknown' before 'T[]' to resolve strict TypeScript conversion error.
+            setData(prev => ({ ...prev, [stateKey]: (prev[stateKey] as unknown as T[]).filter(item => item.id !== id) }));
         };
 
         return { add, update, del };
@@ -164,6 +177,52 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (error) throw error;
         setData(prev => ({ ...prev, recentActivity: [newData, ...prev.recentActivity] }));
     };
+    
+    const addMultipleContacts = async (contacts: Creatable<Contact>[], batchDetails: Creatable<ImportBatch>) => {
+        if (!session?.user) throw new Error("User not authenticated");
+
+        // 1. Create the import batch record
+        const batchWithUser = { ...batchDetails, user_id: session.user.id };
+        const { data: newBatch, error: batchError } = await supabase.from('import_batches').insert(batchWithUser).select().single();
+        if (batchError) throw batchError;
+        
+        // 2. Add batch ID and user ID to each contact
+        const contactsToInsert = contacts.map(c => ({
+            ...c,
+            user_id: session.user.id,
+            import_batch_id: newBatch.id,
+        }));
+        
+        // 3. Bulk insert contacts
+        const { data: newContacts, error: contactsError } = await supabase.from('contacts').insert(contactsToInsert).select();
+        if (contactsError) throw contactsError;
+        
+        // 4. Update local state
+        setData(prev => ({
+            ...prev,
+            contacts: [...newContacts, ...prev.contacts],
+            importBatches: [newBatch, ...prev.importBatches],
+        }));
+    };
+    
+    const undoImport = async (batchId: string) => {
+        if (!session?.user) throw new Error("User not authenticated");
+        
+        // 1. Delete contacts associated with the batch
+        const { error: contactsError } = await supabase.from('contacts').delete().eq('import_batch_id', batchId);
+        if (contactsError) throw contactsError;
+        
+        // 2. Delete the batch record itself
+        const { error: batchError } = await supabase.from('import_batches').delete().eq('id', batchId);
+        if (batchError) throw batchError;
+
+        // 3. Update local state
+        setData(prev => ({
+            ...prev,
+            contacts: prev.contacts.filter(c => c.import_batch_id !== batchId),
+            importBatches: prev.importBatches.filter(b => b.id !== batchId),
+        }));
+    };
 
     const deleteContact = async (id: string) => {
         await contactsApi.del(id);
@@ -180,6 +239,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loading,
         error,
         addContact: contactsApi.add,
+        addMultipleContacts,
         updateContact: contactsApi.update,
         deleteContact: deleteContact,
         addDeal: dealsApi.add,
@@ -198,6 +258,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addExpense: expensesApi.add,
         addRecentActivity,
         addNote: notesApi.add,
+        undoImport,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
