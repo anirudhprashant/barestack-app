@@ -87,7 +87,7 @@ const navItems = [
 ];
 
 function Sidebar() {
-    const { session } = useAuth();
+    const { session, logout } = useAuth();
     return (
         <div className="fixed top-0 left-0 h-full w-[200px] bg-white border-r-2 border-brand-dark flex flex-col p-4 z-20">
             <div className="text-3xl font-extrabold text-brand-dark mb-10">
@@ -107,13 +107,14 @@ function Sidebar() {
                     </NavLink>
                 ))}
             </nav>
-            <div className="mt-auto">
-                <div className="flex items-center space-x-3 p-2">
-                    <div className="w-10 h-10 bg-brand-light rounded-full border-2 border-brand-dark flex items-center justify-center font-bold">
-                        {session?.user?.email?.[0].toUpperCase()}
-                    </div>
-                    <div className="font-bold text-brand-dark truncate">{session?.user?.email}</div>
-                </div>
+            <div className="mt-auto p-2">
+                <button
+                    onClick={logout}
+                    title="Log Out"
+                    className="w-12 h-12 bg-white text-brand-dark font-bold text-xl rounded-full border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center"
+                >
+                    {session?.user?.email?.[0].toUpperCase()}
+                </button>
             </div>
         </div>
     );
