@@ -1,39 +1,61 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, FC, useEffect } from 'react';
 import { Card, PageHeader, Button, Icon, Modal, Input, Select } from '../components/ui';
 import { Contact, Deal, DealStage } from '../types';
 import { useData } from '../dataStore';
 
-// --- Add Contact Form ---
-const AddContactForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { addContact, addRecentActivity } = useData();
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [company, setCompany] = useState('');
-    const [tags, setTags] = useState('');
+const ITEMS_PER_PAGE = 10;
+
+// --- Helper to get a contact's current stage ---
+const getContactStage = (contactId: string, deals: Deal[]): DealStage => {
+    const contactDeals = deals
+        .filter(d => d.contact_id === contactId)
+        .sort((a, b) => new Date(b.last_interaction).getTime() - new Date(a.last_interaction).getTime());
+    return contactDeals.length > 0 ? contactDeals[0].stage : DealStage.Lead;
+};
+
+
+// --- FORMS ---
+
+const ContactForm: FC<{ contact?: Contact; onClose: () => void }> = ({ contact, onClose }) => {
+    const { addContact, updateContact, addRecentActivity } = useData();
+    const [formData, setFormData] = useState({
+        name: contact?.name || '',
+        email: contact?.email || '',
+        phone: contact?.phone || '',
+        company: contact?.company || '',
+        tags: contact?.tags?.join(', ') || '',
+    });
     const [loading, setLoading] = useState(false);
+    const isEditing = !!contact;
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({ ...prev, [id]: value }));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const newContact: Omit<Contact, 'id' | 'user_id' | 'created_at'> = {
-                name,
-                email,
-                phone,
-                company,
-                tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+            const contactData = {
+                ...formData,
+                tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
             };
-            await addContact(newContact);
-            await addRecentActivity({
-                timestamp: new Date().toISOString(),
-                type: 'CONTACT_ADDED',
-                description: `New contact added: ${name}`
-            });
+
+            if (isEditing) {
+                await updateContact({ ...contact, ...contactData });
+            } else {
+                await addContact(contactData);
+                await addRecentActivity({
+                    timestamp: new Date().toISOString(),
+                    type: 'CONTACT_ADDED',
+                    description: `New contact added: ${formData.name}`
+                });
+            }
             onClose();
         } catch (error) {
-            console.error("Failed to add contact:", error);
-            // Here you would show a toast notification
+            console.error("Failed to save contact:", error);
         } finally {
             setLoading(false);
         }
@@ -41,11 +63,11 @@ const AddContactForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <Input label="Full Name" id="name" value={name} onChange={e => setName(e.target.value)} required />
-            <Input label="Email Address" id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-            <Input label="Phone Number" id="phone" value={phone} onChange={e => setPhone(e.target.value)} />
-            <Input label="Company" id="company" value={company} onChange={e => setCompany(e.target.value)} />
-            <Input label="Tags (comma-separated)" id="tags" value={tags} onChange={e => setTags(e.target.value)} />
+            <Input label="Full Name" id="name" value={formData.name} onChange={handleChange} required />
+            <Input label="Email Address" id="email" type="email" value={formData.email} onChange={handleChange} required />
+            <Input label="Phone Number" id="phone" value={formData.phone} onChange={handleChange} />
+            <Input label="Company" id="company" value={formData.company} onChange={handleChange} />
+            <Input label="Tags (comma-separated)" id="tags" value={formData.tags} onChange={handleChange} />
             <div className="flex justify-end space-x-2 pt-4">
                 <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
                 <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : 'Save Contact'}</Button>
@@ -54,12 +76,12 @@ const AddContactForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     );
 };
 
-// --- Add Deal Form ---
-const AddDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+
+const AddDealForm: FC<{ onClose: () => void; initialContactId?: string; initialStage?: DealStage }> = ({ onClose, initialContactId, initialStage }) => {
     const { data, addDeal, addRecentActivity } = useData();
-    const [contactId, setContactId] = useState(data.contacts[0]?.id || '');
+    const [contactId, setContactId] = useState(initialContactId || data.contacts[0]?.id || '');
     const [value, setValue] = useState('');
-    const [stage, setStage] = useState(DealStage.Lead);
+    const [stage, setStage] = useState(initialStage || DealStage.Qualified);
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -95,7 +117,7 @@ const AddDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </Select>
             <Input label="Deal Value ($)" id="value" type="number" value={value} onChange={e => setValue(e.target.value)} required />
             <Select label="Stage" id="stage" value={stage} onChange={e => setStage(e.target.value as DealStage)}>
-                {Object.values(DealStage).map(s => <option key={s} value={s}>{s}</option>)}
+                {Object.values(DealStage).filter(s => s !== DealStage.Lead).map(s => <option key={s} value={s}>{s}</option>)}
             </Select>
             <div className="flex justify-end space-x-2 pt-4">
                 <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
@@ -106,9 +128,13 @@ const AddDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 };
 
 // --- Deal Card ---
-const DealCard: React.FC<{deal: Deal, contactName: string}> = ({ deal, contactName }) => {
+const DealCard: FC<{ deal: Deal, contactName: string, onDragStart: (e: React.DragEvent, dealId: string) => void }> = ({ deal, contactName, onDragStart }) => {
     return (
-        <div className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing">
+        <div 
+            draggable 
+            onDragStart={(e) => onDragStart(e, deal.id!)}
+            className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing transition-opacity duration-200"
+        >
             <p className="font-bold">{contactName}</p>
             <p className="text-xl font-black text-brand-dark">${deal.value.toLocaleString()}</p>
             <p className="text-sm text-gray-500">Last interaction: {new Date(deal.last_interaction).toLocaleDateString()}</p>
@@ -116,23 +142,93 @@ const DealCard: React.FC<{deal: Deal, contactName: string}> = ({ deal, contactNa
     );
 }
 
+// --- MAIN CRM COMPONENT ---
 const CRM: React.FC = () => {
-    const { data } = useData();
+    const { data, updateDeal, deleteContact } = useData();
     const { contacts, deals } = data;
     const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
     const [isAddDealModalOpen, setIsAddDealModalOpen] = useState(false);
+    const [editingContact, setEditingContact] = useState<Contact | null>(null);
+    const [deletingContact, setDeletingContact] = useState<Contact | null>(null);
+    const [newDealProps, setNewDealProps] = useState<{ contactId: string, stage: DealStage } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    
+    // Drag and Drop state
+    const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
+    const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
 
-    const filteredContacts = useMemo(() => 
-        contacts.filter(c => 
+    const filteredContacts = useMemo(() =>
+        contacts.filter(c =>
             c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             c.company.toLowerCase().includes(searchTerm.toLowerCase())
         ), [contacts, searchTerm]
     );
+    
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const paginatedContacts = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        return filteredContacts.slice(startIndex, endIndex);
+    }, [filteredContacts, currentPage]);
+    
+    const pageCount = useMemo(() => {
+        return Math.ceil(filteredContacts.length / ITEMS_PER_PAGE);
+    }, [filteredContacts]);
+
 
     const getContactName = (contactId: string) => contacts.find(c => c.id === contactId)?.name || 'Unknown Contact';
     const dealStages = Object.values(DealStage);
+
+    const handleStageChange = async (contact: Contact, newStage: DealStage) => {
+        const contactDeals = deals
+            .filter(d => d.contact_id === contact.id)
+            .sort((a, b) => new Date(b.last_interaction).getTime() - new Date(a.last_interaction).getTime());
+        
+        if (contactDeals.length > 0) {
+            // Update the most recent deal
+            const latestDeal = contactDeals[0];
+            await updateDeal({ ...latestDeal, stage: newStage });
+        } else if (newStage !== DealStage.Lead) {
+            // This was a Lead, prompt to create a new deal
+            setNewDealProps({ contactId: contact.id!, stage: newStage });
+            setIsAddDealModalOpen(true);
+        }
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (deletingContact) {
+            await deleteContact(deletingContact.id!);
+            setDeletingContact(null);
+        }
+    };
+
+    // --- Drag and Drop Handlers ---
+    const handleDragStart = (e: React.DragEvent, dealId: string) => {
+        setDraggedDealId(dealId);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent, stage: DealStage) => {
+        e.preventDefault();
+        setDragOverStage(stage);
+    };
+
+    const handleDrop = async (e: React.DragEvent, newStage: DealStage) => {
+        e.preventDefault();
+        if (draggedDealId) {
+            const dealToUpdate = deals.find(d => d.id === draggedDealId);
+            if (dealToUpdate && dealToUpdate.stage !== newStage) {
+                await updateDeal({ ...dealToUpdate, stage: newStage, last_interaction: new Date().toISOString() });
+            }
+        }
+        setDraggedDealId(null);
+        setDragOverStage(null);
+    };
 
     return (
         <div>
@@ -145,32 +241,13 @@ const CRM: React.FC = () => {
                 </Button>
             </PageHeader>
 
-            {/* Deals Pipeline */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                {dealStages.map(stage => (
-                    <div key={stage} className="bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark">
-                        <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({deals.filter(d => d.stage === stage).length})</h3>
-                        <div>
-                            {deals.filter(d => d.stage === stage).map(deal => (
-                                <DealCard key={deal.id} deal={deal} contactName={getContactName(deal.contact_id)} />
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-
             {/* Contacts Table */}
-            <Card>
+            <Card className="mb-8">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-2xl font-bold">All Contacts ({filteredContacts.length})</h3>
                     <div className="relative w-full max-w-xs">
-                        <input
-                            id="searchContacts"
-                            placeholder="Search contacts..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full p-3 pl-10 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark"
-                        />
+                        <input id="searchContacts" placeholder="Search contacts..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full p-3 pl-10 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark"/>
                         <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     </div>
                 </div>
@@ -182,26 +259,36 @@ const CRM: React.FC = () => {
                                 <th className="p-4 font-black">Company</th>
                                 <th className="p-4 font-black">Email</th>
                                 <th className="p-4 font-black">Phone</th>
+                                <th className="p-4 font-black">Stage</th>
                                 <th className="p-4 font-black">Tags</th>
                                 <th className="p-4 font-black">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredContacts.map(contact => (
+                            {paginatedContacts.map(contact => (
                                 <tr key={contact.id} className="border-b-2 border-brand-light last:border-b-0">
                                     <td className="p-4 font-bold">{contact.name}</td>
                                     <td className="p-4">{contact.company}</td>
                                     <td className="p-4">{contact.email}</td>
                                     <td className="p-4">{contact.phone}</td>
                                     <td className="p-4">
-                                        {contact.tags.map(tag => (
-                                            <span key={tag} className="bg-blue-200 text-blue-800 text-xs font-bold mr-2 px-2.5 py-0.5 rounded-full border-2 border-brand-dark">{tag}</span>
-                                        ))}
+                                        <select value={getContactStage(contact.id!, deals)}
+                                            onChange={(e) => handleStageChange(contact, e.target.value as DealStage)}
+                                            className="w-full p-2 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark appearance-none bg-no-repeat bg-right pr-8" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%232B2B2B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`}}>
+                                            {Object.values(DealStage).map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex flex-wrap gap-1">
+                                            {contact.tags.map(tag => (
+                                                <span key={tag} className="bg-blue-200 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full border-2 border-brand-dark">{tag}</span>
+                                            ))}
+                                        </div>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex space-x-2">
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none"><Icon name="edit"/></Button>
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none"><Icon name="trash"/></Button>
+                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none" onClick={() => setEditingContact(contact)}><Icon name="edit"/></Button>
+                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none" onClick={() => setDeletingContact(contact)}><Icon name="trash"/></Button>
                                         </div>
                                     </td>
                                 </tr>
@@ -209,14 +296,74 @@ const CRM: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                {pageCount > 1 && (
+                    <div className="flex justify-between items-center pt-4 border-t-2 border-brand-light mt-4">
+                        <span className="font-bold">
+                            Page {currentPage} of {pageCount}
+                        </span>
+                        <div className="flex space-x-2">
+                            <Button
+                                variant="secondary"
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
+                                disabled={currentPage === pageCount}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </Card>
 
+            {/* Deals Pipeline */}
+            <PageHeader title="Deal Pipeline" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {dealStages.filter(s => s !== DealStage.Lead).map(stage => (
+                    <div key={stage} 
+                        onDragOver={(e) => handleDragOver(e, stage)}
+                        onDrop={(e) => handleDrop(e, stage)}
+                        className={`bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark transition-colors duration-300 ${dragOverStage === stage ? 'bg-blue-200' : ''}`}
+                    >
+                        <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({deals.filter(d => d.stage === stage).length})</h3>
+                        <div className="min-h-[200px]">
+                            {deals.filter(d => d.stage === stage).map(deal => (
+                                <DealCard key={deal.id} deal={deal} contactName={getContactName(deal.contact_id)} onDragStart={handleDragStart} />
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+
+            {/* Modals */}
             <Modal isOpen={isAddContactModalOpen} onClose={() => setIsAddContactModalOpen(false)} title="Add New Contact">
-                <AddContactForm onClose={() => setIsAddContactModalOpen(false)} />
+                <ContactForm onClose={() => setIsAddContactModalOpen(false)} />
             </Modal>
             
-            <Modal isOpen={isAddDealModalOpen} onClose={() => setIsAddDealModalOpen(false)} title="Add New Deal">
-                <AddDealForm onClose={() => setIsAddDealModalOpen(false)} />
+            <Modal isOpen={!!editingContact} onClose={() => setEditingContact(null)} title="Edit Contact">
+                {editingContact && <ContactForm contact={editingContact} onClose={() => setEditingContact(null)} />}
+            </Modal>
+            
+            <Modal isOpen={isAddDealModalOpen} onClose={() => { setIsAddDealModalOpen(false); setNewDealProps(null); }} title="Add New Deal">
+                <AddDealForm 
+                    onClose={() => { setIsAddDealModalOpen(false); setNewDealProps(null); }} 
+                    initialContactId={newDealProps?.contactId}
+                    initialStage={newDealProps?.stage}
+                />
+            </Modal>
+
+            <Modal isOpen={!!deletingContact} onClose={() => setDeletingContact(null)} title="Confirm Deletion">
+                <p className="mb-6">Are you sure you want to delete the contact "{deletingContact?.name}"? This will also delete all associated deals, projects, and invoices. This action cannot be undone.</p>
+                <div className="flex justify-end space-x-2">
+                    <Button variant="secondary" onClick={() => setDeletingContact(null)}>Cancel</Button>
+                    <Button variant="primary" className="bg-red-500 hover:bg-red-600" onClick={handleDeleteConfirm}>Yes, Delete</Button>
+                </div>
             </Modal>
         </div>
     );
