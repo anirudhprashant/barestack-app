@@ -1,7 +1,6 @@
 import React, { useState, useMemo, FC, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Card, PageHeader, Button, Icon, Modal, Input, Select, Textarea } from '../components/ui';
-// FIX: Import the 'Creatable' type to resolve the TypeScript error.
+import { Card, Button, Icon, Modal, Input, Textarea } from '../components/ui';
 import { Contact, Deal, DealStage, Note, Creatable } from '../types';
 import { useData } from '../dataStore';
 
@@ -15,30 +14,36 @@ const getContactStage = (contactId: string, deals: Deal[]): DealStage => {
     return contactDeals.length > 0 ? contactDeals[0].stage : DealStage.Lead;
 };
 
-// --- Sub-navigation for CRM section ---
-const CrmNav = () => {
+// --- Shared CRM Header Component ---
+const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
     const navLinks = [
         { href: '/crm', label: 'Contacts' },
         { href: '/crm/pipeline', label: 'Pipeline' },
         { href: '/crm/activities', label: 'Activities' },
     ];
+
     return (
-        <div className="flex space-x-2 border-b-2 border-brand-dark mb-8">
-            {navLinks.map(link => (
-                <NavLink
-                    key={link.href}
-                    to={link.href}
-                    end
-                    className={({ isActive }) => 
-                        `py-2 px-4 font-bold text-lg rounded-t-[10px] border-brand-dark -mb-px
-                        ${isActive 
-                            ? 'bg-white border-2 border-b-white' 
-                            : 'bg-brand-light border-x-2 border-t-2 border-transparent hover:bg-white/60'}`
-                    }
-                >
-                    {link.label}
-                </NavLink>
-            ))}
+        <div className="flex justify-between items-center mb-8">
+            <div className="flex space-x-2">
+                {navLinks.map(link => (
+                    <NavLink
+                        key={link.href}
+                        to={link.href}
+                        end
+                        className={({ isActive }) => 
+                            `font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
+                            ${isActive 
+                                ? 'bg-brand-dark text-white' 
+                                : 'bg-white text-brand-dark'}`
+                        }
+                    >
+                        {link.label}
+                    </NavLink>
+                ))}
+            </div>
+            <div>
+                {children}
+            </div>
         </div>
     );
 };
@@ -141,13 +146,13 @@ const AddDealForm: FC<{ onClose: () => void; initialContactId?: string; initialS
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <Select label="Contact" id="contact" value={contactId} onChange={e => setContactId(e.target.value)} required>
+            <select id="contact" value={contactId} onChange={e => setContactId(e.target.value)} required className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark">
                 {data.contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </Select>
+            </select>
             <Input label="Deal Value ($)" id="value" type="number" value={value} onChange={e => setValue(e.target.value)} required />
-            <Select label="Stage" id="stage" value={stage} onChange={e => setStage(e.target.value as DealStage)}>
+            <select id="stage" value={stage} onChange={e => setStage(e.target.value as DealStage)} className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark">
                 {Object.values(DealStage).filter(s => s !== DealStage.Lead).map(s => <option key={s} value={s}>{s}</option>)}
-            </Select>
+            </select>
             <div className="flex justify-end space-x-2 pt-4">
                 <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
                 <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : 'Save Deal'}</Button>
@@ -257,13 +262,12 @@ const CRM: React.FC = () => {
 
     return (
         <div>
-            <CrmNav />
-            <PageHeader title="Contacts">
+            <CrmHeader>
                 <Button variant="primary" onClick={() => setIsAddContactModalOpen(true)}>
                     <Icon name="plus" /> Add Contact
                 </Button>
-            </PageHeader>
-
+            </CrmHeader>
+            
             {/* Contacts Table */}
             <Card>
                 <div className="flex justify-between items-center mb-4">

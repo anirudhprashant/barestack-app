@@ -1,33 +1,39 @@
-import React from 'react';
+import React, { FC } from 'react';
 import { NavLink } from 'react-router-dom';
-import { PageHeader, Card, Icon } from '../components/ui';
+import { Card, Icon } from '../components/ui';
 import { useData } from '../dataStore';
 import { formatDistanceToNow } from 'date-fns';
 
-// --- Sub-navigation for CRM section ---
-const CrmNav = () => {
+// --- Shared CRM Header Component ---
+const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
     const navLinks = [
         { href: '/crm', label: 'Contacts' },
         { href: '/crm/pipeline', label: 'Pipeline' },
         { href: '/crm/activities', label: 'Activities' },
     ];
+
     return (
-        <div className="flex space-x-2 border-b-2 border-brand-dark mb-8">
-            {navLinks.map(link => (
-                <NavLink
-                    key={link.href}
-                    to={link.href}
-                    end
-                    className={({ isActive }) => 
-                        `py-2 px-4 font-bold text-lg rounded-t-[10px] border-brand-dark -mb-px
-                        ${isActive 
-                            ? 'bg-white border-2 border-b-white' 
-                            : 'bg-brand-light border-x-2 border-t-2 border-transparent hover:bg-white/60'}`
-                    }
-                >
-                    {link.label}
-                </NavLink>
-            ))}
+        <div className="flex justify-between items-center mb-8">
+            <div className="flex space-x-2">
+                {navLinks.map(link => (
+                    <NavLink
+                        key={link.href}
+                        to={link.href}
+                        end
+                        className={({ isActive }) => 
+                            `font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
+                            ${isActive 
+                                ? 'bg-brand-dark text-white' 
+                                : 'bg-white text-brand-dark'}`
+                        }
+                    >
+                        {link.label}
+                    </NavLink>
+                ))}
+            </div>
+            <div>
+                {children}
+            </div>
         </div>
     );
 };
@@ -42,8 +48,7 @@ const Activities: React.FC = () => {
 
     return (
         <div>
-            <CrmNav />
-            <PageHeader title="Activity Feed" />
+            <CrmHeader />
             <div className="space-y-6 max-w-4xl mx-auto">
                 {notes.length > 0 ? (
                     notes.map(note => (
