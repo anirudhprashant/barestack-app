@@ -301,14 +301,20 @@ const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
         setError(null);
 
         try {
-            for (const fileContact of toUpdate) {
-                const existingContact = data.contacts.find(c => c.email.toLowerCase() === fileContact.email?.toLowerCase());
+             // Create an array of promises for all the update operations.
+            const updatePromises = toUpdate.map(fileContact => {
+                const existingContact = data.contacts.find(c => c.email && fileContact.email && c.email.toLowerCase() === fileContact.email.toLowerCase());
                 if (existingContact) {
-                    const updatedContact = { ...existingContact, ...fileContact, id: existingContact.id };
-                    await updateContact(updatedContact);
+                    // Merge data: file data overwrites existing data, but keep the ID.
+                    const updatedContactData = { ...existingContact, ...fileContact, id: existingContact.id };
+                    return updateContact(updatedContactData);
                 }
-            }
+                return Promise.resolve(); // Do nothing if no matching contact is found
+            });
 
+            // Execute all updates in parallel for better performance.
+            await Promise.all(updatePromises);
+            
             if (toCreate.length > 0) {
                 const batchDetails: Creatable<ImportBatch> = {
                     file_name: file.name,
@@ -424,7 +430,7 @@ const AddNoteForm: FC<{ contact: Contact; onClose: () => void }> = ({ contact, o
 
 // --- MAIN CRM COMPONENT (NOW CONTACTS LIST) ---
 const CRM: React.FC = () => {
-    const { data, updateDeal, deleteContact } = useData();
+    const { data, updateDeal, deleteContact, addDeal } = useData();
     const { contacts, deals } = data;
     const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -462,13 +468,22 @@ const CRM: React.FC = () => {
         const contactDeals = deals
             .filter(d => d.contact_id === contact.id)
             .sort((a, b) => new Date(b.last_interaction).getTime() - new Date(a.last_interaction).getTime());
-        
+    
         if (contactDeals.length > 0) {
             // Update the most recent deal
             const latestDeal = contactDeals[0];
-            await updateDeal({ ...latestDeal, stage: newStage });
+            await updateDeal({ ...latestDeal, stage: newStage, last_interaction: new Date().toISOString() });
+        } else if (newStage !== DealStage.Lead) {
+            // No deals exist, create a new one since they are being moved out of the default 'Lead' stage
+            const newDeal: Creatable<Deal> = {
+                contact_id: contact.id!,
+                value: 0, // User can update this later in the pipeline
+                stage: newStage,
+                last_interaction: new Date().toISOString(),
+            };
+            await addDeal(newDeal);
         }
-        // If it's a lead and changed, the deal creation is handled on other pages now
+        // If no deals exist and the stage remains 'Lead', do nothing.
     };
 
     const handleDeleteConfirm = async () => {
