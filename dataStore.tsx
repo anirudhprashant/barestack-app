@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { AppState, Contact, Deal, Expense, Invoice, Project, RecentActivity, Task, TimeEntry } from './types';
 import { supabase } from './services/supabaseClient';
@@ -22,7 +21,9 @@ interface DataContextType {
     loading: boolean;
     error: string | null;
     addContact: (contact: Omit<Contact, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
+    updateContact: (contactId: string, updates: Partial<Contact>) => Promise<void>;
     addDeal: (deal: Omit<Deal, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
+    updateDeal: (dealId: string, updates: Partial<Deal>) => Promise<void>;
     addProject: (project: Omit<Project, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
     addTask: (task: Omit<Task, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
     addInvoice: (invoice: Omit<Invoice, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
@@ -49,8 +50,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const [
                 contacts, deals, projects, tasks, invoices, timeEntries, expenses, recentActivity
             ] = await Promise.all([
-                supabase.from('contacts').select('*'),
-                supabase.from('deals').select('*'),
+                supabase.from('contacts').select('*').order('created_at', { ascending: false }),
+                supabase.from('deals').select('*').order('created_at', { ascending: false }),
                 supabase.from('projects').select('*'),
                 supabase.from('tasks').select('*'),
                 supabase.from('invoices').select('*'),
@@ -92,11 +93,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         else await fetchData();
     };
 
+    const updateContact = async (contactId: string, updates: Partial<Contact>) => {
+        const { error } = await supabase.from('contacts').update(updates).eq('id', contactId);
+        if (error) setError(error.message);
+        else await fetchData();
+    }
+
     const addDeal = async (deal: Omit<Deal, 'id' | 'user_id' | 'created_at'>) => {
         const { error } = await supabase.from('deals').insert(deal);
         if (error) setError(error.message);
         else await fetchData();
     };
+
+    const updateDeal = async (dealId: string, updates: Partial<Deal>) => {
+        const { error } = await supabase.from('deals').update(updates).eq('id', dealId);
+        if (error) setError(error.message);
+        else await fetchData();
+    }
     
     const addProject = async (project: Omit<Project, 'id' | 'user_id' | 'created_at'>) => {
         const { error } = await supabase.from('projects').insert(project);
@@ -130,7 +143,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
     return (
-        <DataContext.Provider value={{ data, loading, error, addContact, addDeal, addProject, addTask, addInvoice, addExpense, addRecentActivity }}>
+        <DataContext.Provider value={{ data, loading, error, addContact, updateContact, addDeal, updateDeal, addProject, addTask, addInvoice, addExpense, addRecentActivity }}>
             {children}
         </DataContext.Provider>
     );
