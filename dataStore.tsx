@@ -1,9 +1,46 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
-import { AppState, Contact, Deal, Expense, Invoice, Project, RecentActivity, Task, TimeEntry } from './types';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from './services/supabaseClient';
 import { useAuth } from './App';
+import {
+    AppState,
+    Contact,
+    Deal,
+    Project,
+    Task,
+    Invoice,
+    TimeEntry,
+    Expense,
+    RecentActivity
+} from './types';
 
-// --- INITIAL STATE ---
+type Creatable<T> = Omit<T, 'id' | 'user_id' | 'created_at'>;
+
+interface DataContextType {
+    data: AppState;
+    loading: boolean;
+    error: string | null;
+    addContact: (contact: Creatable<Contact>) => Promise<void>;
+    updateContact: (contact: Contact) => Promise<void>;
+    deleteContact: (id: string) => Promise<void>;
+    addDeal: (deal: Creatable<Deal>) => Promise<void>;
+    updateDeal: (deal: Deal) => Promise<void>;
+    deleteDeal: (id: string) => Promise<void>;
+    addProject: (project: Creatable<Project>) => Promise<void>;
+    updateProject: (project: Project) => Promise<void>;
+    deleteProject: (id: string) => Promise<void>;
+    addTask: (task: Creatable<Task>) => Promise<void>;
+    updateTask: (task: Task) => Promise<void>;
+    deleteTask: (id: string) => Promise<void>;
+    addInvoice: (invoice: Creatable<Invoice>) => Promise<void>;
+    updateInvoice: (invoice: Invoice) => Promise<void>;
+    deleteInvoice: (id: string) => Promise<void>;
+    addTimeEntry: (timeEntry: Creatable<TimeEntry>) => Promise<void>;
+    addExpense: (expense: Creatable<Expense>) => Promise<void>;
+    addRecentActivity: (activity: Omit<RecentActivity, 'id' | 'user_id'>) => Promise<void>;
+}
+
+const DataContext = createContext<DataContextType | undefined>(undefined);
+
 const initialState: AppState = {
     contacts: [],
     deals: [],
@@ -15,26 +52,6 @@ const initialState: AppState = {
     recentActivity: [],
 };
 
-// --- CONTEXT ---
-interface DataContextType {
-    data: AppState;
-    loading: boolean;
-    error: string | null;
-    addContact: (contact: Omit<Contact, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
-    updateContact: (contactId: string, updates: Partial<Contact>) => Promise<void>;
-    addDeal: (deal: Omit<Deal, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
-    updateDeal: (dealId: string, updates: Partial<Deal>) => Promise<void>;
-    addProject: (project: Omit<Project, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
-    addTask: (task: Omit<Task, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
-    addInvoice: (invoice: Omit<Invoice, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
-    addExpense: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
-    addRecentActivity: (activity: Omit<RecentActivity, 'id' | 'user_id'>) => Promise<void>;
-}
-
-const DataContext = createContext<DataContextType | null>(null);
-
-// --- PROVIDER ---
-// FIX: Explicitly type DataProvider as React.FC to resolve a potential TypeScript inference issue causing a false positive 'children' prop error.
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { session } = useAuth();
     const [data, setData] = useState<AppState>(initialState);
@@ -42,40 +59,44 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [error, setError] = useState<string | null>(null);
 
     const fetchData = useCallback(async () => {
-        if (!session) return;
+        if (!session?.user) {
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         setError(null);
 
         try {
             const [
-                contacts, deals, projects, tasks, invoices, timeEntries, expenses, recentActivity
+                contacts, deals, projects, tasks, invoices,
+                timeEntries, expenses, recentActivity,
             ] = await Promise.all([
-                supabase.from('contacts').select('*').order('created_at', { ascending: false }),
-                supabase.from('deals').select('*').order('created_at', { ascending: false }),
-                supabase.from('projects').select('*'),
-                supabase.from('tasks').select('*'),
-                supabase.from('invoices').select('*'),
-                supabase.from('time_entries').select('*'),
-                supabase.from('expenses').select('*'),
-                supabase.from('recent_activity').select('*').order('timestamp', { ascending: false }).limit(20)
+                supabase.from('contacts').select('*').eq('user_id', session.user.id),
+                supabase.from('deals').select('*').eq('user_id', session.user.id),
+                supabase.from('projects').select('*').eq('user_id', session.user.id),
+                supabase.from('tasks').select('*').eq('user_id', session.user.id),
+                supabase.from('invoices').select('*').eq('user_id', session.user.id),
+                supabase.from('time_entries').select('*').eq('user_id', session.user.id),
+                supabase.from('expenses').select('*').eq('user_id', session.user.id),
+                supabase.from('recent_activity').select('*').eq('user_id', session.user.id).order('timestamp', { ascending: false }).limit(20),
             ]);
-
-            const checkError = (res: any, name: string) => {
-                if (res.error) throw new Error(`Failed to fetch ${name}: ${res.error.message}`);
-                return res.data;
-            };
+            
+            const responses = [contacts, deals, projects, tasks, invoices, timeEntries, expenses, recentActivity];
+            for (const res of responses) {
+                if (res.error) throw res.error;
+            }
 
             setData({
-                contacts: checkError(contacts, 'contacts'),
-                deals: checkError(deals, 'deals'),
-                projects: checkError(projects, 'projects'),
-                tasks: checkError(tasks, 'tasks'),
-                invoices: checkError(invoices, 'invoices'),
-                timeEntries: checkError(timeEntries, 'time_entries'),
-                expenses: checkError(expenses, 'expenses'),
-                recentActivity: checkError(recentActivity, 'recent_activity'),
+                contacts: contacts.data || [],
+                deals: deals.data || [],
+                projects: projects.data || [],
+                tasks: tasks.data || [],
+                invoices: invoices.data || [],
+                timeEntries: timeEntries.data || [],
+                expenses: expenses.data || [],
+                recentActivity: recentActivity.data || [],
             });
-
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -87,72 +108,88 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         fetchData();
     }, [fetchData]);
 
-    const addContact = async (contact: Omit<Contact, 'id' | 'user_id' | 'created_at'>) => {
-        const { error } = await supabase.from('contacts').insert(contact);
-        if (error) setError(error.message);
-        else await fetchData();
-    };
+    const createApiHandler = useCallback(<T extends { id: string }>(table: string, stateKey: keyof AppState) => {
+        const add = async (item: Omit<T, 'id' | 'user_id' | 'created_at'>): Promise<void> => {
+            if (!session?.user) throw new Error("User not authenticated");
+            const itemWithUser = { ...item, user_id: session.user.id };
+            const { data: newData, error } = await supabase.from(table).insert(itemWithUser).select().single();
+            if (error) throw error;
+            setData(prev => ({ ...prev, [stateKey]: [newData, ...(prev[stateKey] as any[])] }));
+        };
 
-    const updateContact = async (contactId: string, updates: Partial<Contact>) => {
-        const { error } = await supabase.from('contacts').update(updates).eq('id', contactId);
-        if (error) setError(error.message);
-        else await fetchData();
-    }
+        const update = async (item: T): Promise<void> => {
+            if (!session?.user) throw new Error("User not authenticated");
+            const { id, ...updateData } = item;
+            // @ts-ignore
+            delete updateData.user_id; // prevent user_id from being updated
+            // @ts-ignore
+            delete updateData.created_at; // prevent created_at from being updated
+            const { error } = await supabase.from(table).update(updateData).eq('id', id);
+            if (error) throw error;
+            setData(prev => {
+                const items = prev[stateKey] as T[];
+                const index = items.findIndex(i => i.id === id);
+                if (index > -1) items[index] = item;
+                return { ...prev, [stateKey]: [...items] };
+            });
+        };
 
-    const addDeal = async (deal: Omit<Deal, 'id' | 'user_id' | 'created_at'>) => {
-        const { error } = await supabase.from('deals').insert(deal);
-        if (error) setError(error.message);
-        else await fetchData();
-    };
+        const del = async (id: string): Promise<void> => {
+            if (!session?.user) throw new Error("User not authenticated");
+            const { error } = await supabase.from(table).delete().eq('id', id);
+            if (error) throw error;
+            setData(prev => ({ ...prev, [stateKey]: (prev[stateKey] as T[]).filter(item => item.id !== id) }));
+        };
 
-    const updateDeal = async (dealId: string, updates: Partial<Deal>) => {
-        const { error } = await supabase.from('deals').update(updates).eq('id', dealId);
-        if (error) setError(error.message);
-        else await fetchData();
-    }
-    
-    const addProject = async (project: Omit<Project, 'id' | 'user_id' | 'created_at'>) => {
-        const { error } = await supabase.from('projects').insert(project);
-        if (error) setError(error.message);
-        else await fetchData();
-    };
-    
-    const addTask = async (task: Omit<Task, 'id' | 'user_id' | 'created_at'>) => {
-        const { error } = await supabase.from('tasks').insert(task);
-        if (error) setError(error.message);
-        else await fetchData();
-    };
+        return { add, update, del };
+    }, [session]);
 
-    const addInvoice = async (invoice: Omit<Invoice, 'id' | 'user_id' | 'created_at'>) => {
-        const { error } = await supabase.from('invoices').insert(invoice);
-        if (error) setError(error.message);
-        else await fetchData();
-    };
-    
-    const addExpense = async (expense: Omit<Expense, 'id' | 'user_id' | 'created_at'>) => {
-        const { error } = await supabase.from('expenses').insert(expense);
-        if (error) setError(error.message);
-        else await fetchData();
-    };
+    const contactsApi = createApiHandler<Contact>('contacts', 'contacts');
+    const dealsApi = createApiHandler<Deal>('deals', 'deals');
+    const projectsApi = createApiHandler<Project>('projects', 'projects');
+    const tasksApi = createApiHandler<Task>('tasks', 'tasks');
+    const invoicesApi = createApiHandler<Invoice>('invoices', 'invoices');
+    const timeEntriesApi = createApiHandler<TimeEntry>('time_entries', 'timeEntries');
+    const expensesApi = createApiHandler<Expense>('expenses', 'expenses');
 
     const addRecentActivity = async (activity: Omit<RecentActivity, 'id' | 'user_id'>) => {
-       await supabase.from('recent_activity').insert(activity);
-       // We don't need to refetch for this, as it's not critical to show instantly.
-       // The next full fetch will pick it up.
+        if (!session?.user) throw new Error("User not authenticated");
+        const itemWithUser = { ...activity, user_id: session.user.id };
+        const { data: newData, error } = await supabase.from('recent_activity').insert(itemWithUser).select().single();
+        if (error) throw error;
+        setData(prev => ({ ...prev, recentActivity: [newData, ...prev.recentActivity] }));
     };
 
+    const value: DataContextType = {
+        data,
+        loading,
+        error,
+        addContact: contactsApi.add,
+        updateContact: contactsApi.update,
+        deleteContact: contactsApi.del,
+        addDeal: dealsApi.add,
+        updateDeal: dealsApi.update,
+        deleteDeal: dealsApi.del,
+        addProject: projectsApi.add,
+        updateProject: projectsApi.update,
+        deleteProject: projectsApi.del,
+        addTask: tasksApi.add,
+        updateTask: tasksApi.update,
+        deleteTask: tasksApi.del,
+        addInvoice: invoicesApi.add,
+        updateInvoice: invoicesApi.update,
+        deleteInvoice: invoicesApi.del,
+        addTimeEntry: timeEntriesApi.add,
+        addExpense: expensesApi.add,
+        addRecentActivity
+    };
 
-    return (
-        <DataContext.Provider value={{ data, loading, error, addContact, updateContact, addDeal, updateDeal, addProject, addTask, addInvoice, addExpense, addRecentActivity }}>
-            {children}
-        </DataContext.Provider>
-    );
+    return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };
 
-// --- HOOK ---
 export const useData = () => {
     const context = useContext(DataContext);
-    if (!context) {
+    if (context === undefined) {
         throw new Error('useData must be used within a DataProvider');
     }
     return context;
