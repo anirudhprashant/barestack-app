@@ -11,6 +11,7 @@ const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
         { href: '/crm', label: 'Contacts' },
         { href: '/crm/pipeline', label: 'Pipeline' },
         { href: '/crm/activities', label: 'Activities' },
+        { href: '/crm/imports', label: 'Imports' },
     ];
 
     return (

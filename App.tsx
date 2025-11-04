@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import CRM from './pages/CRM';
 import DealPipeline from './pages/DealPipeline';
 import Activities from './pages/Activities';
+import Imports from './pages/Imports';
 import Projects from './pages/Projects';
 import Invoices from './pages/Invoices';
 import TimeTracking from './pages/TimeTracking';
@@ -220,6 +221,7 @@ function AppLayout() {
                                 <Route path="/crm" element={<CRM />} />
                                 <Route path="/crm/pipeline" element={<DealPipeline />} />
                                 <Route path="/crm/activities" element={<Activities />} />
+                                <Route path="/crm/imports" element={<Imports />} />
                                 <Route path="/projects" element={<Projects />} />
                                 <Route path="/invoices" element={<Invoices />} />
                                 <Route path="/time-tracking" element={<TimeTracking />} />
