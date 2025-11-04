@@ -1,7 +1,8 @@
 import React, { useState, useMemo, FC, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { Card, PageHeader, Button, Icon, Modal, Input, Select } from '../components/ui';
-import { Contact, Deal, DealStage } from '../types';
+import { NavLink } from 'react-router-dom';
+import { Card, PageHeader, Button, Icon, Modal, Input, Select, Textarea } from '../components/ui';
+// FIX: Import the 'Creatable' type to resolve the TypeScript error.
+import { Contact, Deal, DealStage, Note, Creatable } from '../types';
 import { useData } from '../dataStore';
 
 const ITEMS_PER_PAGE = 10;
@@ -18,7 +19,8 @@ const getContactStage = (contactId: string, deals: Deal[]): DealStage => {
 const CrmNav = () => {
     const navLinks = [
         { href: '/crm', label: 'Contacts' },
-        { href: '/crm/pipeline', label: 'Pipeline' }
+        { href: '/crm/pipeline', label: 'Pipeline' },
+        { href: '/crm/activities', label: 'Activities' },
     ];
     return (
         <div className="flex space-x-2 border-b-2 border-brand-dark mb-8">
@@ -154,14 +156,50 @@ const AddDealForm: FC<{ onClose: () => void; initialContactId?: string; initialS
     );
 };
 
+const AddNoteForm: FC<{ contact: Contact; onClose: () => void }> = ({ contact, onClose }) => {
+    const { addNote } = useData();
+    const [content, setContent] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!content.trim()) return;
+        setLoading(true);
+        try {
+            const newNote: Creatable<Note> = {
+                contact_id: contact.id!,
+                content,
+            };
+            await addNote(newNote);
+            onClose();
+        } catch (error) {
+            console.error("Failed to add note:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <Textarea label={`Note for ${contact.name}`} id="noteContent" value={content} onChange={e => setContent(e.target.value)} rows={5} required />
+            <div className="flex justify-end space-x-2 pt-4">
+                <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+                <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : 'Save Note'}</Button>
+            </div>
+        </form>
+    );
+};
+
 // --- MAIN CRM COMPONENT (NOW CONTACTS LIST) ---
 const CRM: React.FC = () => {
     const { data, updateDeal, deleteContact } = useData();
     const { contacts, deals } = data;
     const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
     const [isAddDealModalOpen, setIsAddDealModalOpen] = useState(false);
+    const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
     const [editingContact, setEditingContact] = useState<Contact | null>(null);
     const [deletingContact, setDeletingContact] = useState<Contact | null>(null);
+    const [notingContact, setNotingContact] = useState<Contact | null>(null);
     const [newDealProps, setNewDealProps] = useState<{ contactId: string, stage: DealStage } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -210,6 +248,11 @@ const CRM: React.FC = () => {
             await deleteContact(deletingContact.id!);
             setDeletingContact(null);
         }
+    };
+    
+    const openAddNoteModal = (contact: Contact) => {
+        setNotingContact(contact);
+        setIsAddNoteModalOpen(true);
     };
 
     return (
@@ -267,8 +310,9 @@ const CRM: React.FC = () => {
                                     </td>
                                     <td className="p-4">
                                         <div className="flex space-x-2">
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none" onClick={() => setEditingContact(contact)}><Icon name="edit"/></Button>
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none" onClick={() => setDeletingContact(contact)}><Icon name="trash"/></Button>
+                                            <Button variant="secondary" title="Add Note" className="p-2 h-12 w-12 !shadow-none" onClick={() => openAddNoteModal(contact)}><Icon name="document"/></Button>
+                                            <Button variant="secondary" title="Edit Contact" className="p-2 h-12 w-12 !shadow-none" onClick={() => setEditingContact(contact)}><Icon name="edit"/></Button>
+                                            <Button variant="secondary" title="Delete Contact" className="p-2 h-12 w-12 !shadow-none" onClick={() => setDeletingContact(contact)}><Icon name="trash"/></Button>
                                         </div>
                                     </td>
                                 </tr>
@@ -316,6 +360,10 @@ const CRM: React.FC = () => {
                     initialContactId={newDealProps?.contactId}
                     initialStage={newDealProps?.stage}
                 />
+            </Modal>
+            
+            <Modal isOpen={isAddNoteModalOpen} onClose={() => setIsAddNoteModalOpen(false)} title="Add a Note">
+                {notingContact && <AddNoteForm contact={notingContact} onClose={() => setIsAddNoteModalOpen(false)} />}
             </Modal>
 
             <Modal isOpen={!!deletingContact} onClose={() => setDeletingContact(null)} title="Confirm Deletion">
