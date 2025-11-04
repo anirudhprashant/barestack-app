@@ -1,6 +1,7 @@
+
 import React, { useState, createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { Icon, Button, Input } from './components/ui';
+import { Icon, Button } from './components/ui';
 import { DataProvider, useData } from './dataStore';
 import { supabase } from './services/supabaseClient';
 import type { AuthSession } from '@supabase/supabase-js';
@@ -31,7 +32,8 @@ export function useAuth() {
     return context;
 }
 
-function AuthProvider({ children }: { children: ReactNode }) {
+// FIX: Explicitly type AuthProvider as React.FC to resolve a potential TypeScript inference issue causing a false positive 'children' prop error.
+const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [session, setSession] = useState<AuthSession | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -138,25 +140,17 @@ function Header() {
 
 // --- LOGIN PAGE ---
 function LoginPage() {
-    const [isLogin, setIsLogin] = useState(true);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleGoogleLogin = async () => {
         setLoading(true);
         setError(null);
         try {
-            if (isLogin) {
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-            } else {
-                const { error } = await supabase.auth.signUp({ email, password });
-                if (error) throw error;
-                alert('Check your email for a confirmation link!');
-            }
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+            });
+            if (error) throw error;
         } catch (err: any) {
             setError(err.error_description || err.message);
         } finally {
@@ -170,19 +164,20 @@ function LoginPage() {
                 <h1 className="text-4xl font-black text-brand-dark text-center mb-2">BareStack</h1>
                 <p className="text-center text-brand-dark mb-8">No-bullshit business tools.</p>
                 {error && <p className="bg-red-200 text-red-800 p-3 rounded-[10px] border-2 border-red-800 text-center mb-4">{error}</p>}
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                       <Input id="email" label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-                    </div>
-                    <div className="mb-6">
-                        <Input id="password" label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-                    </div>
-                    <button type="submit" disabled={loading} className="w-full bg-brand-dark text-white font-bold py-3 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all disabled:opacity-50">
-                        {loading ? '...' : isLogin ? 'Login' : 'Sign Up'}
-                    </button>
-                </form>
-                <button onClick={() => setIsLogin(!isLogin)} className="w-full text-center mt-4 font-bold text-brand-dark hover:underline">
-                    {isLogin ? "Need an account? Sign Up" : "Have an account? Login"}
+                
+                <button 
+                    onClick={handleGoogleLogin} 
+                    disabled={loading} 
+                    className="w-full bg-white text-brand-dark font-bold py-3 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center space-x-3"
+                >
+                    <svg className="w-6 h-6" viewBox="0 0 48 48">
+                        <path fill="#4285F4" d="M24 9.5c3.13 0 5.9 1.08 7.97 2.97l6.02-6.02C34.32 2.85 29.56 1 24 1 14.88 1 7.22 6.56 4.43 14.61l7.35 5.7c1.33-4.02 5.08-6.81 9.22-6.81z"></path>
+                        <path fill="#34A853" d="M46.2 25.6c0-1.66-.15-3.28-.42-4.85H24v9.16h12.45c-.54 2.97-2.13 5.48-4.64 7.22l7.35 5.7c4.27-3.95 6.74-9.84 6.74-17.23z"></path>
+                        <path fill="#FBBC05" d="M9.22 27.99c-.38-1.13-.6-2.33-.6-3.59s.22-2.46.6-3.59l-7.35-5.7C.38 18.27 0 21.06 0 24s.38 5.73 1.87 8.38l7.35-5.39z"></path>
+                        <path fill="#EA4335" d="M24 47c5.56 0 10.32-1.85 13.75-5.03l-7.35-5.7c-1.85 1.24-4.2 1.98-6.4 1.98-4.14 0-7.89-2.79-9.22-6.81l-7.35 5.7C7.22 41.44 14.88 47 24 47z"></path>
+                        <path fill="none" d="M0 0h48v48H0z"></path>
+                    </svg>
+                    <span>{loading ? 'Redirecting...' : 'Sign in with Google'}</span>
                 </button>
             </div>
             <p className="mt-8 text-brand-dark font-semibold">Built by one person with AI. Open-source forever.</p>
