@@ -1,5 +1,5 @@
-
 import React, { useState, useMemo, FC, useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Card, PageHeader, Button, Icon, Modal, Input, Select } from '../components/ui';
 import { Contact, Deal, DealStage } from '../types';
 import { useData } from '../dataStore';
@@ -12,6 +12,33 @@ const getContactStage = (contactId: string, deals: Deal[]): DealStage => {
         .filter(d => d.contact_id === contactId)
         .sort((a, b) => new Date(b.last_interaction).getTime() - new Date(a.last_interaction).getTime());
     return contactDeals.length > 0 ? contactDeals[0].stage : DealStage.Lead;
+};
+
+// --- Sub-navigation for CRM section ---
+const CrmNav = () => {
+    const navLinks = [
+        { href: '/crm', label: 'Contacts' },
+        { href: '/crm/pipeline', label: 'Pipeline' }
+    ];
+    return (
+        <div className="flex space-x-2 border-b-2 border-brand-dark mb-8">
+            {navLinks.map(link => (
+                <NavLink
+                    key={link.href}
+                    to={link.href}
+                    end
+                    className={({ isActive }) => 
+                        `py-2 px-4 font-bold text-lg rounded-t-[10px] border-brand-dark -mb-px
+                        ${isActive 
+                            ? 'bg-white border-2 border-b-white' 
+                            : 'bg-brand-light border-x-2 border-t-2 border-transparent hover:bg-white/60'}`
+                    }
+                >
+                    {link.label}
+                </NavLink>
+            ))}
+        </div>
+    );
 };
 
 
@@ -127,22 +154,7 @@ const AddDealForm: FC<{ onClose: () => void; initialContactId?: string; initialS
     );
 };
 
-// --- Deal Card ---
-const DealCard: FC<{ deal: Deal, contactName: string, onDragStart: (e: React.DragEvent, dealId: string) => void }> = ({ deal, contactName, onDragStart }) => {
-    return (
-        <div 
-            draggable 
-            onDragStart={(e) => onDragStart(e, deal.id!)}
-            className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing transition-opacity duration-200"
-        >
-            <p className="font-bold">{contactName}</p>
-            <p className="text-xl font-black text-brand-dark">${deal.value.toLocaleString()}</p>
-            <p className="text-sm text-gray-500">Last interaction: {new Date(deal.last_interaction).toLocaleDateString()}</p>
-        </div>
-    );
-}
-
-// --- MAIN CRM COMPONENT ---
+// --- MAIN CRM COMPONENT (NOW CONTACTS LIST) ---
 const CRM: React.FC = () => {
     const { data, updateDeal, deleteContact } = useData();
     const { contacts, deals } = data;
@@ -154,10 +166,6 @@ const CRM: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     
-    // Drag and Drop state
-    const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
-    const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
-
     const filteredContacts = useMemo(() =>
         contacts.filter(c =>
             c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -180,9 +188,6 @@ const CRM: React.FC = () => {
         return Math.ceil(filteredContacts.length / ITEMS_PER_PAGE);
     }, [filteredContacts]);
 
-
-    const getContactName = (contactId: string) => contacts.find(c => c.id === contactId)?.name || 'Unknown Contact';
-    const dealStages = Object.values(DealStage);
 
     const handleStageChange = async (contact: Contact, newStage: DealStage) => {
         const contactDeals = deals
@@ -207,42 +212,17 @@ const CRM: React.FC = () => {
         }
     };
 
-    // --- Drag and Drop Handlers ---
-    const handleDragStart = (e: React.DragEvent, dealId: string) => {
-        setDraggedDealId(dealId);
-        e.dataTransfer.effectAllowed = 'move';
-    };
-
-    const handleDragOver = (e: React.DragEvent, stage: DealStage) => {
-        e.preventDefault();
-        setDragOverStage(stage);
-    };
-
-    const handleDrop = async (e: React.DragEvent, newStage: DealStage) => {
-        e.preventDefault();
-        if (draggedDealId) {
-            const dealToUpdate = deals.find(d => d.id === draggedDealId);
-            if (dealToUpdate && dealToUpdate.stage !== newStage) {
-                await updateDeal({ ...dealToUpdate, stage: newStage, last_interaction: new Date().toISOString() });
-            }
-        }
-        setDraggedDealId(null);
-        setDragOverStage(null);
-    };
-
     return (
         <div>
-            <PageHeader title="CRM">
-                <Button variant="secondary" onClick={() => setIsAddDealModalOpen(true)} disabled={contacts.length === 0}>
-                    <Icon name="plus" /> Add Deal
-                </Button>
+            <CrmNav />
+            <PageHeader title="Contacts">
                 <Button variant="primary" onClick={() => setIsAddContactModalOpen(true)}>
                     <Icon name="plus" /> Add Contact
                 </Button>
             </PageHeader>
 
             {/* Contacts Table */}
-            <Card className="mb-8">
+            <Card>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-2xl font-bold">All Contacts ({filteredContacts.length})</h3>
                     <div className="relative w-full max-w-xs">
@@ -320,26 +300,6 @@ const CRM: React.FC = () => {
                     </div>
                 )}
             </Card>
-
-            {/* Deals Pipeline */}
-            <PageHeader title="Deal Pipeline" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {dealStages.filter(s => s !== DealStage.Lead).map(stage => (
-                    <div key={stage} 
-                        onDragOver={(e) => handleDragOver(e, stage)}
-                        onDrop={(e) => handleDrop(e, stage)}
-                        className={`bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark transition-colors duration-300 ${dragOverStage === stage ? 'bg-blue-200' : ''}`}
-                    >
-                        <h3 className="font-extrabold text-lg mb-4 text-center">{stage} ({deals.filter(d => d.stage === stage).length})</h3>
-                        <div className="min-h-[200px]">
-                            {deals.filter(d => d.stage === stage).map(deal => (
-                                <DealCard key={deal.id} deal={deal} contactName={getContactName(deal.contact_id)} onDragStart={handleDragStart} />
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-
 
             {/* Modals */}
             <Modal isOpen={isAddContactModalOpen} onClose={() => setIsAddContactModalOpen(false)} title="Add New Contact">
