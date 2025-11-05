@@ -24,7 +24,7 @@ const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
                         to={link.href}
                         end
                         className={({ isActive }) =>
-                            `font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
+                            `font-bold py-2 px-4 rounded-[10px] border-[3px] border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
                             ${isActive
                                 ? 'bg-brand-dark text-white'
                                 : 'bg-white text-brand-dark'}`
@@ -70,7 +70,7 @@ const Imports: React.FC = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="border-b-2 border-brand-dark">
+                            <tr className="border-b-[3px] border-brand-dark">
                                 <th className="p-4 font-black">File Name</th>
                                 <th className="p-4 font-black">Date</th>
                                 <th className="p-4 font-black">Contacts Imported</th>
@@ -87,7 +87,6 @@ const Imports: React.FC = () => {
                                         <td className="p-4">
                                             <Button
                                                 variant="secondary"
-                                                className="bg-red-200 border-red-500 hover:bg-red-300"
                                                 onClick={() => setUndoingBatch(batch)}
                                             >
                                                 Undo Import
@@ -97,7 +96,7 @@ const Imports: React.FC = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="text-center p-8 text-gray-500 font-semibold">
+                                    <td colSpan={4} className="text-center p-8 text-brand-dark opacity-70 font-semibold">
                                         You haven't imported any contacts yet.
                                     </td>
                                 </tr>
@@ -117,7 +116,6 @@ const Imports: React.FC = () => {
                     </Button>
                     <Button
                         variant="primary"
-                        className="bg-red-500 hover:bg-red-600"
                         onClick={handleUndoConfirm}
                         disabled={loading}
                     >

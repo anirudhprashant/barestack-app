@@ -35,7 +35,7 @@ const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
                         to={link.href}
                         end
                         className={({ isActive }) => 
-                            `font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
+                            `font-bold py-2 px-4 rounded-[10px] border-[3px] border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
                             ${isActive 
                                 ? 'bg-brand-dark text-white' 
                                 : 'bg-white text-brand-dark'}`
@@ -150,24 +150,24 @@ const DuplicateHandler: FC<DuplicateHandlerProps> = ({ duplicates, onConfirm, on
         <div>
             <p className="mb-4">We found {duplicates.length} contacts in your file that might already exist based on their email address. How would you like to handle them?</p>
             
-            <div className="flex space-x-2 mb-4 p-2 bg-brand-light rounded-[10px] border-2 border-brand-dark">
+            <div className="flex space-x-2 mb-4 p-2 bg-brand-light rounded-[10px] border-[3px] border-brand-dark">
                 <span className="font-bold my-auto">Apply to all:</span>
                 <Button variant="secondary" onClick={() => applyToAll('skip')}>Skip All</Button>
                 <Button variant="secondary" onClick={() => applyToAll('update')}>Update All</Button>
                 <Button variant="secondary" onClick={() => applyToAll('create')}>Create All as New</Button>
             </div>
 
-            <div className="space-y-2 max-h-64 overflow-y-auto p-2 bg-brand-light rounded-[10px] border-2 border-brand-dark">
+            <div className="space-y-2 max-h-64 overflow-y-auto p-2 bg-brand-light rounded-[10px] border-[3px] border-brand-dark">
                 {duplicates.map((dup) => (
-                    <div key={dup.email} className="bg-white p-3 rounded-[10px] border-2 border-brand-dark flex justify-between items-center">
+                    <div key={dup.email} className="bg-white p-3 rounded-[10px] border-[3px] border-brand-dark flex justify-between items-center">
                         <div>
                             <p className="font-bold">{dup.name}</p>
-                            <p className="text-sm text-gray-600">{dup.email}</p>
+                            <p className="text-sm text-brand-dark opacity-70">{dup.email}</p>
                         </div>
                         <select 
                             value={resolutions[dup.email]}
                             onChange={e => handleResolutionChange(dup.email!, e.target.value as Resolution)}
-                            className="p-2 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none"
+                            className="p-2 bg-white text-brand-dark rounded-[10px] border-[3px] border-brand-dark focus:outline-none"
                         >
                             <option value="skip">Skip Import</option>
                             <option value="update">Update Existing</option>
@@ -374,11 +374,11 @@ const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
                                 type="file" 
                                 accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
                                 onChange={handleFileChange}
-                                className="w-full text-brand-dark file:mr-4 file:py-2 file:px-4 file:rounded-[10px] file:border-2 file:border-brand-dark file:text-sm file:font-semibold file:bg-white file:text-brand-dark hover:file:bg-brand-light"
+                                className="w-full text-brand-dark file:mr-4 file:py-2 file:px-4 file:rounded-[10px] file:border-[3px] file:border-brand-dark file:text-sm file:font-semibold file:bg-white file:text-brand-dark hover:file:bg-brand-light"
                             />
                         </div>
                         {file && <p className="font-bold">Selected: {file.name}</p>}
-                        {error && <p className="text-red-600 font-bold">{error}</p>}
+                        {error && <p className="text-brand-dark font-bold">{error}</p>}
                         <div className="flex justify-end space-x-2 pt-4">
                             <Button type="button" variant="secondary" onClick={handleClose}>Cancel</Button>
                             <Button type="button" variant="primary" onClick={handleParseAndCheck} disabled={!file || loading}>
@@ -515,14 +515,14 @@ const CRM: React.FC = () => {
                     <h3 className="text-2xl font-bold">All Contacts ({filteredContacts.length})</h3>
                     <div className="relative w-full max-w-xs">
                         <input id="searchContacts" placeholder="Search contacts..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full p-3 pl-10 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark"/>
-                        <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            className="w-full p-3 pl-10 bg-white text-brand-dark rounded-[10px] border-[3px] border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark"/>
+                        <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-dark opacity-50" />
                     </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="border-b-2 border-brand-dark">
+                            <tr className="border-b-[3px] border-brand-dark">
                                 <th className="p-4 font-black">Name</th>
                                 <th className="p-4 font-black">Company</th>
                                 <th className="p-4 font-black">Email</th>
@@ -542,14 +542,14 @@ const CRM: React.FC = () => {
                                     <td className="p-4">
                                         <select value={getContactStage(contact.id!, deals)}
                                             onChange={(e) => handleStageChange(contact, e.target.value as DealStage)}
-                                            className="w-full p-2 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark appearance-none bg-no-repeat bg-right pr-8" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%232B2B2B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`}}>
+                                            className="w-full p-2 bg-white text-brand-dark rounded-[10px] border-[3px] border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark appearance-none bg-no-repeat bg-right pr-8" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%232B2B2B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`}}>
                                             {Object.values(DealStage).map(s => <option key={s} value={s}>{s}</option>)}
                                         </select>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex flex-wrap gap-1">
                                             {contact.tags.map(tag => (
-                                                <span key={tag} className="bg-blue-200 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full border-2 border-brand-dark">{tag}</span>
+                                                <span key={tag} className="bg-brand-light text-brand-dark text-xs font-bold px-2.5 py-0.5 rounded-full border-[3px] border-brand-dark">{tag}</span>
                                             ))}
                                         </div>
                                     </td>
@@ -611,7 +611,7 @@ const CRM: React.FC = () => {
                 <p className="mb-6">Are you sure you want to delete the contact "{deletingContact?.name}"? This will also delete all associated deals, projects, and invoices. This action cannot be undone.</p>
                 <div className="flex justify-end space-x-2">
                     <Button variant="secondary" onClick={() => setDeletingContact(null)}>Cancel</Button>
-                    <Button variant="primary" className="bg-red-500 hover:bg-red-600" onClick={handleDeleteConfirm}>Yes, Delete</Button>
+                    <Button variant="primary" onClick={handleDeleteConfirm}>Yes, Delete</Button>
                 </div>
             </Modal>
         </div>

@@ -108,7 +108,7 @@ interface CardProps {
 
 export const Card: React.FC<CardProps> = ({ children, className = '' }) => {
     return (
-        <div className={`bg-white p-6 rounded-[10px] border-2 border-brand-dark shadow-neo ${className}`}>
+        <div className={`bg-white p-6 rounded-[10px] border-[3px] border-brand-dark shadow-neo ${className}`}>
             {children}
         </div>
     );
@@ -122,7 +122,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', className = '', ...props }) => {
-    const baseClasses = "font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed";
+    const baseClasses = "font-bold py-2 px-4 rounded-[10px] border-[3px] border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed";
     const variantClasses = variant === 'primary' 
         ? 'bg-brand-dark text-white' 
         : 'bg-white text-brand-dark';
@@ -143,7 +143,7 @@ export const Input: React.FC<InputProps> = ({ label, id, ...props }) => {
     return (
         <div>
             <label htmlFor={id} className="block text-brand-dark font-bold mb-2">{label}</label>
-            <input id={id} {...props} className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark" />
+            <input id={id} {...props} className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-[3px] border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark" />
         </div>
     );
 }
@@ -156,7 +156,7 @@ export const Textarea: React.FC<TextareaProps> = ({ label, id, ...props }) => {
     return (
         <div>
             <label htmlFor={id} className="block text-brand-dark font-bold mb-2">{label}</label>
-            <textarea id={id} {...props} className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark" />
+            <textarea id={id} {...props} className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-[3px] border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark" />
         </div>
     );
 };
@@ -170,7 +170,7 @@ export const Select: React.FC<SelectProps> = ({ label, id, children, ...props })
     return (
         <div>
             <label htmlFor={id} className="block text-brand-dark font-bold mb-2">{label}</label>
-            <select id={id} {...props} className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-2 border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark appearance-none bg-no-repeat bg-right pr-8" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%232B2B2B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`}}>
+            <select id={id} {...props} className="w-full p-3 bg-white text-brand-dark rounded-[10px] border-[3px] border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark appearance-none bg-no-repeat bg-right pr-8" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%232B2B2B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`}}>
                 {children}
             </select>
         </div>
@@ -191,7 +191,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
     return ReactDOM.createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4" onClick={onClose}>
             <div 
-                className="bg-white p-8 rounded-[10px] border-2 border-brand-dark shadow-neo w-full max-w-lg relative"
+                className="bg-white p-8 rounded-[10px] border-[3px] border-brand-dark shadow-neo w-full max-w-lg relative"
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-6">
@@ -239,9 +239,12 @@ interface ToastProps {
 }
 
 export const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
-    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    const typeClasses = type === 'success' 
+        ? 'bg-white text-brand-dark' 
+        : 'bg-brand-dark text-white';
+
     return (
-        <div className={`fixed bottom-5 right-5 p-4 rounded-[10px] border-2 border-brand-dark text-white font-bold shadow-neo z-50 ${bgColor}`}>
+        <div className={`fixed bottom-5 right-5 p-4 rounded-[10px] border-[3px] border-brand-dark font-bold shadow-neo z-50 ${typeClasses}`}>
             {message}
             <button onClick={onClose} className="ml-4 font-black">X</button>
         </div>

@@ -41,9 +41,9 @@ function Sidebar() {
     };
     
     return (
-        <div className="fixed top-0 left-0 h-full w-[200px] bg-white border-r-2 border-brand-dark flex flex-col z-20">
+        <div className="fixed top-0 left-0 h-full w-[200px] bg-white border-r-[3px] border-brand-dark flex flex-col z-20">
             {/* Header-aligned logo */}
-            <div className="h-16 flex items-center p-4 border-b-2 border-brand-dark">
+            <div className="h-16 flex items-center p-4 border-b-[3px] border-brand-dark">
                 <div className="text-2xl font-extrabold text-brand-dark">
                     BareStack
                 </div>
@@ -57,7 +57,7 @@ function Sidebar() {
                             key={item.href}
                             to={item.href}
                             className={({ isActive }) =>
-                                `flex items-center space-x-3 p-2 rounded-[10px] text-brand-dark font-bold transition-all duration-200 hover:bg-brand-light ${isActive ? 'bg-brand-light border-2 border-brand-dark' : ''}`
+                                `flex items-center space-x-3 p-2 rounded-[10px] text-brand-dark font-bold transition-all duration-200 hover:bg-brand-light ${isActive ? 'bg-brand-light border-[3px] border-brand-dark' : ''}`
                             }
                         >
                             <Icon name={item.icon as any} className="w-6 h-6" />
@@ -69,7 +69,7 @@ function Sidebar() {
                     <button
                         onClick={handleFidgetClick}
                         title="Click me!"
-                        className="w-12 h-12 bg-white text-brand-dark font-bold text-xl rounded-full border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center"
+                        className="w-12 h-12 bg-white text-brand-dark font-bold text-xl rounded-full border-[3px] border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center"
                     >
                         {session?.user?.email?.[0].toUpperCase()}
                     </button>
@@ -93,12 +93,12 @@ function Header() {
     const currentPage = getPageTitle(location.pathname);
 
     return (
-        <header className="fixed top-0 left-[200px] right-0 h-16 bg-brand-light border-b-2 border-brand-dark flex items-center justify-between px-8 z-10">
+        <header className="fixed top-0 left-[200px] right-0 h-16 bg-brand-light border-b-[3px] border-brand-dark flex items-center justify-between px-8 z-10">
             <h1 className="text-2xl font-extrabold text-brand-dark">{currentPage}</h1>
             <div className="flex items-center space-x-2">
                 <button 
                   onClick={logout}
-                  className="bg-white text-brand-dark font-bold py-1.5 px-3 rounded-[10px] border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
+                  className="bg-white text-brand-dark font-bold py-1.5 px-3 rounded-[10px] border-[3px] border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
                 >
                   Log Out
                 </button>
@@ -132,15 +132,15 @@ function LoginPage() {
 
     return (
         <div className="min-h-screen bg-brand-light flex flex-col items-center justify-center font-sans p-4">
-            <div className="w-full max-w-sm bg-white p-8 rounded-[10px] border-2 border-brand-dark shadow-neo">
+            <div className="w-full max-w-sm bg-white p-8 rounded-[10px] border-[3px] border-brand-dark shadow-neo">
                 <h1 className="text-4xl font-black text-brand-dark text-center mb-2">BareStack</h1>
                 <p className="text-center text-brand-dark mb-8">No-bullshit business tools.</p>
-                {error && <p className="bg-red-200 text-red-800 p-3 rounded-[10px] border-2 border-red-800 text-center mb-4">{error}</p>}
+                {error && <p className="bg-white text-brand-dark p-3 rounded-[10px] border-[3px] border-brand-dark text-center mb-4 font-bold">{error}</p>}
                 
                 <button 
                     onClick={handleGoogleLogin} 
                     disabled={loading} 
-                    className="w-full bg-white text-brand-dark font-bold py-3 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center space-x-3"
+                    className="w-full bg-white text-brand-dark font-bold py-3 px-4 rounded-[10px] border-[3px] border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center space-x-3"
                 >
                     <svg className="w-6 h-6" viewBox="0 0 48 48">
                         <path fill="#4285F4" d="M24 9.5c3.13 0 5.9 1.08 7.97 2.97l6.02-6.02C34.32 2.85 29.56 1 24 1 14.88 1 7.22 6.56 4.43 14.61l7.35 5.7c1.33-4.02 5.08-6.81 9.22-6.81z"></path>
@@ -175,7 +175,7 @@ function AppLayout() {
                             </div>
                         ) : error ? (
                             <div className="flex justify-center items-center h-64">
-                                <p className="text-2xl font-bold text-red-600">Error: {error}</p>
+                                <p className="text-2xl font-bold text-brand-dark">Error: {error}</p>
                             </div>
                         ) : (
                             <Routes>

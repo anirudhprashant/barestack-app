@@ -5,16 +5,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      base: "/",
       server: {
         port: 3000,
-        host: true,
-      },
-      preview: {
-        host: true,
-        port: process.env.PORT ? Number(process.env.PORT) : 4173,
-        strictPort: true,
-        allowedHosts: ["crm.barestack.org"],
+        host: '0.0.0.0',
       },
       plugins: [react()],
       define: {

@@ -44,11 +44,11 @@ const Invoices: React.FC = () => {
         return subtotal * (1 + invoice.tax_rate / 100);
     };
     
-    const statusColors: Record<InvoiceStatus, string> = {
-        [InvoiceStatus.Draft]: 'bg-gray-300',
-        [InvoiceStatus.Sent]: 'bg-blue-300',
-        [InvoiceStatus.Paid]: 'bg-green-300',
-        [InvoiceStatus.Overdue]: 'bg-red-300',
+    const statusClasses: Record<InvoiceStatus, string> = {
+        [InvoiceStatus.Draft]: 'bg-brand-light text-brand-dark',
+        [InvoiceStatus.Sent]: 'bg-white text-brand-dark',
+        [InvoiceStatus.Paid]: 'bg-brand-dark text-white',
+        [InvoiceStatus.Overdue]: 'bg-white text-brand-dark font-black',
     };
 
     return (
@@ -60,7 +60,7 @@ const Invoices: React.FC = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="border-b-2 border-brand-dark">
+                            <tr className="border-b-[3px] border-brand-dark">
                                 <th className="p-4 font-black">Number</th>
                                 <th className="p-4 font-black">Client</th>
                                 <th className="p-4 font-black">Issue Date</th>
@@ -79,7 +79,7 @@ const Invoices: React.FC = () => {
                                     <td className="p-4">{new Date(invoice.due_date).toLocaleDateString()}</td>
                                     <td className="p-4 font-bold">${getInvoiceTotal(invoice).toLocaleString()}</td>
                                     <td className="p-4">
-                                        <span className={`px-2 py-1 text-xs font-bold rounded-full border-2 border-brand-dark text-brand-dark ${statusColors[invoice.status]}`}>{invoice.status}</span>
+                                        <span className={`px-2 py-1 text-xs font-bold rounded-full border-[3px] border-brand-dark ${statusClasses[invoice.status]}`}>{invoice.status}</span>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex space-x-2">
