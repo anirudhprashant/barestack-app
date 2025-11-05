@@ -4,7 +4,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 
 // --- ICON COMPONENT ---
-type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt' | 'chart' | 'settings' | 'plus' | 'search' | 'trash' | 'edit' | 'chevron-down' | 'x';
+type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt' | 'chart' | 'settings' | 'plus' | 'search' | 'trash' | 'edit' | 'chevron-down' | 'x' | 'check';
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
     name: IconName;
@@ -79,6 +79,7 @@ export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
         ),
         'chevron-down': <polyline points="6 9 12 15 18 9" />,
         x: <line x1="18" y1="6" x2="6" y2="18" />,
+        check: <path d="M20 6 9 17l-5-5" />,
     };
 
     return (

@@ -1,3 +1,4 @@
+
 import React, { useState, createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { Icon, Button } from './components/ui';
@@ -11,6 +12,7 @@ import DealPipeline from './pages/DealPipeline';
 import Activities from './pages/Activities';
 import Imports from './pages/Imports';
 import Projects from './pages/Projects';
+import Tasks from './pages/Tasks';
 import Invoices from './pages/Invoices';
 import TimeTracking from './pages/TimeTracking';
 import Expenses from './pages/Expenses';
@@ -143,6 +145,7 @@ function Header() {
     
     const getPageTitle = (pathname: string) => {
         if (pathname.startsWith('/crm')) return 'CRM';
+        if (pathname.startsWith('/projects')) return 'Projects';
         const item = navItems.find(i => i.href === pathname);
         return item?.label || 'Overview';
     };
@@ -240,6 +243,7 @@ function AppLayout() {
                                 <Route path="/crm/activities" element={<Activities />} />
                                 <Route path="/crm/imports" element={<Imports />} />
                                 <Route path="/projects" element={<Projects />} />
+                                <Route path="/projects/tasks" element={<Tasks />} />
                                 <Route path="/invoices" element={<Invoices />} />
                                 <Route path="/time-tracking" element={<TimeTracking />} />
                                 <Route path="/expenses" element={<Expenses />} />
