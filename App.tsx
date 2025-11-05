@@ -2,8 +2,7 @@
 import React, { useMemo } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from './components/ui';
-import { DataProvider, useData } from './dataStore';
-import { AuthProvider, useAuth } from './auth';
+import { DataProvider, useData, AuthProvider, useAuth } from './dataStore';
 import { supabase } from './services/supabaseClient';
 
 import Dashboard from './pages/Dashboard';
