@@ -8,7 +8,13 @@ export default defineConfig(({ mode }) => {
       base: "/",
       server: {
         port: 3000,
-        host: '0.0.0.0',
+        host: true,
+      },
+      preview: {
+        host: true,
+        port: process.env.PORT ? Number(process.env.PORT) : 4173,
+        strictPort: true,
+        allowedHosts: ["crm.barestack.org"],
       },
       plugins: [react()],
       define: {
