@@ -1,10 +1,10 @@
 
-import React, { useState, createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { Icon, Button } from './components/ui';
+import { Icon } from './components/ui';
 import { DataProvider, useData } from './dataStore';
 import { supabase } from './services/supabaseClient';
-import type { AuthSession } from '@supabase/supabase-js';
+import { AuthProvider, useAuth } from './auth';
 
 import Dashboard from './pages/Dashboard';
 import CRM from './pages/CRM';
@@ -18,63 +18,6 @@ import TimeTracking from './pages/TimeTracking';
 import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-
-// --- AUTH CONTEXT ---
-interface AuthContextType {
-    session: AuthSession | null;
-    isAuthenticated: boolean;
-    logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export function useAuth() {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
-}
-
-// FIX: Explicitly type AuthProvider as React.FC to resolve a potential TypeScript inference issue causing a false positive 'children' prop error.
-const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [session, setSession] = useState<AuthSession | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const getSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
-            setLoading(false);
-        };
-        getSession();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-    const logout = () => supabase.auth.signOut();
-
-    const value = useMemo(() => ({
-        session,
-        isAuthenticated: !!session,
-        logout
-    }), [session]);
-
-    if (loading) {
-        return <div className="min-h-screen bg-brand-light flex items-center justify-center">Loading...</div>;
-    }
-
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
-}
-
 
 // --- SIDEBAR ---
 const navItems = [
@@ -168,8 +111,8 @@ function Header() {
 
 // --- LOGIN PAGE ---
 function LoginPage() {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
 
     const handleGoogleLogin = async () => {
         setLoading(true);
