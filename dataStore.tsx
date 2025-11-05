@@ -205,6 +205,11 @@ export const DataProvider: React.FC<{ children: ReactNode; session: AuthSession 
     
     const undoImport = async (batchId: string) => {
         if (!session?.user) throw new Error("User not authenticated");
+
+        // It's crucial to update local state first to get the list of contacts to delete
+        // and avoid race conditions.
+        const contactsToDelete = data.contacts.filter(c => c.import_batch_id === batchId);
+        const contactIdsToDelete = new Set(contactsToDelete.map(c => c.id!));
         
         // 1. Delete contacts associated with the batch
         const { error: contactsError } = await supabase.from('contacts').delete().eq('import_batch_id', batchId);
@@ -214,20 +219,27 @@ export const DataProvider: React.FC<{ children: ReactNode; session: AuthSession 
         const { error: batchError } = await supabase.from('import_batches').delete().eq('id', batchId);
         if (batchError) throw batchError;
 
-        // 3. Update local state
+        // 3. Update local state completely, removing all associated data
         setData(prev => ({
             ...prev,
             contacts: prev.contacts.filter(c => c.import_batch_id !== batchId),
             importBatches: prev.importBatches.filter(b => b.id !== batchId),
+            deals: prev.deals.filter(d => !contactIdsToDelete.has(d.contact_id)),
+            projects: prev.projects.filter(p => !contactIdsToDelete.has(p.client_id)),
+            invoices: prev.invoices.filter(i => !contactIdsToDelete.has(i.client_id)),
+            notes: prev.notes.filter(n => !contactIdsToDelete.has(n.contact_id)),
         }));
     };
 
     const deleteContact = async (id: string) => {
         await contactsApi.del(id);
-        // Also remove associated deals and notes from local state for immediate UI update
+        // Also remove associated entities from local state for immediate UI update
+        // Assumes database has cascade delete setup for full integrity.
         setData(prev => ({
             ...prev,
             deals: prev.deals.filter(d => d.contact_id !== id),
+            projects: prev.projects.filter(p => p.client_id !== id),
+            invoices: prev.invoices.filter(i => i.client_id !== id),
             notes: prev.notes.filter(n => n.contact_id !== id),
         }));
     };
