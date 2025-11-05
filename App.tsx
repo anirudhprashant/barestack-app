@@ -2,9 +2,8 @@
 import React, { useMemo } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from './components/ui';
-import { DataProvider, useData } from './dataStore';
+import { DataProvider, useData, AuthProvider, useAuth } from './dataStore';
 import { supabase } from './services/supabaseClient';
-import { AuthProvider, useAuth } from './auth';
 
 import Dashboard from './pages/Dashboard';
 import CRM from './pages/CRM';
@@ -12,7 +11,6 @@ import DealPipeline from './pages/DealPipeline';
 import Activities from './pages/Activities';
 import Imports from './pages/Imports';
 import Projects from './pages/Projects';
-import Tasks from './pages/Tasks';
 import Invoices from './pages/Invoices';
 import TimeTracking from './pages/TimeTracking';
 import Expenses from './pages/Expenses';
@@ -159,6 +157,7 @@ function LoginPage() {
     );
 }
 
+
 // --- MAIN APP LAYOUT ---
 function AppLayout() {
     const { loading, error } = useData();
@@ -186,7 +185,6 @@ function AppLayout() {
                                 <Route path="/crm/activities" element={<Activities />} />
                                 <Route path="/crm/imports" element={<Imports />} />
                                 <Route path="/projects" element={<Projects />} />
-                                <Route path="/projects/tasks" element={<Tasks />} />
                                 <Route path="/invoices" element={<Invoices />} />
                                 <Route path="/time-tracking" element={<TimeTracking />} />
                                 <Route path="/expenses" element={<Expenses />} />
