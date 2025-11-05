@@ -1,7 +1,7 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from './services/supabaseClient';
-import type { AuthSession } from '@supabase/supabase-js';
+import { useAuth } from './auth';
 import {
     AppState,
     Contact,
@@ -17,61 +17,6 @@ import {
     Creatable,
 } from './types';
 
-
-// --- AUTH CONTEXT & PROVIDER ---
-interface AuthContextType {
-    session: AuthSession | null;
-    isAuthenticated: boolean;
-    logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export function useAuth() {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
-}
-
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [session, setSession] = useState<AuthSession | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const getSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
-            setLoading(false);
-        };
-        getSession();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-    const logout = () => supabase.auth.signOut();
-
-    const value = useMemo(() => ({
-        session,
-        isAuthenticated: !!session,
-        logout
-    }), [session]);
-
-    if (loading) {
-        return <div className="min-h-screen bg-brand-light flex items-center justify-center">Loading...</div>;
-    }
-
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
-}
 
 // --- DATA CONTEXT & PROVIDER ---
 interface DataContextType {
@@ -196,11 +141,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const { error } = await supabase.from(table).update(updateData).eq('id', id);
             if (error) throw error;
             setData(prev => {
-                // FIX: Cast to 'unknown' before 'T[]' to resolve strict TypeScript conversion error.
                 const items = prev[stateKey] as unknown as T[];
                 const index = items.findIndex(i => i.id === id);
                 if (index > -1) {
-                    // FIX: Ensure immutability by creating a new array for the update.
                     const newItems = [...items];
                     newItems[index] = item;
                     return { ...prev, [stateKey]: newItems };
@@ -213,7 +156,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (!session?.user) throw new Error("User not authenticated");
             const { error } = await supabase.from(table).delete().eq('id', id);
             if (error) throw error;
-            // FIX: Cast to 'unknown' before 'T[]' to resolve strict TypeScript conversion error.
             setData(prev => ({ ...prev, [stateKey]: (prev[stateKey] as unknown as T[]).filter(item => item.id !== id) }));
         };
 

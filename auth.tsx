@@ -1,3 +1,4 @@
+
 import React, { useState, createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { supabase } from './services/supabaseClient';
 import type { AuthSession } from '@supabase/supabase-js';
