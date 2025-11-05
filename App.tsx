@@ -2,7 +2,8 @@
 import React, { useMemo } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from './components/ui';
-import { DataProvider, useData, AuthProvider, useAuth } from './dataStore';
+import { DataProvider, useData } from './dataStore';
+import { AuthProvider, useAuth } from './auth';
 import { supabase } from './services/supabaseClient';
 
 import Dashboard from './pages/Dashboard';
@@ -43,8 +44,8 @@ function Sidebar() {
     return (
         <div className="fixed top-0 left-0 h-full w-[200px] bg-white border-r-2 border-brand-dark flex flex-col z-20">
             {/* Header-aligned logo */}
-            <div className="h-20 flex items-center p-4 border-b-2 border-brand-dark">
-                <div className="text-3xl font-extrabold text-brand-dark">
+            <div className="h-16 flex items-center p-4 border-b-2 border-brand-dark">
+                <div className="text-2xl font-extrabold text-brand-dark">
                     BareStack
                 </div>
             </div>
@@ -93,12 +94,12 @@ function Header() {
     const currentPage = getPageTitle(location.pathname);
 
     return (
-        <header className="fixed top-0 left-[200px] right-0 h-20 bg-brand-light border-b-2 border-brand-dark flex items-center justify-between px-8 z-10">
-            <h1 className="text-3xl font-extrabold text-brand-dark">{currentPage}</h1>
+        <header className="fixed top-0 left-[200px] right-0 h-16 bg-brand-light border-b-2 border-brand-dark flex items-center justify-between px-8 z-10">
+            <h1 className="text-2xl font-extrabold text-brand-dark">{currentPage}</h1>
             <div className="flex items-center space-x-2">
                 <button 
                   onClick={logout}
-                  className="bg-white text-brand-dark font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
+                  className="bg-white text-brand-dark font-bold py-1.5 px-3 rounded-[10px] border-2 border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
                 >
                   Log Out
                 </button>
@@ -167,7 +168,7 @@ function AppLayout() {
             <Sidebar />
             <div className="ml-[200px]">
                 <Header />
-                <main className="pt-20">
+                <main className="pt-16">
                     <div className="p-8">
                         {loading ? (
                             <div className="flex justify-center items-center h-64">
