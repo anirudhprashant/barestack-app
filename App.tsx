@@ -1,8 +1,8 @@
-
 import React, { useMemo } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from './components/ui';
-import { DataProvider, useData, AuthProvider, useAuth } from './dataStore';
+import { DataProvider, useData } from './dataStore';
+import { AuthProvider, useAuth } from './auth';
 import { supabase } from './services/supabaseClient';
 
 import Dashboard from './pages/Dashboard';
@@ -202,11 +202,11 @@ function AppLayout() {
 
 // --- APP ---
 function AppContent() {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, session } = useAuth();
     return (
         <BrowserRouter>
             {isAuthenticated ? (
-                <DataProvider>
+                <DataProvider session={session}>
                     <AppLayout />
                 </DataProvider>
             ) : <LoginPage />}
