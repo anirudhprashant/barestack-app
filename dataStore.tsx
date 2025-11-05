@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from './services/supabaseClient';
-import { useAuth } from './App';
+import { useAuth } from './auth';
 import {
     AppState,
     Contact,
