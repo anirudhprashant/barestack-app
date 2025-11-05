@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from './services/supabaseClient';
 import { useAuth } from './App';
@@ -20,26 +21,26 @@ interface DataContextType {
     data: AppState;
     loading: boolean;
     error: string | null;
-    addContact: (contact: Creatable<Contact>) => Promise<void>;
+    addContact: (contact: Creatable<Contact>) => Promise<Contact>;
     addMultipleContacts: (contacts: Creatable<Contact>[], batchDetails: Creatable<ImportBatch>) => Promise<void>;
     updateContact: (contact: Contact) => Promise<void>;
     deleteContact: (id: string) => Promise<void>;
-    addDeal: (deal: Creatable<Deal>) => Promise<void>;
+    addDeal: (deal: Creatable<Deal>) => Promise<Deal>;
     updateDeal: (deal: Deal) => Promise<void>;
     deleteDeal: (id: string) => Promise<void>;
-    addProject: (project: Creatable<Project>) => Promise<void>;
+    addProject: (project: Creatable<Project>) => Promise<Project>;
     updateProject: (project: Project) => Promise<void>;
     deleteProject: (id: string) => Promise<void>;
-    addTask: (task: Creatable<Task>) => Promise<void>;
+    addTask: (task: Creatable<Task>) => Promise<Task>;
     updateTask: (task: Task) => Promise<void>;
     deleteTask: (id: string) => Promise<void>;
-    addInvoice: (invoice: Creatable<Invoice>) => Promise<void>;
+    addInvoice: (invoice: Creatable<Invoice>) => Promise<Invoice>;
     updateInvoice: (invoice: Invoice) => Promise<void>;
     deleteInvoice: (id: string) => Promise<void>;
-    addTimeEntry: (timeEntry: Creatable<TimeEntry>) => Promise<void>;
-    addExpense: (expense: Creatable<Expense>) => Promise<void>;
+    addTimeEntry: (timeEntry: Creatable<TimeEntry>) => Promise<TimeEntry>;
+    addExpense: (expense: Creatable<Expense>) => Promise<Expense>;
     addRecentActivity: (activity: Omit<RecentActivity, 'id' | 'user_id'>) => Promise<void>;
-    addNote: (note: Creatable<Note>) => Promise<void>;
+    addNote: (note: Creatable<Note>) => Promise<Note>;
     undoImport: (batchId: string) => Promise<void>;
 }
 
@@ -119,12 +120,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [fetchData]);
 
     const createApiHandler = useCallback(<T extends { id?: string }>(table: string, stateKey: keyof AppState) => {
-        const add = async (item: Omit<T, 'id' | 'user_id' | 'created_at'>): Promise<void> => {
+        const add = async (item: Omit<T, 'id' | 'user_id' | 'created_at'>): Promise<T> => {
             if (!session?.user) throw new Error("User not authenticated");
             const itemWithUser = { ...item, user_id: session.user.id };
             const { data: newData, error } = await supabase.from(table).insert(itemWithUser).select().single();
             if (error) throw error;
             setData(prev => ({ ...prev, [stateKey]: [newData, ...(prev[stateKey] as any[])] }));
+            return newData as T;
         };
 
         const update = async (item: T): Promise<void> => {
