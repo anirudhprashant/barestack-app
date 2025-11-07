@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from './services/supabaseClient';
 import type { AuthSession } from '@supabase/supabase-js';
 import {
@@ -15,63 +15,6 @@ import {
     ImportBatch,
     Creatable,
 } from './types';
-
-
-// --- AUTH CONTEXT & PROVIDER (CONSOLIDATED) ---
-interface AuthContextType {
-    session: AuthSession | null;
-    isAuthenticated: boolean;
-    logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export function useAuth() {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
-}
-
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [session, setSession] = useState<AuthSession | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const getSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
-            setLoading(false);
-        };
-        getSession();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-    const logout = () => supabase.auth.signOut();
-
-    const value = useMemo(() => ({
-        session,
-        isAuthenticated: !!session,
-        logout
-    }), [session]);
-
-    if (loading) {
-        return <div className="min-h-screen bg-brand-light flex items-center justify-center font-bold text-2xl">Authenticating...</div>;
-    }
-
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
-};
-
 
 // --- DATA CONTEXT & PROVIDER ---
 interface DataContextType {
@@ -116,8 +59,7 @@ const initialState: AppState = {
     importBatches: [],
 };
 
-export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { session } = useAuth();
+export const DataProvider: React.FC<{ children: ReactNode; session: AuthSession | null }> = ({ children, session }) => {
     const [data, setData] = useState<AppState>(initialState);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -263,6 +205,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const undoImport = async (batchId: string) => {
         if (!session?.user) throw new Error("User not authenticated");
+
+        // It's crucial to update local state first to get the list of contacts to delete
+        // and avoid race conditions.
+        const contactsToDelete = data.contacts.filter(c => c.import_batch_id === batchId);
+        const contactIdsToDelete = new Set(contactsToDelete.map(c => c.id!));
         
         // 1. Delete contacts associated with the batch
         const { error: contactsError } = await supabase.from('contacts').delete().eq('import_batch_id', batchId);
@@ -272,20 +219,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { error: batchError } = await supabase.from('import_batches').delete().eq('id', batchId);
         if (batchError) throw batchError;
 
-        // 3. Update local state
+        // 3. Update local state completely, removing all associated data
         setData(prev => ({
             ...prev,
             contacts: prev.contacts.filter(c => c.import_batch_id !== batchId),
             importBatches: prev.importBatches.filter(b => b.id !== batchId),
+            deals: prev.deals.filter(d => !contactIdsToDelete.has(d.contact_id)),
+            projects: prev.projects.filter(p => !contactIdsToDelete.has(p.client_id)),
+            invoices: prev.invoices.filter(i => !contactIdsToDelete.has(i.client_id)),
+            notes: prev.notes.filter(n => !contactIdsToDelete.has(n.contact_id)),
         }));
     };
 
     const deleteContact = async (id: string) => {
         await contactsApi.del(id);
-        // Also remove associated deals and notes from local state for immediate UI update
+        // Also remove associated entities from local state for immediate UI update
+        // Assumes database has cascade delete setup for full integrity.
         setData(prev => ({
             ...prev,
             deals: prev.deals.filter(d => d.contact_id !== id),
+            projects: prev.projects.filter(p => p.client_id !== id),
+            invoices: prev.invoices.filter(i => i.client_id !== id),
             notes: prev.notes.filter(n => n.contact_id !== id),
         }));
     };

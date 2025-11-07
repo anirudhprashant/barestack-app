@@ -22,7 +22,7 @@ const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
                         to={link.href}
                         end
                         className={({ isActive }) => 
-                            `font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
+                            `font-bold py-2 px-4 rounded-[10px] border-[3px] border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
                             ${isActive 
                                 ? 'bg-brand-dark text-white' 
                                 : 'bg-white text-brand-dark'}`
@@ -56,7 +56,7 @@ const Activities: React.FC = () => {
                         <Card key={note.id} className="relative !p-0">
                              <div className="p-6">
                                 <div className="flex items-start space-x-4">
-                                    <div className="flex-shrink-0 w-12 h-12 bg-brand-light rounded-full border-2 border-brand-dark flex items-center justify-center">
+                                    <div className="flex-shrink-0 w-12 h-12 bg-brand-light rounded-full border-[3px] border-brand-dark flex items-center justify-center">
                                         <Icon name="document" className="w-6 h-6 text-brand-dark" />
                                     </div>
                                     <div className="flex-grow">
@@ -65,7 +65,7 @@ const Activities: React.FC = () => {
                                         </p>
                                         <p className="mt-2 text-brand-dark whitespace-pre-wrap">{note.content}</p>
                                     </div>
-                                    <div className="text-sm text-gray-500 font-medium flex-shrink-0">
+                                    <div className="text-sm text-brand-dark opacity-70 font-medium flex-shrink-0">
                                         {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
                                     </div>
                                 </div>
@@ -75,7 +75,7 @@ const Activities: React.FC = () => {
                 ) : (
                     <Card className="text-center">
                         <h3 className="text-2xl font-bold">No activities yet.</h3>
-                        <p className="mt-2 text-gray-500">Add a note to a contact to get started!</p>
+                        <p className="mt-2 text-brand-dark opacity-70">Add a note to a contact to get started!</p>
                     </Card>
                 )}
             </div>
