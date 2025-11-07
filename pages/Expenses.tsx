@@ -65,14 +65,6 @@ const Expenses: React.FC = () => {
         return projects.find(p => p.id === projectId)?.name || 'Unknown Project';
     };
     
-    const categoryColors: Record<ExpenseCategory, string> = {
-        [ExpenseCategory.Travel]: 'bg-blue-300',
-        [ExpenseCategory.Meals]: 'bg-orange-300',
-        [ExpenseCategory.Equipment]: 'bg-purple-300',
-        [ExpenseCategory.Software]: 'bg-indigo-300',
-        [ExpenseCategory.Other]: 'bg-gray-300',
-    };
-
     return (
         <div>
             <PageHeader title="Expenses">
@@ -82,7 +74,7 @@ const Expenses: React.FC = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="border-b-2 border-brand-dark">
+                            <tr className="border-b-[3px] border-brand-dark">
                                 <th className="p-4 font-black">Date</th>
                                 <th className="p-4 font-black">Description</th>
                                 <th className="p-4 font-black">Category</th>
@@ -97,7 +89,7 @@ const Expenses: React.FC = () => {
                                     <td className="p-4 font-semibold">{new Date(expense.date).toLocaleDateString()}</td>
                                     <td className="p-4 font-bold">{expense.description}</td>
                                     <td className="p-4">
-                                        <span className={`px-2 py-1 text-xs font-bold rounded-full border-2 border-brand-dark text-brand-dark ${categoryColors[expense.category]}`}>{expense.category}</span>
+                                        <span className={`px-2 py-1 text-xs font-bold rounded-full border-[3px] border-brand-dark text-brand-dark bg-brand-light`}>{expense.category}</span>
                                     </td>
                                     <td className="p-4">{getProjectName(expense.project_id)}</td>
                                     <td className="p-4 font-bold">${expense.amount.toFixed(2)}</td>
