@@ -3,6 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
+    "start": "serve -s dist",
     "build": "mkdir -p dist && cp -r App.tsx auth.tsx components dataStore.tsx index.html index.tsx metadata.json pages services types.ts dist/"
+  },
+  "dependencies": {
+    "serve": "^14.2.3"
   }
 }
