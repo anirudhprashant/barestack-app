@@ -23,7 +23,7 @@ const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
                         to={link.href}
                         end
                         className={({ isActive }) => 
-                            `font-bold py-2 px-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
+                            `font-bold py-2 px-4 rounded-[10px] border-[3px] border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
                             ${isActive 
                                 ? 'bg-brand-dark text-white' 
                                 : 'bg-white text-brand-dark'}`
@@ -97,11 +97,11 @@ const DealCard: FC<{ deal: Deal, contactName: string, onDragStart: (e: React.Dra
         <div 
             draggable 
             onDragStart={(e) => onDragStart(e, deal)}
-            className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing transition-opacity duration-200"
+            className="bg-white p-3 rounded-[10px] border-[3px] border-brand-dark mb-3 cursor-grab active:cursor-grabbing transition-opacity duration-200"
         >
             <p className="font-bold text-lg">{contactName}</p>
             <p className="text-xl font-black text-brand-dark">${deal.value.toLocaleString()}</p>
-            <p className="text-sm text-gray-500">Last interaction: {new Date(deal.last_interaction).toLocaleDateString()}</p>
+            <p className="text-sm text-brand-dark opacity-70">Last interaction: {new Date(deal.last_interaction).toLocaleDateString()}</p>
         </div>
     );
 }
@@ -169,13 +169,13 @@ const DealPipeline: React.FC = () => {
                         onDragOver={(e) => handleDragOver(e, stage)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, stage)}
-                        className={`bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark transition-colors duration-300 h-full`}
+                        className={`bg-brand-light p-4 rounded-[10px] border-[3px] border-brand-dark transition-colors duration-300 h-full`}
                     >
-                        <div className="text-center mb-4 pb-2 border-b-2 border-brand-dark">
+                        <div className="text-center mb-4 pb-2 border-b-[3px] border-brand-dark">
                             <h3 className="font-extrabold text-lg">{stage}</h3>
                             <p className="font-bold text-brand-dark">${value.toLocaleString()} ({count})</p>
                         </div>
-                        <div className={`min-h-[300px] p-2 rounded-[10px] transition-all ${dragOverStage === stage ? 'border-2 border-dashed border-brand-dark bg-white/50' : ''}`}>
+                        <div className={`min-h-[300px] p-2 rounded-[10px] transition-all ${dragOverStage === stage ? 'border-[3px] border-dashed border-brand-dark bg-white/50' : ''}`}>
                             {stageDeals.length > 0 ? (
                                 stageDeals.map(deal => (
                                     <div key={deal.id} style={{ opacity: draggedDeal?.id === deal.id ? 0.5 : 1 }}>
@@ -183,7 +183,7 @@ const DealPipeline: React.FC = () => {
                                     </div>
                                 ))
                             ) : (
-                                <div className="flex items-center justify-center h-full text-center text-gray-500 font-semibold">
+                                <div className="flex items-center justify-center h-full text-center text-brand-dark opacity-70 font-semibold">
                                     No deals in this stage.
                                 </div>
                             )}

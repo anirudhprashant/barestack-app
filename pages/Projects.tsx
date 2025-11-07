@@ -1,8 +1,10 @@
 
+
 import React, { useState, useEffect, FC } from 'react';
 import { Card, PageHeader, Button, Icon, Modal, Input, Select } from '../components/ui';
 import { Project, Task, TaskStatus, Creatable, ProjectStatus } from '../types';
 import { useData } from '../dataStore';
+import { useAuth } from '../auth';
 
 // --- Add Project Form ---
 const AddProjectForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -58,6 +60,7 @@ const AddProjectForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 // --- Add Task Form ---
 const AddTaskForm: FC<{ projectId: string, onClose: () => void }> = ({ projectId, onClose }) => {
     const { addTask } = useData();
+    const { session } = useAuth();
     const [title, setTitle] = useState('');
     const [estimatedHours, setEstimatedHours] = useState('');
     const [dueDate, setDueDate] = useState('');
@@ -65,11 +68,15 @@ const AddTaskForm: FC<{ projectId: string, onClose: () => void }> = ({ projectId
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!session?.user) {
+            console.error("No user session found.");
+            return;
+        }
         setLoading(true);
         const newTask: Creatable<Task> = {
             project_id: projectId,
             title,
-            assigned_to: 'u1', // Placeholder for user assignment
+            assigned_to: session.user.id,
             due_date: dueDate ? new Date(dueDate).toISOString() : new Date().toISOString(),
             estimated_hours: parseInt(estimatedHours) || 0,
             status: TaskStatus.ToDo,
@@ -98,17 +105,17 @@ const TaskCard: FC<{ task: Task, onDragStart: (e: React.DragEvent, task: Task) =
         <div 
             draggable 
             onDragStart={(e) => onDragStart(e, task)}
-            className="bg-white p-3 rounded-[10px] border-2 border-brand-dark mb-3 cursor-grab active:cursor-grabbing"
+            className="bg-white p-3 rounded-[10px] border-[3px] border-brand-dark mb-3 cursor-grab active:cursor-grabbing"
         >
             <p className="font-bold">{task.title}</p>
-            <p className="text-sm text-gray-500">Due: {new Date(task.due_date).toLocaleDateString()}</p>
+            <p className="text-sm text-brand-dark opacity-70">Due: {new Date(task.due_date).toLocaleDateString()}</p>
             <div className="flex justify-between items-center mt-2">
-                <span className="text-xs font-bold bg-brand-light px-2 py-1 rounded-md border-2 border-brand-dark">{task.estimated_hours} hrs</span>
+                <span className="text-xs font-bold bg-brand-light px-2 py-1 rounded-md border-[3px] border-brand-dark">{task.estimated_hours} hrs</span>
                 {task.status !== TaskStatus.Done && (
                      <button
                         title="Mark as Done"
                         onClick={() => onComplete(task)}
-                        className="w-8 h-8 bg-white rounded-full border-2 border-brand-dark flex items-center justify-center hover:bg-green-200 transition-colors active:shadow-none active:translate-y-0.5"
+                        className="w-8 h-8 bg-white rounded-full border-[3px] border-brand-dark flex items-center justify-center hover:bg-brand-light transition-colors active:shadow-none active:translate-y-0.5"
                     >
                         <Icon name="check" className="w-5 h-5 text-brand-dark" />
                     </button>
@@ -206,10 +213,10 @@ const Projects: React.FC = () => {
                             onDragOver={(e) => handleDragOver(e, stage)}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, stage)}
-                            className="bg-brand-light p-4 rounded-[10px] border-2 border-brand-dark h-full"
+                            className="bg-brand-light p-4 rounded-[10px] border-[3px] border-brand-dark h-full"
                         >
-                            <h3 className="font-extrabold text-lg mb-4 text-center pb-2 border-b-2 border-brand-dark">{stage} ({selectedProjectTasks.filter(t => t.status === stage).length})</h3>
-                            <div className={`min-h-[300px] p-2 rounded-[10px] transition-all ${dragOverStatus === stage ? 'border-2 border-dashed border-brand-dark bg-white/50' : ''}`}>
+                            <h3 className="font-extrabold text-lg mb-4 text-center pb-2 border-b-[3px] border-brand-dark">{stage} ({selectedProjectTasks.filter(t => t.status === stage).length})</h3>
+                            <div className={`min-h-[300px] p-2 rounded-[10px] transition-all ${dragOverStatus === stage ? 'border-[3px] border-dashed border-brand-dark bg-white/50' : ''}`}>
                                 {selectedProjectTasks.filter(t => t.status === stage).map(task => (
                                     <div key={task.id} style={{ opacity: draggedTask?.id === task.id ? 0.5 : 1 }}>
                                         <TaskCard task={task} onDragStart={handleDragStart} onComplete={handleCompleteTask} />
@@ -222,7 +229,7 @@ const Projects: React.FC = () => {
             ) : (
                  <Card className="text-center p-12">
                     <h3 className="text-2xl font-bold">No Project Selected</h3>
-                    <p className="mt-2 text-gray-500">Please select a project from the dropdown to view its tasks, or create a new project.</p>
+                    <p className="mt-2 text-brand-dark opacity-70">Please select a project from the dropdown to view its tasks, or create a new project.</p>
                 </Card>
             )}
             

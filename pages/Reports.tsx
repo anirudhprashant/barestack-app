@@ -44,7 +44,13 @@ const Reports: React.FC = () => {
         })).filter(p => p.hours > 0);
     }, [projects, timeEntries]);
     
-    const COLORS = ['#2B2B2B', '#8884d8', '#82ca9d', '#ffc658', '#FF8042'];
+    // Adhering to the strict color palette
+    const COLORS = ['#2B2B2B', '#F5F5F5', '#FFFFFF'];
+    const tooltipStyle = { 
+        backgroundColor: '#F5F5F5', 
+        border: '3px solid #2B2B2B', 
+        borderRadius: '10px' 
+    };
 
     return (
         <div>
@@ -57,7 +63,7 @@ const Reports: React.FC = () => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" />
                             <YAxis />
-                            <Tooltip contentStyle={{ backgroundColor: '#F5F5F5', border: '2px solid #2B2B2B', borderRadius: '10px' }} />
+                            <Tooltip contentStyle={tooltipStyle} />
                             <Legend />
                             <Line type="monotone" dataKey="revenue" stroke="#2B2B2B" strokeWidth={4} activeDot={{ r: 8 }} />
                         </LineChart>
@@ -70,9 +76,9 @@ const Reports: React.FC = () => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" />
                             <YAxis />
-                            <Tooltip contentStyle={{ backgroundColor: '#F5F5F5', border: '2px solid #2B2B2B', borderRadius: '10px' }} />
+                            <Tooltip contentStyle={tooltipStyle} />
                             <Legend />
-                            <Bar dataKey="budget" fill="#8884d8" />
+                            <Bar dataKey="budget" fill="#F5F5F5" stroke="#2B2B2B" strokeWidth={2}/>
                             <Bar dataKey="actual" fill="#2B2B2B" />
                         </BarChart>
                     </ResponsiveContainer>
@@ -81,12 +87,12 @@ const Reports: React.FC = () => {
                     <h3 className="text-2xl font-bold mb-4">Time Breakdown by Project</h3>
                      <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
-                            <Pie data={timeBreakdownData} dataKey="hours" nameKey="name" cx="50%" cy="50%" outerRadius={100} fill="#8884d8" label>
+                            <Pie data={timeBreakdownData} dataKey="hours" nameKey="name" cx="50%" cy="50%" outerRadius={100} fill="#2B2B2B" label>
                                 {timeBreakdownData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="#2B2B2B" strokeWidth={2} />
                                 ))}
                             </Pie>
-                            <Tooltip contentStyle={{ backgroundColor: '#F5F5F5', border: '2px solid #2B2B2B', borderRadius: '10px' }} />
+                            <Tooltip contentStyle={tooltipStyle} />
                             <Legend />
                         </PieChart>
                     </ResponsiveContainer>

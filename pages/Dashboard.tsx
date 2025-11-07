@@ -9,12 +9,12 @@ const Dashboard: React.FC = () => {
     const { contacts, projects, invoices, timeEntries, tasks, recentActivity } = data;
 
     const activityIconMap: Record<RecentActivity['type'], React.ReactNode> = {
-        'CONTACT_ADDED': <Icon name="users" className="w-6 h-6 text-blue-500"/>,
-        'PROJECT_CREATED': <Icon name="clipboard" className="w-6 h-6 text-purple-500"/>,
-        'INVOICE_SENT': <Icon name="document" className="w-6 h-6 text-green-500"/>,
-        'TASK_COMPLETED': <Icon name="clock" className="w-6 h-6 text-yellow-500"/>,
-        'DEAL_ADDED': <Icon name="users" className="w-6 h-6 text-teal-500"/>,
-        'EXPENSE_ADDED': <Icon name="receipt" className="w-6 h-6 text-orange-500"/>,
+        'CONTACT_ADDED': <Icon name="users" className="w-6 h-6 text-brand-dark"/>,
+        'PROJECT_CREATED': <Icon name="clipboard" className="w-6 h-6 text-brand-dark"/>,
+        'INVOICE_SENT': <Icon name="document" className="w-6 h-6 text-brand-dark"/>,
+        'TASK_COMPLETED': <Icon name="clock" className="w-6 h-6 text-brand-dark"/>,
+        'DEAL_ADDED': <Icon name="users" className="w-6 h-6 text-brand-dark"/>,
+        'EXPENSE_ADDED': <Icon name="receipt" className="w-6 h-6 text-brand-dark"/>,
     };
 
     // Calculate stats
@@ -57,13 +57,13 @@ const Dashboard: React.FC = () => {
                 <div className="space-y-4">
                     {sortedActivity.slice(0, 10).map(item => (
                         <div key={item.id} className="flex items-center space-x-4 p-2 border-b-2 border-brand-light last:border-b-0">
-                            <div className="flex-shrink-0 w-10 h-10 bg-brand-light rounded-full flex items-center justify-center border-2 border-brand-dark">
+                            <div className="flex-shrink-0 w-10 h-10 bg-brand-light rounded-full flex items-center justify-center border-[3px] border-brand-dark">
                                 {activityIconMap[item.type]}
                             </div>
                             <div className="flex-grow">
                                 <p className="font-semibold">{item.description}</p>
                             </div>
-                            <div className="text-sm text-gray-500 font-medium">
+                            <div className="text-sm text-brand-dark opacity-70 font-medium">
                                 {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
                             </div>
                         </div>
