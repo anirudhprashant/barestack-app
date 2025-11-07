@@ -1,7 +1,7 @@
 
 
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createPortal } from 'react-dom';
 
 // --- ICON COMPONENT ---
 type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt' | 'chart' | 'settings' | 'plus' | 'search' | 'trash' | 'edit' | 'chevron-down' | 'x' | 'check';
@@ -188,7 +188,7 @@ interface ModalProps {
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
 
-    return ReactDOM.createPortal(
+    return createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4" onClick={onClose}>
             <div 
                 className="bg-white p-8 rounded-[10px] border-[3px] border-brand-dark shadow-neo w-full max-w-lg relative"
