@@ -5,6 +5,11 @@ import { Contact, Deal, DealStage, Note, Creatable, ImportBatch } from '../types
 import { useData } from '../dataStore';
 
 // @ts-ignore - XLSX is loaded from CDN in index.html
+declare global {
+    interface Window {
+        XLSX: any;
+    }
+}
 const XLSX = window.XLSX;
 
 const ITEMS_PER_PAGE = 10;
