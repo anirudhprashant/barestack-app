@@ -1,0 +1,6 @@
+[phases.build]
+cmds = ["npm run build"]
+
+# Static site configuration for Nixpacks
+[static]
+publish = "dist"
