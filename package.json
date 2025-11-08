@@ -3,10 +3,24 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "start": "serve -s dist",
-    "build": "mkdir -p dist && cp -r App.tsx auth.tsx components dataStore.tsx index.html index.tsx metadata.json pages services types.ts dist/"
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "start": "serve -s dist -l ${PORT:-3000}"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.78.0",
+    "date-fns": "^4.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.5",
     "serve": "^14.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
   }
 }
