@@ -2,14 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BareStack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Gabarito', 'sans-serif'],
+            },
+            colors: {
+                'brand-dark': '#2B2B2B',
+                'brand-light': '#F5F5F5',
+            },
+            boxShadow: {
+                'neo': '8px 8px 0px #2B2B2B',
+                'neo-sm': '4px 4px 0px #2B2B2B',
+            }
+          }
+        }
+      }
+    </script>
+    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.5",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
+    "date-fns": "https://aistudiocdn.com/date-fns@^4.1.0",
+    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.78.0",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0"
+  }
+}
+</script>
+<!-- ADD BABEL FOR LIVE JSX/TSX TRANSPILATION -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="text/babel" data-type="module" src="/index.tsx"></script>
 </body>
 </html>

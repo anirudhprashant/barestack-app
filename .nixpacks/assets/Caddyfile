@@ -1,7 +1,0 @@
-:{$PORT:3000} {
-  log { format json }
-  encode gzip
-  root * /app/dist
-  file_server
-  try_files {path} /index.html
-}
