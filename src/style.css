@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Gabarito", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  --color-brand-dark: #2B2B2B;
+  --color-brand-light: #F5F5F5;
+  --shadow-neo: 8px 8px 0px #2B2B2B;
+  --shadow-neo-sm: 4px 4px 0px #2B2B2B;
+}
