@@ -130,7 +130,7 @@ export interface RecentActivity {
   id?: string;
   user_id?: string;
   timestamp: string; // ISO date string
-  type: 'CONTACT_ADDED' | 'PROJECT_CREATED' | 'INVOICE_SENT' | 'TASK_COMPLETED' | 'DEAL_ADDED' | 'EXPENSE_ADDED';
+  type: 'CONTACT_ADDED' | 'PROJECT_CREATED' | 'INVOICE_CREATED' | 'INVOICE_SENT' | 'TASK_COMPLETED' | 'DEAL_ADDED' | 'EXPENSE_ADDED';
   description: string;
 }
 

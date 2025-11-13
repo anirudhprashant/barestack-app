@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Card, PageHeader, Button, Input, Select, Textarea } from '../components/ui';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import { useData } from '../dataStore';
@@ -7,9 +7,6 @@ import { Creatable, TimeEntry } from '../types';
 const TimeTracking: React.FC = () => {
     const { data, addTimeEntry } = useData();
     const { timeEntries, projects } = data;
-    const [isTimerRunning, setIsTimerRunning] = useState(false);
-    const [elapsedTime, setElapsedTime] = useState(0);
-    const timerRef = useRef<number | null>(null);
     
     // Manual Entry Form State
     const [formState, setFormState] = useState({
@@ -20,26 +17,7 @@ const TimeTracking: React.FC = () => {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleTimerToggle = () => {
-        if (isTimerRunning) {
-            clearInterval(timerRef.current!);
-            timerRef.current = null;
-        } else {
-            const startTime = Date.now() - elapsedTime;
-            timerRef.current = window.setInterval(() => {
-                setElapsedTime(Date.now() - startTime);
-            }, 1000);
-        }
-        setIsTimerRunning(!isTimerRunning);
-    };
     
-    const formatTime = (ms: number) => {
-        const totalSeconds = Math.floor(ms / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    };
     
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { id, value } = e.target;
@@ -92,17 +70,8 @@ const TimeTracking: React.FC = () => {
     return (
         <div>
             <PageHeader title="Time Tracking" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <Card className="lg:col-span-1">
-                    <h3 className="text-2xl font-bold mb-4">Timer</h3>
-                    <div className="text-6xl font-black text-center p-8 bg-brand-light border-[3px] border-brand-dark rounded-[10px] mb-4">
-                        {formatTime(elapsedTime)}
-                    </div>
-                    <Button onClick={handleTimerToggle} variant="primary" className="w-full">
-                        {isTimerRunning ? 'Stop Timer' : 'Start Timer'}
-                    </Button>
-                </Card>
-                <Card className="lg:col-span-2">
+            <div className="grid grid-cols-1 gap-8">
+                <Card>
                     <h3 className="text-2xl font-bold mb-4">Add Manual Entry</h3>
                     <form className="space-y-4" onSubmit={handleManualSubmit}>
                         <div className="grid grid-cols-2 gap-4">

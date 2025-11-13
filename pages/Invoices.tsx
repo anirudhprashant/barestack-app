@@ -32,7 +32,7 @@ const Invoices: React.FC = () => {
         await addInvoice(newInvoice);
         await addRecentActivity({
             timestamp: new Date().toISOString(),
-            type: 'INVOICE_SENT',
+            type: 'INVOICE_CREATED',
             description: `Created new invoice ${newInvoice.invoice_number} for ${randomContact.name}`
         });
     };
@@ -67,7 +67,6 @@ const Invoices: React.FC = () => {
                                 <th className="p-4 font-black">Due Date</th>
                                 <th className="p-4 font-black">Total</th>
                                 <th className="p-4 font-black">Status</th>
-                                <th className="p-4 font-black">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -81,12 +80,7 @@ const Invoices: React.FC = () => {
                                     <td className="p-4">
                                         <span className={`px-2 py-1 text-xs font-bold rounded-full border-[3px] border-brand-dark ${statusClasses[invoice.status]}`}>{invoice.status}</span>
                                     </td>
-                                    <td className="p-4">
-                                        <div className="flex space-x-2">
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none"><Icon name="document"/></Button>
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none"><Icon name="edit"/></Button>
-                                        </div>
-                                    </td>
+                                    
                                 </tr>
                             ))}
                         </tbody>

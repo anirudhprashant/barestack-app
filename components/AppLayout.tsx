@@ -12,8 +12,6 @@ import Projects from '../pages/Projects';
 import Invoices from '../pages/Invoices';
 import TimeTracking from '../pages/TimeTracking';
 import Expenses from '../pages/Expenses';
-import Reports from '../pages/Reports';
-import Settings from '../pages/Settings';
 
 const AppLayout: React.FC = () => {
     const { loading, error } = useData();
@@ -44,8 +42,6 @@ const AppLayout: React.FC = () => {
                                 <Route path="/invoices" element={<Invoices />} />
                                 <Route path="/time-tracking" element={<TimeTracking />} />
                                 <Route path="/expenses" element={<Expenses />} />
-                                <Route path="/reports" element={<Reports />} />
-                                <Route path="/settings" element={<Settings />} />
                             </Routes>
                         )}
                     </div>

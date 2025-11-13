@@ -127,7 +127,7 @@ const TaskCard: FC<{ task: Task, onDragStart: (e: React.DragEvent, task: Task) =
 
 // --- Main Projects Component ---
 const Projects: React.FC = () => {
-    const { data, updateTask } = useData();
+    const { data, updateTask, addRecentActivity } = useData();
     const { projects, tasks } = data;
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
     const [isAddProjectModalOpen, setIsAddProjectModalOpen] = useState(false);
@@ -146,6 +146,11 @@ const Projects: React.FC = () => {
     const handleCompleteTask = async (task: Task) => {
         if (task.status !== TaskStatus.Done) {
             await updateTask({ ...task, status: TaskStatus.Done });
+            await addRecentActivity({
+                timestamp: new Date().toISOString(),
+                type: 'TASK_COMPLETED',
+                description: `Task completed: ${task.title}`
+            });
         }
     };
 

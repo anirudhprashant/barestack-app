@@ -229,28 +229,6 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, icon }) => {
     );
 };
 
-// --- TOAST COMPONENT ---
-// This would typically be managed by a context provider for global access.
-// For simplicity, here's a basic component structure.
-interface ToastProps {
-    message: string;
-    type: 'success' | 'error';
-    onClose: () => void;
-}
-
-export const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
-    const typeClasses = type === 'success' 
-        ? 'bg-white text-brand-dark' 
-        : 'bg-brand-dark text-white';
-
-    return (
-        <div className={`fixed bottom-5 right-5 p-4 rounded-[10px] border-[3px] border-brand-dark font-bold shadow-neo z-50 ${typeClasses}`}>
-            {message}
-            <button onClick={onClose} className="ml-4 font-black">X</button>
-        </div>
-    );
-};
-
 // --- PAGE HEADER ---
 interface PageHeaderProps {
     title: string;

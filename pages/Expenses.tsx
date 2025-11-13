@@ -80,7 +80,6 @@ const Expenses: React.FC = () => {
                                 <th className="p-4 font-black">Category</th>
                                 <th className="p-4 font-black">Project</th>
                                 <th className="p-4 font-black">Amount</th>
-                                <th className="p-4 font-black">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -93,12 +92,7 @@ const Expenses: React.FC = () => {
                                     </td>
                                     <td className="p-4">{getProjectName(expense.project_id)}</td>
                                     <td className="p-4 font-bold">${expense.amount.toFixed(2)}</td>
-                                    <td className="p-4">
-                                         <div className="flex space-x-2">
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none"><Icon name="receipt"/></Button>
-                                            <Button variant="secondary" className="p-2 h-12 w-12 !shadow-none"><Icon name="edit"/></Button>
-                                        </div>
-                                    </td>
+                                    
                                 </tr>
                             ))}
                         </tbody>

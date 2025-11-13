@@ -1,20 +1,17 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# BareStack
 
-# Run and deploy your AI Studio app
-
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/drive/1LDqawyu6_QgXHrAE7m8wINzLFGLMtfjq
+Simple, fast, no-bloat business tools built with React + Vite and Supabase.
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+Prerequisites: Node.js
 
+1. Install dependencies: `npm install`
+2. Set environment variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+3. Start dev server: `npm run dev`
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Deploy
+
+Deploy with your preferred platform. Self-hosting via Coolify works well. This is a client-side SPA; ensure SPA rewrites to `index.html`.
