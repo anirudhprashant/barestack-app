@@ -539,15 +539,9 @@ const CRM: React.FC = () => {
                                     </td>
                                     <td className="p-4">
                                         <div className="flex items-center justify-center gap-1 w-full">
-                                            <Button variant="secondary" title="Add Note" className="p-1 h-8 w-8 !shadow-none" onClick={() => openAddNoteModal(contact)}>
-                                                <Icon name="document" width={16} height={16} strokeWidth={2} />
-                                            </Button>
-                                            <Button variant="secondary" title="Edit Contact" className="p-1 h-8 w-8 !shadow-none" onClick={() => setEditingContact(contact)}>
-                                                <Icon name="edit" width={16} height={16} strokeWidth={2} />
-                                            </Button>
-                                            <Button variant="secondary" title="Delete Contact" className="p-1 h-8 w-8 !shadow-none" onClick={() => setDeletingContact(contact)}>
-                                                <Icon name="trash" width={16} height={16} strokeWidth={2} />
-                                            </Button>
+                                            <Button variant="secondary" title="Add Note" className="py-1 px-2 !shadow-none" onClick={() => openAddNoteModal(contact)}>Note</Button>
+                                            <Button variant="secondary" title="Edit Contact" className="py-1 px-2 !shadow-none" onClick={() => setEditingContact(contact)}>Edit</Button>
+                                            <Button variant="secondary" title="Delete Contact" className="py-1 px-2 !bg-red-100 !text-red-700 hover:!bg-red-200 !shadow-none" onClick={() => setDeletingContact(contact)}>Del</Button>
                                         </div>
                                     </td>
                                 </tr>
