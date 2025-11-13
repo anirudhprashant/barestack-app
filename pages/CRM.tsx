@@ -539,9 +539,9 @@ const CRM: React.FC = () => {
                                     </td>
                                     <td className="p-4">
                                         <div className="flex gap-1 w-full justify-center">
-                                            <Button variant="secondary" title="Add Note" className="p-2 h-10 w-10 !shadow-none" onClick={() => openAddNoteModal(contact)}><Icon name="document" className="w-6 h-6"/></Button>
-                                            <Button variant="secondary" title="Edit Contact" className="p-2 h-10 w-10 !shadow-none" onClick={() => setEditingContact(contact)}><Icon name="edit" className="w-6 h-6"/></Button>
-                                            <Button variant="secondary" title="Delete Contact" className="p-2 h-10 w-10 !shadow-none" onClick={() => setDeletingContact(contact)}><Icon name="trash" className="w-6 h-6"/></Button>
+                                            <Button variant="secondary" title="Add Note" className="p-2 h-10 w-10 !shadow-none" onClick={() => openAddNoteModal(contact)}><Icon name="document" width={20} height={20} strokeWidth={2} /></Button>
+                                            <Button variant="secondary" title="Edit Contact" className="p-2 h-10 w-10 !shadow-none" onClick={() => setEditingContact(contact)}><Icon name="edit" width={20} height={20} strokeWidth={2} /></Button>
+                                            <Button variant="secondary" title="Delete Contact" className="p-2 h-10 w-10 !shadow-none" onClick={() => setDeletingContact(contact)}><Icon name="trash" width={20} height={20} strokeWidth={2} /></Button>
                                         </div>
                                     </td>
                                 </tr>
