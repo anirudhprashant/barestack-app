@@ -5,6 +5,4 @@ export const navItems = [
     { href: '/invoices', label: 'Invoicing', icon: 'document' },
     { href: '/time-tracking', label: 'Time Tracking', icon: 'clock' },
     { href: '/expenses', label: 'Expenses', icon: 'receipt' },
-    { href: '/reports', label: 'Reports', icon: 'chart' },
-    { href: '/settings', label: 'Settings', icon: 'settings' },
 ];

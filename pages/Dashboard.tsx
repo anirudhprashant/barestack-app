@@ -11,6 +11,7 @@ const Dashboard: React.FC = () => {
     const activityIconMap: Record<RecentActivity['type'], React.ReactNode> = {
         'CONTACT_ADDED': <Icon name="users" className="w-6 h-6 text-brand-dark"/>,
         'PROJECT_CREATED': <Icon name="clipboard" className="w-6 h-6 text-brand-dark"/>,
+        'INVOICE_CREATED': <Icon name="document" className="w-6 h-6 text-brand-dark"/>,
         'INVOICE_SENT': <Icon name="document" className="w-6 h-6 text-brand-dark"/>,
         'TASK_COMPLETED': <Icon name="clock" className="w-6 h-6 text-brand-dark"/>,
         'DEAL_ADDED': <Icon name="users" className="w-6 h-6 text-brand-dark"/>,
