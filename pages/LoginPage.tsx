@@ -4,11 +4,15 @@ import { supabase } from '../services/supabaseClient';
 const LoginPage: React.FC = () => {
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
+    const envMissing = !supabase;
 
     const handleGoogleLogin = async () => {
         setLoading(true);
         setError(null);
         try {
+            if (envMissing) {
+                throw new Error('Supabase configuration missing. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+            }
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
@@ -32,7 +36,7 @@ const LoginPage: React.FC = () => {
                 
                 <button 
                     onClick={handleGoogleLogin} 
-                    disabled={loading} 
+                    disabled={loading || envMissing} 
                     className="w-full bg-white text-brand-dark font-bold py-3 px-4 rounded-[10px] border-[3px] border-brand-dark shadow-neo-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center space-x-3"
                 >
                     <svg className="w-6 h-6" viewBox="0 0 48 48">
@@ -42,7 +46,7 @@ const LoginPage: React.FC = () => {
                         <path fill="#EA4335" d="M24 47c5.56 0 10.32-1.85 13.75-5.03l-7.35-5.7c-1.85 1.24-4.2 1.98-6.4 1.98-4.14 0-7.89-2.79-9.22-6.81l-7.35 5.7C7.22 41.44 14.88 47 24 47z"></path>
                         <path fill="none" d="M0 0h48v48H0z"></path>
                     </svg>
-                    <span>{loading ? 'Redirecting...' : 'Sign in with Google'}</span>
+                    <span>{envMissing ? 'Configuration required' : (loading ? 'Redirecting...' : 'Sign in with Google')}</span>
                 </button>
             </div>
             <p className="mt-8 text-brand-dark font-semibold">Built by one person with AI. Open-source forever.</p>
