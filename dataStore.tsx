@@ -233,14 +233,31 @@ export const DataProvider: React.FC<{ children: ReactNode; session: AuthSession 
 
     const deleteContact = async (id: string) => {
         await contactsApi.del(id);
-        // Also remove associated entities from local state for immediate UI update
-        // Assumes database has cascade delete setup for full integrity.
+
+        // Determine affected projects for this contact
+        const affectedProjectIds = data.projects.filter(p => p.client_id === id).map(p => p.id!).filter(Boolean);
+
+        try {
+            // Clean up related records in the database to avoid orphans
+            if (affectedProjectIds.length > 0) {
+                await supabase.from('tasks').delete().in('project_id', affectedProjectIds);
+                await supabase.from('time_entries').delete().in('project_id', affectedProjectIds);
+                await supabase.from('expenses').delete().in('project_id', affectedProjectIds);
+            }
+        } catch (e) {
+            // Best-effort cleanup; UI state will still be consistent below
+        }
+
+        // Update local state to remove all associated entities
         setData(prev => ({
             ...prev,
             deals: prev.deals.filter(d => d.contact_id !== id),
             projects: prev.projects.filter(p => p.client_id !== id),
             invoices: prev.invoices.filter(i => i.client_id !== id),
             notes: prev.notes.filter(n => n.contact_id !== id),
+            tasks: prev.tasks.filter(t => !affectedProjectIds.includes(t.project_id)),
+            timeEntries: prev.timeEntries.filter(te => !affectedProjectIds.includes(te.project_id)),
+            expenses: prev.expenses.filter(ex => !affectedProjectIds.includes(ex.project_id || '')),
         }));
     };
 
