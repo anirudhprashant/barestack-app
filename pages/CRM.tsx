@@ -484,7 +484,16 @@ const CRM: React.FC = () => {
                     </div>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                    <table className="table-fixed w-full text-left">
+                        <colgroup>
+                            <col className="w-[16%]" />
+                            <col className="w-[14%]" />
+                            <col className="w-[22%]" />
+                            <col className="w-[12%]" />
+                            <col className="w-[12%]" />
+                            <col className="w-[18%]" />
+                            <col className="w-[6%]" />
+                        </colgroup>
                         <thead>
                             <tr className="border-b-[3px] border-brand-dark">
                                 <th className="p-4 font-black">Name</th>
@@ -506,19 +515,19 @@ const CRM: React.FC = () => {
                                     <td className="p-4">
                                         <select value={getContactStage(contact.id!, deals)}
                                             onChange={(e) => handleStageChange(contact, e.target.value as DealStage)}
-                                            className="w-full p-2 bg-white text-brand-dark rounded-[10px] border-[3px] border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark appearance-none bg-no-repeat bg-right pr-8" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%232B2B2B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`}}>
+                                            className="w-28 p-2 bg-white text-brand-dark rounded-[10px] border-[3px] border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark appearance-none bg-no-repeat bg-right pr-8" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%232B2B2B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`}}>
                                             {Object.values(DealStage).map(s => <option key={s} value={s}>{s}</option>)}
                                         </select>
                                     </td>
                                     <td className="p-4">
-                                        <div className="flex flex-wrap gap-1">
+                                        <div className="flex flex-wrap gap-1 max-w-[220px] overflow-hidden">
                                             {contact.tags.map(tag => (
                                                 <span key={tag} className="bg-brand-light text-brand-dark text-xs font-bold px-2.5 py-0.5 rounded-full border-[3px] border-brand-dark">{tag}</span>
                                             ))}
                                         </div>
                                     </td>
                                     <td className="p-4">
-                                        <div className="flex space-x-2">
+                                        <div className="flex space-x-2 w-28 justify-between">
                                             <Button variant="secondary" title="Add Note" className="p-2 h-12 w-12 !shadow-none" onClick={() => openAddNoteModal(contact)}><Icon name="document"/></Button>
                                             <Button variant="secondary" title="Edit Contact" className="p-2 h-12 w-12 !shadow-none" onClick={() => setEditingContact(contact)}><Icon name="edit"/></Button>
                                             <Button variant="secondary" title="Delete Contact" className="p-2 h-12 w-12 !shadow-none" onClick={() => setDeletingContact(contact)}><Icon name="trash"/></Button>
