@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         host: true,
         strictPort: true,
-        allowedHosts: ['test.barestack.org'],
+        allowedHosts: ['test.barestack.org', 'app.barestack.org'],
       },
       plugins: [react(), tailwindcss()],
       define: {
