@@ -8,11 +8,9 @@ type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
     name: IconName;
-    size?: number;
-    strokeWidth?: number;
 }
 
-export const Icon: React.FC<IconProps> = ({ name, size = 28, strokeWidth = 3, ...props }) => {
+export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
     const icons: Record<IconName, React.ReactNode> = {
         grid: <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />,
         users: (
@@ -87,12 +85,12 @@ export const Icon: React.FC<IconProps> = ({ name, size = 28, strokeWidth = 3, ..
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            width={size}
-            height={size}
+            width="24"
+            height="24"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth={strokeWidth}
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             {...props}
