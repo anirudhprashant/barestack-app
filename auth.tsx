@@ -23,21 +23,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const getSession = async () => {
+        const init = async () => {
+            if (!supabase) {
+                setSession(null);
+                setLoading(false);
+                return;
+            }
             const { data: { session } } = await supabase.auth.getSession();
             setSession(session);
             setLoading(false);
         };
-        getSession();
+        init();
 
+        if (!supabase) return;
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
         });
-
         return () => subscription.unsubscribe();
     }, []);
 
-    const logout = () => supabase.auth.signOut();
+    const logout = () => {
+        if (!supabase) return;
+        supabase.auth.signOut();
+    };
 
     const value = useMemo(() => ({
         session,
