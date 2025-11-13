@@ -15,7 +15,8 @@
     "react-router-dom": "^6.28.0",
     "recharts": "^2.13.3",
     "date-fns": "^3.6.0",
-    "@supabase/supabase-js": "^2.78.0"
+    "@supabase/supabase-js": "^2.78.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^20.17.6",

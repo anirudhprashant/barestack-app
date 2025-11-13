@@ -1,11 +1,10 @@
 import React, { useState, useMemo, FC, useEffect, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import { Card, Button, Icon, Modal, Input, Textarea } from '../components/ui';
 import { Contact, Deal, DealStage, Note, Creatable, ImportBatch } from '../types';
 import { useData } from '../dataStore';
 import CrmHeader from '../components/CrmHeader';
 
-// @ts-ignore - XLSX is loaded from CDN in index.html
-const XLSX = window.XLSX;
 
 const ITEMS_PER_PAGE = 10;
 
@@ -191,16 +190,25 @@ const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
         setLoading(true);
         setError(null);
 
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
         const reader = new FileReader();
+
         reader.onload = async (e) => {
             try {
-                const dataContent = e.target?.result;
-                const workbook = XLSX.read(dataContent, { type: 'binary' });
+                let workbook: XLSX.WorkBook;
+                const result = e.target?.result;
+                if (ext === 'csv') {
+                    workbook = XLSX.read(result as string, { type: 'string' });
+                } else {
+                    const buf = result as ArrayBuffer;
+                    workbook = XLSX.read(new Uint8Array(buf), { type: 'array' });
+                }
+
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
-                const json: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                const json: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-                if (json.length === 0) throw new Error("The file is empty or in an unsupported format.");
+                if (json.length === 0) throw new Error('The file is empty or in an unsupported format.');
 
                 const fieldMap: Record<keyof Pick<Creatable<Contact>, 'name' | 'email' | 'phone' | 'company'>, string[]> = {
                     name: ['name', 'full name', 'contact name'],
@@ -212,7 +220,7 @@ const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
                 const newContacts: Creatable<Contact>[] = json.map((row: any) => {
                     const contact: Creatable<Contact> = { name: '', email: '', phone: '', company: '', tags: [] };
                     for (const key in row) {
-                        const lowerKey = key.toLowerCase().trim();
+                        const lowerKey = String(key).toLowerCase().trim();
                         for (const field of Object.keys(fieldMap) as Array<keyof typeof fieldMap>) {
                             if (fieldMap[field].includes(lowerKey)) {
                                 contact[field] = String(row[key]).trim();
@@ -224,7 +232,7 @@ const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
                     return contact;
                 }).filter((c): c is Creatable<Contact> => c !== null);
 
-                if (newContacts.length === 0) throw new Error("No valid contacts found. Check column headers.");
+                if (newContacts.length === 0) throw new Error('No valid contacts found. Check column headers.');
 
                 const existingEmails = new Set(data.contacts.map(c => c.email?.toLowerCase()).filter(Boolean));
                 const duplicates: Creatable<Contact>[] = [];
@@ -246,16 +254,19 @@ const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
                     await processImport(nonDuplicates, []);
                 }
             } catch (err: any) {
-                setError(err.message || "Failed to process the file.");
+                setError(err.message || 'Failed to process the file.');
             } finally {
                 setLoading(false);
             }
         };
+
         reader.onerror = () => {
-             setError("Failed to read the file.");
-             setLoading(false);
-        }
-        reader.readAsBinaryString(file);
+            setError('Failed to read the file.');
+            setLoading(false);
+        };
+
+        if (ext === 'csv') reader.readAsText(file);
+        else reader.readAsArrayBuffer(file);
     };
     
     const processImport = async (toCreate: Creatable<Contact>[], toUpdate: Creatable<Contact>[]) => {
