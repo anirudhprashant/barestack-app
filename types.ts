@@ -31,9 +31,9 @@ export interface Deal {
 }
 
 export enum ProjectStatus {
-    Active = 'Active',
-    Archived = 'Archived',
-    Completed = 'Completed'
+  Active = 'Active',
+  Archived = 'Archived',
+  Completed = 'Completed'
 }
 
 export interface Project {
@@ -48,9 +48,9 @@ export interface Project {
 }
 
 export enum TaskStatus {
-    ToDo = 'To Do',
-    InProgress = 'In Progress',
-    Done = 'Done'
+  ToDo = 'To Do',
+  InProgress = 'In Progress',
+  Done = 'Done'
 }
 
 export interface Task {
@@ -66,10 +66,10 @@ export interface Task {
 }
 
 export enum InvoiceStatus {
-    Draft = 'Draft',
-    Sent = 'Sent',
-    Paid = 'Paid',
-    Overdue = 'Overdue'
+  Draft = 'Draft',
+  Sent = 'Sent',
+  Paid = 'Paid',
+  Overdue = 'Overdue'
 }
 
 export interface LineItem {
@@ -107,11 +107,11 @@ export interface TimeEntry {
 }
 
 export enum ExpenseCategory {
-    Travel = 'Travel',
-    Meals = 'Meals',
-    Equipment = 'Equipment',
-    Software = 'Software',
-    Other = 'Other'
+  Travel = 'Travel',
+  Meals = 'Meals',
+  Equipment = 'Equipment',
+  Software = 'Software',
+  Other = 'Other'
 }
 
 export interface Expense {
@@ -143,22 +143,29 @@ export interface Note {
 }
 
 export interface ImportBatch {
-    id: string;
-    user_id: string;
-    created_at: string;
-    contact_count: number;
-    file_name: string;
+  id: string;
+  user_id: string;
+  created_at: string;
+  contact_count: number;
+  file_name: string;
 }
 
 export interface AppState {
-    contacts: Contact[];
-    deals: Deal[];
-    projects: Project[];
-    tasks: Task[];
-    invoices: Invoice[];
-    timeEntries: TimeEntry[];
-    expenses: Expense[];
-    recentActivity: RecentActivity[];
-    notes: Note[];
-    importBatches: ImportBatch[];
+  contacts: Contact[];
+  deals: Deal[];
+  projects: Project[];
+  tasks: Task[];
+  invoices: Invoice[];
+  timeEntries: TimeEntry[];
+  expenses: Expense[];
+  recentActivity: RecentActivity[];
+  notes: Note[];
+  importBatches: ImportBatch[];
+  userProfile: UserProfile;
+}
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  avatar_url?: string;
 }

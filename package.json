@@ -10,17 +10,21 @@
     "start": "vite preview --port 3000 --host --strictPort"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.78.0",
+    "@types/file-saver": "^2.0.7",
+    "@types/jszip": "^3.4.0",
+    "date-fns": "^3.6.0",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
-    "date-fns": "^3.6.0",
-    "@supabase/supabase-js": "^2.78.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^20.17.6",
     "@vitejs/plugin-react": "^4.3.4",
-    "@tailwindcss/vite": "^4.0.0",
     "tailwindcss": "^4.0.0",
     "typescript": "~5.8.2",
     "vite": "^5.4.11"

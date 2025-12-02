@@ -1,11 +1,140 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Gabarito", ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
-  --color-brand-dark: #2B2B2B;
-  --color-brand-light: #F5F5F5;
-  --shadow-neo: 8px 8px 0px #2B2B2B;
-  --shadow-neo-sm: 4px 4px 0px #2B2B2B;
+:root {
+  /* Primary Palette */
+  --color-canvas: #FFFFFF;
+  --color-ink: #000000;
+  --color-accent: #E11D48;
+  --color-surface: #F4F4F5;
+
+  /* Utility Palette */
+  --color-border: #E4E4E7;
+  --color-muted: #71717A;
+
+  /* Mapping to existing semantic variables for compatibility */
+  --color-bg-main: var(--color-canvas);
+  --color-bg-surface: var(--color-canvas);
+  --color-bg-subtle: var(--color-surface);
+  --color-bg-muted: var(--color-surface);
+
+  --color-text-main: var(--color-ink);
+  --color-text-secondary: var(--color-muted);
+  --color-text-muted: var(--color-muted);
+  --color-text-inverted: var(--color-canvas);
+
+  --color-border-default: var(--color-border);
+  --color-border-subtle: var(--color-surface);
+
+  --color-brand-primary: var(--color-ink);
+  --color-brand-accent: var(--color-accent);
+  --color-brand-dark: var(--color-ink);
+  --color-brand-light: var(--color-canvas);
+
+  /* Sidebar */
+  --color-bg-sidebar: var(--color-ink);
+  --color-text-sidebar: var(--color-canvas);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  /* Dark Theme Palette */
+  --color-canvas: #09090b;
+  /* Zinc 950 */
+  --color-ink: #FFFFFF;
+  --color-accent: #E11D48;
+  --color-surface: #18181b;
+  /* Zinc 900 */
+
+  /* Utility Palette */
+  --color-border: #27272a;
+  /* Zinc 800 */
+  --color-muted: #a1a1aa;
+  /* Zinc 400 */
+
+  /* Mapping */
+  --color-bg-main: var(--color-canvas);
+  --color-bg-surface: var(--color-canvas);
+  --color-bg-subtle: var(--color-surface);
+  --color-bg-muted: var(--color-surface);
+
+  --color-text-main: var(--color-ink);
+  --color-text-secondary: var(--color-muted);
+  --color-text-muted: var(--color-muted);
+  --color-text-inverted: var(--color-canvas);
+
+  --color-border-default: var(--color-border);
+  --color-border-subtle: var(--color-surface);
+
+  --color-brand-primary: var(--color-ink);
+  --color-brand-accent: var(--color-accent);
+  --color-brand-dark: var(--color-ink);
+  --color-brand-light: var(--color-canvas);
+
+  /* Sidebar */
+  --color-bg-sidebar: #000000;
+  --color-gray-50: var(--color-surface);
+  --color-gray-100: var(--color-surface);
+  --color-gray-200: var(--color-border);
+  --color-gray-300: var(--color-border);
+  --color-gray-400: var(--color-muted);
+  --color-gray-500: var(--color-muted);
+  --color-gray-600: var(--color-muted);
+  --color-gray-700: var(--color-muted);
+  --color-gray-800: var(--color-ink);
+  --color-gray-900: var(--color-ink);
+
+  /* Brand Colors */
+  --color-brand-dark: var(--color-brand-primary);
+  --color-brand-light: var(--color-bg-main);
+  --color-brand-accent: var(--color-brand-accent);
+}
+
+.bg-sidebar {
+  background-color: var(--color-bg-sidebar);
+  color: var(--color-text-sidebar);
+}
+
+/* Static Utilities */
+.text-static-white {
+  color: #FFFFFF;
+}
+
+.text-static-black {
+  color: #000000;
+}
+
+.bg-static-dark {
+  background-color: #000000;
+}
+
+body {
+  background-color: var(--color-bg-main);
+  color: var(--color-text-main);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* Utility Classes for the new design */
+.border-hard {
+  border: 1px solid var(--color-border);
+}
+
+.border-hard-2 {
+  border: 2px solid var(--color-ink);
+}
+
+.shadow-none-important {
+  box-shadow: none !important;
 }
