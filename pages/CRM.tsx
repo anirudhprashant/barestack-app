@@ -1,601 +1,560 @@
-import React, { useState, useMemo, FC, useEffect, useCallback } from 'react';
-import * as XLSX from 'xlsx';
-import { Card, Button, Icon, Modal, Input, Textarea } from '../components/ui';
-import { Contact, Deal, DealStage, Note, Creatable, ImportBatch } from '../types';
+import React, { useState, FC } from 'react';
 import { useData } from '../dataStore';
-import CrmHeader from '../components/CrmHeader';
-
+import { Contact, Deal, DealStage, Note, Creatable, ImportBatch } from '../types';
+import { Button, Input, Modal, Icon, Card, Select, Textarea, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui';
+import { ContactForm } from '../components/ContactForm';
+import { ImportModal } from '../components/ImportModal';
+import { EditableCell } from '../components/EditableCell';
 
 const ITEMS_PER_PAGE = 10;
 
-// --- Helper to get a contact's current stage ---
-const getContactStage = (contactId: string, deals: Deal[]): DealStage => {
-    const contactDeals = deals
-        .filter(d => d.contact_id === contactId)
-        .sort((a, b) => new Date(b.last_interaction).getTime() - new Date(a.last_interaction).getTime());
-    return contactDeals.length > 0 ? contactDeals[0].stage : DealStage.Lead;
-};
-
-// --- FORMS ---
-
-const ContactForm: FC<{ contact?: Contact; onClose: () => void }> = ({ contact, onClose }) => {
-    const { addContact, updateContact, addRecentActivity } = useData();
-    const [formData, setFormData] = useState({
-        name: contact?.name || '',
-        email: contact?.email || '',
-        phone: contact?.phone || '',
-        company: contact?.company || '',
-        tags: contact?.tags?.join(', ') || '',
-    });
+// Add Note Form Component
+const AddNoteForm: FC<{ contactId: string }> = ({ contactId }) => {
+    const { addNote, addRecentActivity } = useData();
+    const [noteContent, setNoteContent] = useState('');
     const [loading, setLoading] = useState(false);
-    const isEditing = !!contact;
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { id, value } = e.target;
-        setFormData(prev => ({ ...prev, [id]: value }));
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!noteContent.trim()) return;
+
         setLoading(true);
         try {
-            const contactData = {
-                ...formData,
-                tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
-            };
-
-            if (isEditing) {
-                await updateContact({ ...contact, ...contactData });
-            } else {
-                await addContact(contactData);
-                await addRecentActivity({
-                    timestamp: new Date().toISOString(),
-                    type: 'CONTACT_ADDED',
-                    description: `New contact added: ${formData.name}`
-                });
-            }
-            onClose();
-        } catch (error) {
-            console.error("Failed to save contact:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <Input label="Full Name" id="name" value={formData.name} onChange={handleChange} required />
-            <Input label="Email Address" id="email" type="email" value={formData.email} onChange={handleChange} required />
-            <Input label="Phone Number" id="phone" value={formData.phone} onChange={handleChange} />
-            <Input label="Company" id="company" value={formData.company} onChange={handleChange} />
-            <Input label="Tags (comma-separated)" id="tags" value={formData.tags} onChange={handleChange} />
-            <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-                <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : 'Save Contact'}</Button>
-            </div>
-        </form>
-    );
-};
-
-// --- Duplicate Handler Component ---
-type Resolution = 'skip' | 'update' | 'create';
-
-interface DuplicateHandlerProps {
-    duplicates: Creatable<Contact>[];
-    onConfirm: (resolutions: Record<string, Resolution>) => void;
-    onCancel: () => void;
-}
-
-const DuplicateHandler: FC<DuplicateHandlerProps> = ({ duplicates, onConfirm, onCancel }) => {
-    const [resolutions, setResolutions] = useState<Record<string, Resolution>>(() => {
-        const initial: Record<string, Resolution> = {};
-        duplicates.forEach(d => {
-            if (d.email) {
-                initial[d.email] = 'skip'; // Default to skip
-            }
-        });
-        return initial;
-    });
-
-    const handleResolutionChange = (email: string, resolution: Resolution) => {
-        setResolutions(prev => ({ ...prev, [email]: resolution }));
-    };
-
-    const applyToAll = (resolution: Resolution) => {
-        const newResolutions: Record<string, Resolution> = {};
-        Object.keys(resolutions).forEach(email => {
-            newResolutions[email] = resolution;
-        });
-        setResolutions(newResolutions);
-    };
-    
-    return (
-        <div>
-            <p className="mb-4">We found {duplicates.length} contacts in your file that might already exist based on their email address. How would you like to handle them?</p>
-            
-            <div className="flex space-x-2 mb-4 p-2 bg-brand-light rounded-[10px] border-[3px] border-brand-dark">
-                <span className="font-bold my-auto">Apply to all:</span>
-                <Button variant="secondary" onClick={() => applyToAll('skip')}>Skip All</Button>
-                <Button variant="secondary" onClick={() => applyToAll('update')}>Update All</Button>
-                <Button variant="secondary" onClick={() => applyToAll('create')}>Create All as New</Button>
-            </div>
-
-            <div className="space-y-2 max-h-64 overflow-y-auto p-2 bg-brand-light rounded-[10px] border-[3px] border-brand-dark">
-                {duplicates.map((dup) => (
-                    <div key={dup.email} className="bg-white p-3 rounded-[10px] border-[3px] border-brand-dark flex justify-between items-center">
-                        <div>
-                            <p className="font-bold">{dup.name}</p>
-                            <p className="text-sm text-brand-dark opacity-70">{dup.email}</p>
-                        </div>
-                        <select 
-                            value={resolutions[dup.email]}
-                            onChange={e => handleResolutionChange(dup.email!, e.target.value as Resolution)}
-                            className="p-2 bg-white text-brand-dark rounded-[10px] border-[3px] border-brand-dark focus:outline-none"
-                        >
-                            <option value="skip">Skip Import</option>
-                            <option value="update">Update Existing</option>
-                            <option value="create">Create as New</option>
-                        </select>
-                    </div>
-                ))}
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-4 mt-4 border-t-2 border-brand-light">
-                <Button type="button" variant="secondary" onClick={onCancel}>Back</Button>
-                <Button type="button" variant="primary" onClick={() => onConfirm(resolutions)}>
-                    Confirm Import
-                </Button>
-            </div>
-        </div>
-    );
-};
-
-// --- Import Modal ---
-const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { data, addMultipleContacts, updateContact } = useData();
-
-    const [step, setStep] = useState<'upload' | 'duplicates' | 'importing'>('upload');
-    const [file, setFile] = useState<File | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [detectedDuplicates, setDetectedDuplicates] = useState<Creatable<Contact>[]>([]);
-    const [newUniqueContacts, setNewUniqueContacts] = useState<Creatable<Contact>[]>([]);
-
-    const resetState = () => {
-        setStep('upload');
-        setFile(null);
-        setLoading(false);
-        setError(null);
-        setDetectedDuplicates([]);
-        setNewUniqueContacts([]);
-    };
-
-    const handleClose = () => {
-        resetState();
-        onClose();
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
-            setError(null);
-        }
-    };
-    
-    const handleParseAndCheck = async () => {
-        if (!file) {
-            setError("Please select a file.");
-            return;
-        }
-        setLoading(true);
-        setError(null);
-
-        const ext = (file.name.split('.').pop() || '').toLowerCase();
-        const reader = new FileReader();
-
-        reader.onload = async (e) => {
-            try {
-                let workbook: XLSX.WorkBook;
-                const result = e.target?.result;
-                if (ext === 'csv') {
-                    workbook = XLSX.read(result as string, { type: 'string' });
-                } else {
-                    const buf = result as ArrayBuffer;
-                    workbook = XLSX.read(new Uint8Array(buf), { type: 'array' });
-                }
-
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const json: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-
-                if (json.length === 0) throw new Error('The file is empty or in an unsupported format.');
-
-                const fieldMap: Record<keyof Pick<Creatable<Contact>, 'name' | 'email' | 'phone' | 'company'>, string[]> = {
-                    name: ['name', 'full name', 'contact name'],
-                    email: ['email', 'email address'],
-                    phone: ['phone', 'phone number'],
-                    company: ['company', 'company name'],
-                };
-
-                const newContacts: Creatable<Contact>[] = json.map((row: any) => {
-                    const contact: Creatable<Contact> = { name: '', email: '', phone: '', company: '', tags: [] };
-                    for (const key in row) {
-                        const lowerKey = String(key).toLowerCase().trim();
-                        for (const field of Object.keys(fieldMap) as Array<keyof typeof fieldMap>) {
-                            if (fieldMap[field].includes(lowerKey)) {
-                                contact[field] = String(row[key]).trim();
-                                break;
-                            }
-                        }
-                    }
-                    if (!contact.name && !contact.email) return null;
-                    return contact;
-                }).filter((c): c is Creatable<Contact> => c !== null);
-
-                if (newContacts.length === 0) throw new Error('No valid contacts found. Check column headers.');
-
-                const existingEmails = new Set(data.contacts.map(c => c.email?.toLowerCase()).filter(Boolean));
-                const duplicates: Creatable<Contact>[] = [];
-                const nonDuplicates: Creatable<Contact>[] = [];
-
-                newContacts.forEach(contact => {
-                    if (contact.email && existingEmails.has(contact.email.toLowerCase())) {
-                        duplicates.push(contact);
-                    } else {
-                        nonDuplicates.push(contact);
-                    }
-                });
-
-                if (duplicates.length > 0) {
-                    setDetectedDuplicates(duplicates);
-                    setNewUniqueContacts(nonDuplicates);
-                    setStep('duplicates');
-                } else {
-                    await processImport(nonDuplicates, []);
-                }
-            } catch (err: any) {
-                setError(err.message || 'Failed to process the file.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        reader.onerror = () => {
-            setError('Failed to read the file.');
-            setLoading(false);
-        };
-
-        if (ext === 'csv') reader.readAsText(file);
-        else reader.readAsArrayBuffer(file);
-    };
-    
-    const processImport = async (toCreate: Creatable<Contact>[], toUpdate: Creatable<Contact>[]) => {
-        if (!file) return;
-        setStep('importing');
-        setLoading(true);
-        setError(null);
-
-        try {
-             // Create an array of promises for all the update operations.
-            const updatePromises = toUpdate.map(fileContact => {
-                const existingContact = data.contacts.find(c => c.email && fileContact.email && c.email.toLowerCase() === fileContact.email.toLowerCase());
-                if (existingContact) {
-                    // Merge data: file data overwrites existing data, but keep the ID.
-                    const updatedContactData = { ...existingContact, ...fileContact, id: existingContact.id };
-                    return updateContact(updatedContactData);
-                }
-                return Promise.resolve(); // Do nothing if no matching contact is found
+            await addNote({
+                contact_id: contactId,
+                content: noteContent,
             });
-
-            // Execute all updates in parallel for better performance.
-            await Promise.all(updatePromises);
-            
-            if (toCreate.length > 0) {
-                const batchDetails: Creatable<ImportBatch> = {
-                    file_name: file.name,
-                    contact_count: toCreate.length,
-                };
-                await addMultipleContacts(toCreate, batchDetails);
-            }
-            
-            handleClose();
-        } catch(err: any) {
-            setError(err.message);
-            setStep('upload');
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    const handleDuplicatesConfirmed = async (resolutions: Record<string, Resolution>) => {
-        const toCreate: Creatable<Contact>[] = [...newUniqueContacts];
-        const toUpdate: Creatable<Contact>[] = [];
-
-        detectedDuplicates.forEach(dup => {
-            const resolution = resolutions[dup.email!];
-            if (resolution === 'create') {
-                toCreate.push(dup);
-            } else if (resolution === 'update') {
-                toUpdate.push(dup);
-            }
-        });
-        
-        await processImport(toCreate, toUpdate);
-    };
-
-    const renderContent = () => {
-        if (step === 'importing' || loading) {
-            return <div className="text-center p-8"><p className="text-xl font-bold">Importing contacts, please wait...</p></div>;
-        }
-
-        switch (step) {
-            case 'duplicates':
-                return <DuplicateHandler 
-                            duplicates={detectedDuplicates} 
-                            onConfirm={handleDuplicatesConfirmed} 
-                            onCancel={() => {
-                                setError(null);
-                                setStep('upload');
-                            }}
-                       />;
-            case 'upload':
-            default:
-                return (
-                    <div className="space-y-4">
-                        <p>Upload a CSV, XLS, or XLSX file to import contacts. We'll look for headers like 'Name', 'Email', 'Phone', and 'Company'.</p>
-                        <div>
-                            <label className="block text-brand-dark font-bold mb-2">Select File</label>
-                            <input 
-                                type="file" 
-                                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                                onChange={handleFileChange}
-                                className="w-full text-brand-dark file:mr-4 file:py-2 file:px-4 file:rounded-[10px] file:border-[3px] file:border-brand-dark file:text-sm file:font-semibold file:bg-white file:text-brand-dark hover:file:bg-brand-light"
-                            />
-                        </div>
-                        {file && <p className="font-bold">Selected: {file.name}</p>}
-                        {error && <p className="text-brand-dark font-bold">{error}</p>}
-                        <div className="flex justify-end space-x-2 pt-4">
-                            <Button type="button" variant="secondary" onClick={handleClose}>Cancel</Button>
-                            <Button type="button" variant="primary" onClick={handleParseAndCheck} disabled={!file || loading}>
-                                {loading ? 'Checking...' : 'Review & Import'}
-                            </Button>
-                        </div>
-                    </div>
-                );
-        }
-    };
-    
-    return renderContent();
-};
-
-
-const AddNoteForm: FC<{ contact: Contact; onClose: () => void }> = ({ contact, onClose }) => {
-    const { addNote } = useData();
-    const [content, setContent] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!content.trim()) return;
-        setLoading(true);
-        try {
-            const newNote: Creatable<Note> = {
-                contact_id: contact.id!,
-                content,
-            };
-            await addNote(newNote);
-            onClose();
+            setNoteContent('');
         } catch (error) {
-            console.error("Failed to add note:", error);
+            console.error('Failed to add note:', error);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <Textarea label={`Note for ${contact.name}`} id="noteContent" value={content} onChange={e => setContent(e.target.value)} rows={5} required />
-            <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-                <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : 'Save Note'}</Button>
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-2">
+            <Textarea
+                label="Add a note"
+                id={`note-${contactId}`}
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                rows={3}
+                placeholder="Enter your note here..."
+            />
+            <Button type="submit" variant="primary" disabled={loading || !noteContent.trim()} className="text-sm">
+                {loading ? 'Saving...' : 'Add Note'}
+            </Button>
         </form>
     );
 };
 
-// --- MAIN CRM COMPONENT (NOW CONTACTS LIST) ---
 const CRM: React.FC = () => {
-    const { data, updateDeal, deleteContact, addDeal } = useData();
+    const { data, deleteContact, updateDeal, addDeal, addNote, addImportBatch, addMultipleContacts, addRecentActivity, updateContact } = useData();
     const { contacts, deals } = data;
-    const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
-    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
-    const [editingContact, setEditingContact] = useState<Contact | null>(null);
-    const [deletingContact, setDeletingContact] = useState<Contact | null>(null);
-    const [notingContact, setNotingContact] = useState<Contact | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    
-    const filteredContacts = useMemo(() =>
-        contacts.filter(c =>
-            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            c.company.toLowerCase().includes(searchTerm.toLowerCase())
-        ), [contacts, searchTerm]
+    const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+    const [editingContact, setEditingContact] = useState<Contact | null>(null);
+    const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
+    const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+    const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+    // Filter contacts
+    const filteredContacts = contacts.filter(contact =>
+        contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (contact.company && contact.company.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-    
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm]);
 
-    const paginatedContacts = useMemo(() => {
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = startIndex + ITEMS_PER_PAGE;
-        return filteredContacts.slice(startIndex, endIndex);
-    }, [filteredContacts, currentPage]);
-    
-    const pageCount = useMemo(() => {
-        return Math.ceil(filteredContacts.length / ITEMS_PER_PAGE);
-    }, [filteredContacts]);
+    // Pagination
+    const totalPages = Math.ceil(filteredContacts.length / ITEMS_PER_PAGE);
+    const paginatedContacts = filteredContacts.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
 
-
-    const handleStageChange = async (contact: Contact, newStage: DealStage) => {
-        const contactDeals = deals
-            .filter(d => d.contact_id === contact.id)
-            .sort((a, b) => new Date(b.last_interaction).getTime() - new Date(a.last_interaction).getTime());
-    
-        if (contactDeals.length > 0) {
-            // Update the most recent deal
-            const latestDeal = contactDeals[0];
-            await updateDeal({ ...latestDeal, stage: newStage, last_interaction: new Date().toISOString() });
-        } else if (newStage !== DealStage.Lead) {
-            // No deals exist, create a new one since they are being moved out of the default 'Lead' stage
-            const newDeal: Creatable<Deal> = {
-                contact_id: contact.id!,
-                value: 0, // User can update this later in the pipeline
-                stage: newStage,
-                last_interaction: new Date().toISOString(),
-            };
-            await addDeal(newDeal);
-        }
-        // If no deals exist and the stage remains 'Lead', do nothing.
+    const getContactStage = (contactId: string) => {
+        const contactDeals = deals.filter(d => d.contact_id === contactId);
+        if (contactDeals.length === 0) return 'Lead';
+        return contactDeals[0].stage;
     };
 
-    const handleDeleteConfirm = async () => {
-        if (deletingContact) {
-            await deleteContact(deletingContact.id!);
-            setDeletingContact(null);
+    const handleDeleteContact = (contact: Contact) => {
+        setContactToDelete(contact);
+    };
+
+    const confirmDelete = async () => {
+        if (contactToDelete && contactToDelete.id) {
+            try {
+                await deleteContact(contactToDelete.id);
+                if (selectedContact?.id === contactToDelete.id) setSelectedContact(null);
+                setContactToDelete(null);
+            } catch (error) {
+                console.error("Failed to delete contact:", error);
+                alert("Failed to delete contact. Please try again.");
+            }
         }
     };
-    
-    const openAddNoteModal = (contact: Contact) => {
-        setNotingContact(contact);
-        setIsAddNoteModalOpen(true);
+
+    const getInitials = (name: string) => {
+        return name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
+    const getRandomColor = (name: string) => {
+        const colors = ['bg-red-100 text-red-600', 'bg-green-100 text-green-600', 'bg-blue-100 text-blue-600', 'bg-yellow-100 text-yellow-600', 'bg-purple-100 text-purple-600', 'bg-pink-100 text-pink-600'];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    };
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedIds(new Set(paginatedContacts.map(c => c.id)));
+        } else {
+            setSelectedIds(new Set());
+        }
+    };
+
+    const handleSelectOne = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
+    const handleBulkDelete = () => {
+        if (selectedIds.size > 0) {
+            setIsBulkDeleteModalOpen(true);
+        }
+    };
+
+    const confirmBulkDelete = async () => {
+        try {
+            for (const id of selectedIds) {
+                await deleteContact(id);
+            }
+            setSelectedIds(new Set());
+            setIsBulkDeleteModalOpen(false);
+        } catch (error) {
+            console.error("Failed to bulk delete contacts:", error);
+            alert("Failed to delete some contacts. Please try again.");
+        }
+    };
+
+    const handleBulkStageUpdate = async (stage: DealStage) => {
+        try {
+            for (const id of selectedIds) {
+                const contactDeals = deals.filter(d => d.contact_id === id);
+                if (contactDeals.length > 0) {
+                    await updateDeal({ ...contactDeals[0], stage, last_interaction: new Date().toISOString() });
+                } else {
+                    await addDeal({
+                        contact_id: id,
+                        value: 0,
+                        stage,
+                        last_interaction: new Date().toISOString()
+                    });
+                }
+            }
+            setSelectedIds(new Set());
+        } catch (error) {
+            console.error("Failed to update bulk stage:", error);
+            alert("Failed to update stages. Please try again.");
+        }
     };
 
     return (
-        <div>
-            <CrmHeader>
-                <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
-                    Import Contacts
-                </Button>
-                <Button variant="primary" onClick={() => setIsAddContactModalOpen(true)}>
-                    <Icon name="plus" /> Add Contact
-                </Button>
-            </CrmHeader>
-            
-            {/* Contacts Table */}
-            <Card>
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-2xl font-bold">All Contacts ({filteredContacts.length})</h3>
-                    <div className="relative w-full max-w-xs">
-                        <input id="searchContacts" placeholder="Search contacts..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full p-3 pl-10 bg-white text-brand-dark rounded-[10px] border-[3px] border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark"/>
-                        <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-dark opacity-50" />
-                    </div>
+        <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+                <div className="relative w-full max-w-md">
+                    <Icon name="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                        type="text"
+                        placeholder="Search contacts..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        id="search-contacts"
+                        name="search"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-dark/20 focus:border-brand-dark transition-colors"
+                    />
                 </div>
-                <div>
-                    <table className="table-fixed w-full text-left">
-                        <colgroup>
-                            <col className="w-[18%]" />
-                            <col className="w-[14%]" />
-                            <col className="w-[22%]" />
-                            <col className="w-[12%]" />
-                            <col className="w-[10%]" />
-                            <col className="w-[12%]" />
-                            <col className="w-[12%]" />
-                        </colgroup>
-                        <thead>
-                            <tr className="border-b-[3px] border-brand-dark">
-                                <th className="p-4 font-black">Name</th>
-                                <th className="p-4 font-black">Company</th>
-                                <th className="p-4 font-black">Email</th>
-                                <th className="p-4 font-black">Phone</th>
-                                <th className="p-4 font-black">Stage</th>
-                                <th className="p-4 font-black">Tags</th>
-                                <th className="p-4 font-black">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                <div className="flex space-x-2 w-full sm:w-auto justify-end">
+                    <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
+                        <Icon name="upload" className="w-4 h-4 mr-2" /> Import CSV
+                    </Button>
+                    <Button className="bg-black text-white hover:bg-gray-800 border border-transparent" onClick={() => setIsAddContactModalOpen(true)}>
+                        <Icon name="plus" className="w-4 h-4 mr-2" /> Add Contact
+                    </Button>
+                </div>
+            </div>
+
+            {filteredContacts.length > 0 ? (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-10">
+                                    <input
+                                        type="checkbox"
+                                        id="select-all-contacts"
+                                        name="select-all"
+                                        className="rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                                        checked={paginatedContacts.length > 0 && selectedIds.size === paginatedContacts.length}
+                                        onChange={handleSelectAll}
+                                    />
+                                </TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Phone</TableHead>
+                                <TableHead>Company</TableHead>
+                                <TableHead>Stage</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {paginatedContacts.map(contact => (
-                                <tr key={contact.id} className="border-b-2 border-brand-light last:border-b-0">
-                                    <td className="p-4 font-bold">{contact.name}</td>
-                                    <td className="p-4">{contact.company}</td>
-                                    <td className="p-4"><div className="max-w-[180px] truncate">{contact.email}</div></td>
-                                    <td className="p-4"><div className="max-w-[140px] truncate">{contact.phone}</div></td>
-                                    <td className="p-4">
-                                        <select value={getContactStage(contact.id!, deals)}
-                                            onChange={(e) => handleStageChange(contact, e.target.value as DealStage)}
-                                            className="w-full p-2 bg-white text-brand-dark rounded-[10px] border-[3px] border-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark appearance-none bg-no-repeat bg-right pr-8" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%232B2B2B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`}}>
-                                            {Object.values(DealStage).map(s => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex flex-wrap gap-1 max-w-[180px] overflow-hidden">
-                                            {contact.tags.map(tag => (
-                                                <span key={tag} className="bg-brand-light text-brand-dark text-xs font-bold px-2.5 py-0.5 rounded-full border-[3px] border-brand-dark">{tag}</span>
-                                            ))}
+                                <TableRow key={contact.id}>
+                                    <TableCell onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            id={`select-${contact.id}`}
+                                            name={`select-contact-${contact.id}`}
+                                            className="rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                                            checked={selectedIds.has(contact.id)}
+                                            onChange={() => handleSelectOne(contact.id)}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center space-x-3">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${getRandomColor(contact.name)}`}>
+                                                {getInitials(contact.name)}
+                                            </div>
+                                            <EditableCell
+                                                value={contact.name}
+                                                onSave={(val) => updateContact({ ...contact, name: val })}
+                                                className="font-medium text-gray-900"
+                                            />
                                         </div>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex items-center justify-center gap-1 w-full">
-                                            <Button variant="secondary" title="Add Note" className="py-1 px-2 !shadow-none" onClick={() => openAddNoteModal(contact)}>Note</Button>
-                                            <Button variant="secondary" title="Edit Contact" className="py-1 px-2 !shadow-none" onClick={() => setEditingContact(contact)}>Edit</Button>
-                                            <Button variant="secondary" title="Delete Contact" className="py-1 px-2 !bg-red-100 !text-red-700 hover:!bg-red-200 !shadow-none" onClick={() => setDeletingContact(contact)}>Del</Button>
+                                    </TableCell>
+                                    <TableCell>
+                                        <EditableCell
+                                            value={contact.email}
+                                            onSave={(val) => updateContact({ ...contact, email: val })}
+                                            type="email"
+                                            className="text-sm text-gray-500"
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <EditableCell
+                                            value={contact.phone || ''}
+                                            onSave={(val) => updateContact({ ...contact, phone: val })}
+                                            type="tel"
+                                            placeholder="Add phone"
+                                            className="text-sm text-gray-500"
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <EditableCell
+                                            value={contact.company || ''}
+                                            onSave={(val) => updateContact({ ...contact, company: val })}
+                                            placeholder="Add company"
+                                            className={contact.company ? "text-gray-700 font-medium" : "text-sm text-gray-500"}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                            <select
+                                                value={getContactStage(contact.id!)}
+                                                onChange={async (e) => {
+                                                    e.stopPropagation();
+                                                    const newStage = e.target.value as DealStage;
+                                                    const contactDeals = deals.filter(d => d.contact_id === contact.id);
+
+                                                    if (contactDeals.length > 0) {
+                                                        await updateDeal({
+                                                            ...contactDeals[0],
+                                                            stage: newStage,
+                                                            last_interaction: new Date().toISOString()
+                                                        });
+                                                    } else {
+                                                        await addDeal({
+                                                            contact_id: contact.id!,
+                                                            value: 0,
+                                                            stage: newStage,
+                                                            last_interaction: new Date().toISOString()
+                                                        });
+                                                        await addRecentActivity({
+                                                            timestamp: new Date().toISOString(),
+                                                            type: 'DEAL_ADDED',
+                                                            description: `New deal created for ${contact.name} at stage ${newStage}`
+                                                        });
+                                                    }
+                                                }}
+                                                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border-0 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-brand-dark/20 ${getContactStage(contact.id!) === DealStage.Won ? 'bg-green-100 text-green-800' :
+                                                    getContactStage(contact.id!) === DealStage.Lost ? 'bg-red-100 text-red-800' :
+                                                        getContactStage(contact.id!) === DealStage.Proposal ? 'bg-blue-100 text-blue-800' :
+                                                            getContactStage(contact.id!) === DealStage.Qualified ? 'bg-purple-100 text-purple-800' :
+                                                                'badge-lead'
+                                                    }`}
+                                            >
+                                                {Object.values(DealStage).map(stage => (
+                                                    <option key={stage} value={stage}>{stage}</option>
+                                                ))}
+                                            </select>
                                         </div>
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedContact(contact);
+                                                }}
+                                                className="p-1.5 text-black hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-black"
+                                                title="View Details"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                                    <circle cx="12" cy="12" r="3" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingContact(contact);
+                                                }}
+                                                className="p-1.5 text-black hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-black"
+                                                title="Edit Contact"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteContact(contact);
+                                                }}
+                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-600"
+                                                title="Delete Contact"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <polyline points="3 6 5 6 21 6" />
+                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                    <line x1="10" y1="11" x2="10" y2="17" />
+                                                    <line x1="14" y1="11" x2="14" y2="17" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
                             ))}
-                        </tbody>
-                    </table>
+                        </TableBody>
+                    </Table>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-between items-center p-4 border-t border-gray-200 bg-gray-50">
+                            <div className="text-sm text-gray-500">
+                                Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredContacts.length)} of {filteredContacts.length} results
+                            </div>
+                            <div className="flex space-x-2">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="py-1 px-3 text-sm"
+                                >
+                                    Previous
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="py-1 px-3 text-sm"
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
-                {pageCount > 1 && (
-                    <div className="flex justify-between items-center pt-4 border-t-2 border-brand-light mt-4">
-                        <span className="font-bold">
-                            Page {currentPage} of {pageCount}
-                        </span>
-                        <div className="flex space-x-2">
-                            <Button
-                                variant="secondary"
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                            >
-                                Previous
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
-                                disabled={currentPage === pageCount}
-                            >
-                                Next
-                            </Button>
+            ) : (
+                <div className="text-center py-12 bg-white rounded-xl border border-gray-200 border-dashed">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Icon name="users" className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">No contacts found</h3>
+                    <p className="text-gray-500 mb-6">Get started by adding a new contact or importing from CSV.</p>
+                    <Button variant="primary" onClick={() => setIsAddContactModalOpen(true)}>
+                        <Icon name="plus" className="w-4 h-4 mr-2" /> Add Contact
+                    </Button>
+                </div>
+            )}
+
+            {/* Bulk Actions Bar */}
+            {selectedIds.size > 0 && (
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 shadow-xl rounded-full px-6 py-3 flex items-center space-x-4 animate-in slide-in-from-bottom-4 z-50">
+                    <span className="text-sm font-medium text-gray-700">{selectedIds.size} selected</span>
+                    <div className="h-4 w-px bg-gray-200" />
+                    <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Set Stage:</span>
+                        <div className="flex space-x-1">
+                            {Object.values(DealStage).filter(s => typeof s === 'string').map((stage) => (
+                                <button
+                                    key={stage}
+                                    onClick={() => handleBulkStageUpdate(stage as DealStage)}
+                                    className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                                >
+                                    {stage}
+                                </button>
+                            ))}
                         </div>
                     </div>
-                )}
-            </Card>
+                    <div className="h-4 w-px bg-gray-200" />
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleBulkDelete}
+                        className="text-red-600 hover:bg-red-50"
+                    >
+                        <Icon name="trash" className="w-4 h-4 mr-2" /> Delete
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedIds(new Set())}
+                        className="text-gray-500"
+                    >
+                        <Icon name="x" className="w-4 h-4" />
+                    </Button>
+                </div>
+            )}
 
-            {/* Modals */}
             <Modal isOpen={isAddContactModalOpen} onClose={() => setIsAddContactModalOpen(false)} title="Add New Contact">
                 <ContactForm onClose={() => setIsAddContactModalOpen(false)} />
             </Modal>
-            
+
             <Modal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} title="Import Contacts">
                 <ImportModal onClose={() => setIsImportModalOpen(false)} />
             </Modal>
-            
+
             <Modal isOpen={!!editingContact} onClose={() => setEditingContact(null)} title="Edit Contact">
-                {editingContact && <ContactForm contact={editingContact} onClose={() => setEditingContact(null)} />}
+                {editingContact && (
+                    <ContactForm
+                        contact={editingContact}
+                        onClose={() => setEditingContact(null)}
+                        onSuccess={(updated) => {
+                            setEditingContact(null);
+                        }}
+                    />
+                )}
             </Modal>
 
-            <Modal isOpen={isAddNoteModalOpen} onClose={() => setIsAddNoteModalOpen(false)} title="Add a Note">
-                {notingContact && <AddNoteForm contact={notingContact} onClose={() => setIsAddNoteModalOpen(false)} />}
+            {/* Contact Details Modal */}
+            {selectedContact && (
+                <Modal isOpen={!!selectedContact} onClose={() => setSelectedContact(null)} title={selectedContact.name}>
+                    <div className="p-4">
+                        <div className="flex items-center space-x-4 mb-6">
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl ${getRandomColor(selectedContact.name)}`}>
+                                {getInitials(selectedContact.name)}
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900">{selectedContact.name}</h3>
+                                <p className="text-gray-500">{selectedContact.company}</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                                <label className="text-xs text-gray-500 uppercase font-semibold">Email</label>
+                                <p className="text-gray-900">{selectedContact.email}</p>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                                <label className="text-xs text-gray-500 uppercase font-semibold">Phone</label>
+                                <p className="text-gray-900">{selectedContact.phone || '-'}</p>
+                            </div>
+                        </div>
+                        {/* Notes Section */}
+                        <div className="border-t border-gray-200 pt-6">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-3">Notes</h4>
+                            {data.notes.filter(n => n.contact_id === selectedContact.id).length > 0 ? (
+                                <div className="space-y-3 mb-4">
+                                    {data.notes
+                                        .filter(n => n.contact_id === selectedContact.id)
+                                        .map(note => (
+                                            <div key={note.id} className="p-3 bg-gray-50 rounded-lg">
+                                                <p className="text-sm text-gray-900">{note.content}</p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {new Date(note.created_at).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-500 mb-4">No notes yet.</p>
+                            )}
+                            <AddNoteForm contactId={selectedContact.id!} />
+                        </div>
+                    </div>
+                </Modal>
+            )}
+            {/* Delete Confirmation Modal */}
+            <Modal
+                isOpen={!!contactToDelete}
+                onClose={() => setContactToDelete(null)}
+                title="Delete Contact"
+            >
+                <div className="space-y-4">
+                    <p className="text-gray-600">
+                        Are you sure you want to delete <strong>{contactToDelete?.name}</strong>? This action cannot be undone and will delete all associated deals.
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                        <Button variant="ghost" onClick={() => setContactToDelete(null)}>
+                            Cancel
+                        </Button>
+                        <Button variant="danger" onClick={confirmDelete}>
+                            Delete Contact
+                        </Button>
+                    </div>
+                </div>
             </Modal>
 
-            <Modal isOpen={!!deletingContact} onClose={() => setDeletingContact(null)} title="Confirm Deletion">
-                <p className="mb-6">Are you sure you want to delete the contact "{deletingContact?.name}"? This will also delete all associated deals, projects, and invoices. This action cannot be undone.</p>
-                <div className="flex justify-end space-x-2">
-                    <Button variant="secondary" onClick={() => setDeletingContact(null)}>Cancel</Button>
-                    <Button variant="primary" onClick={handleDeleteConfirm}>Yes, Delete</Button>
+            {/* Bulk Delete Confirmation Modal */}
+            <Modal
+                isOpen={isBulkDeleteModalOpen}
+                onClose={() => setIsBulkDeleteModalOpen(false)}
+                title="Delete Contacts"
+            >
+                <div className="space-y-4">
+                    <p className="text-gray-600">
+                        Are you sure you want to delete <strong>{selectedIds.size}</strong> contacts? This action cannot be undone and will delete all associated deals.
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                        <Button variant="ghost" onClick={() => setIsBulkDeleteModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="danger" onClick={confirmBulkDelete}>
+                            Delete All
+                        </Button>
+                    </div>
                 </div>
             </Modal>
         </div>

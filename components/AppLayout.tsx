@@ -9,9 +9,11 @@ import DealPipeline from '../pages/DealPipeline';
 import Activities from '../pages/Activities';
 import Imports from '../pages/Imports';
 import Projects from '../pages/Projects';
+import ProjectDetails from '../pages/ProjectDetails';
 import Invoices from '../pages/Invoices';
 import TimeTracking from '../pages/TimeTracking';
 import Expenses from '../pages/Expenses';
+import Settings from '../pages/Settings';
 
 const AppLayout: React.FC = () => {
     const { loading, error } = useData();
@@ -19,7 +21,7 @@ const AppLayout: React.FC = () => {
     return (
         <div className="font-sans text-brand-dark bg-brand-light min-h-screen">
             <Sidebar />
-            <div className="ml-[200px]">
+            <div className="ml-[240px]">
                 <Header />
                 <main className="pt-16">
                     <div className="p-8">
@@ -39,9 +41,11 @@ const AppLayout: React.FC = () => {
                                 <Route path="/crm/activities" element={<Activities />} />
                                 <Route path="/crm/imports" element={<Imports />} />
                                 <Route path="/projects" element={<Projects />} />
+                                <Route path="/projects/:id" element={<ProjectDetails />} />
                                 <Route path="/invoices" element={<Invoices />} />
                                 <Route path="/time-tracking" element={<TimeTracking />} />
                                 <Route path="/expenses" element={<Expenses />} />
+                                <Route path="/settings" element={<Settings />} />
                             </Routes>
                         )}
                     </div>

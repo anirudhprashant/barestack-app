@@ -10,18 +10,18 @@ const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
     ];
 
     return (
-        <div className="flex justify-between items-center mb-8">
-            <div className="flex space-x-2">
+        <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
+            <div className="flex space-x-1">
                 {navLinks.map(link => (
                     <NavLink
                         key={link.href}
                         to={link.href}
                         end
-                        className={({ isActive }) => 
-                            `font-bold py-2 px-4 rounded-[10px] border-[3px] border-brand-dark shadow-neo-sm transition-all active:shadow-none active:translate-x-1 active:translate-y-1
-                            ${isActive 
-                                ? 'bg-brand-dark text-white' 
-                                : 'bg-white text-brand-dark'}`
+                        className={({ isActive }) =>
+                            `text-sm font-medium py-2 px-4 border transition-all
+                            ${isActive
+                                ? 'bg-black text-white border-black'
+                                : 'bg-white text-gray-700 border-transparent hover:border-gray-300 hover:text-black'}`
                         }
                     >
                         {link.label}
