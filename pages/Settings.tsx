@@ -86,14 +86,6 @@ const Settings: React.FC = () => {
                         <p className="text-sm text-gray-500">Manage your account information.</p>
                     </div>
                     <div className="p-6">
-                        <div className="flex items-center space-x-6 mb-6">
-                            <div className="w-20 h-20 rounded-full bg-brand-dark text-white flex items-center justify-center text-2xl font-bold">
-                                {name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                            </div>
-                            <div>
-                                <Button variant="secondary" className="text-sm">Change Avatar</Button>
-                            </div>
-                        </div>
                         <form onSubmit={handleSaveProfile} className="space-y-4 max-w-md">
                             <Input label="Full Name" id="name" value={name} onChange={e => setName(e.target.value)} />
                             <Input label="Email Address" id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
