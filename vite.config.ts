@@ -6,6 +6,18 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+              'vendor-pocketbase': ['pocketbase'],
+              'vendor-utils': ['date-fns', 'xlsx', 'jszip', 'file-saver', 'zod'],
+            },
+          },
+        },
+        chunkSizeWarningLimit: 600,
+      },
       server: {
         port: 3000,
         host: '0.0.0.0',
