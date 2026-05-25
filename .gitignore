@@ -1,3 +1,10 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
 # Logs
 logs
 *.log
@@ -5,34 +12,37 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Local env files (keep .env.example)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# PocketBase
+*.db
+*.db-shm
+*.db-wal
+.pb_admin_token
+
+# Test artifacts
+test-results/
+coverage/
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+.vscode/
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.log
 
-# Trae IDE workspace metadata
+# OS files
+Thumbs.db
+
+# Misc
 .trae/
-
-# PocketBase
-.pb_admin_token
-*.db
-*.db-shm
-*.db-wal
-
-# Environment
-.env.local
-.env.production
-test-results/
+.figma
