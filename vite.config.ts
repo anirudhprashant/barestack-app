@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const pbUrl = env.VITE_POCKETBASE_URL || 'https://api.barestack.org';
+    const pbHost = pbUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+
     return {
       build: {
         rollupOptions: {
@@ -23,12 +26,12 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
         proxy: {
           '/api': {
-            target: (process.env.VITE_PB_URL || 'http://127.0.0.1:8092').replace(/^http/, 'http'),
+            target: pbUrl.replace(/^http/, 'http'),
             changeOrigin: true,
             rewrite: (path) => path,
           },
           '/_': {
-            target: process.env.VITE_PB_URL || 'http://127.0.0.1:8092',
+            target: pbUrl,
             changeOrigin: true,
             rewrite: (path) => path,
           },
@@ -44,7 +47,7 @@ export default defineConfig(({ mode }) => {
           'X-Frame-Options': 'DENY',
           'Referrer-Policy': 'strict-origin-when-cross-origin',
           'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-          'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.pocketbase.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.barestack.org https://cdn.pocketbase.io wss://api.barestack.org; img-src 'self' data: https:; media-src 'self' data: blob:; frame-ancestors 'none';",
+          'Content-Security-Policy': `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.pocketbase.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${pbUrl} https://cdn.pocketbase.io wss://${pbHost}; img-src 'self' data: https:; media-src 'self' data: blob:; frame-ancestors 'none';`,
         },
       },
       plugins: [react(), tailwindcss()],

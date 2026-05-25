@@ -2,7 +2,7 @@
 
 import PocketBase from 'pocketbase';
 
-const PB_URL = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8092';
+const PB_URL = import.meta.env.VITE_POCKETBASE_URL || 'https://api.barestack.org';
 
 // Create PocketBase instance (singleton)
 export const pb = new PocketBase(PB_URL);
