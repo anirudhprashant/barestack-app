@@ -403,9 +403,6 @@ const CRM: React.FC = () => {
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-1">No contacts found</h3>
                     <p className="text-gray-500 mb-6">Get started by adding a new contact or importing from CSV.</p>
-                    <Button variant="primary" onClick={() => setIsAddContactModalOpen(true)}>
-                        <Icon name="plus" className="w-4 h-4 mr-2" /> Add Contact
-                    </Button>
                 </div>
             )}
 
