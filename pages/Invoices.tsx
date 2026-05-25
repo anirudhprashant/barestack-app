@@ -27,102 +27,62 @@ const Invoices: React.FC = () => {
         const total = getInvoiceTotal(invoice);
         const subtotal = invoice.line_items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
         const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 20;
+        const rightMargin = pageWidth - margin;
 
-        // Colors
-        const brandDark = [15, 23, 42] as [number, number, number];
-        const brandLight = [248, 250, 252] as [number, number, number];
-        const accent = [37, 99, 235] as [number, number, number];
-        const textDark = [15, 23, 42] as [number, number, number];
-        const textMuted = [100, 116, 139] as [number, number, number];
+        // Monochrome palette
+        const black = [0, 0, 0] as [number, number, number];
+        const darkGray = [60, 60, 60] as [number, number, number];
+        const midGray = [120, 120, 120] as [number, number, number];
+        const lightGray = [200, 200, 200] as [number, number, number];
+        const white = [255, 255, 255] as [number, number, number];
 
-        // Header bar
-        doc.setFillColor(...brandDark);
-        doc.rect(0, 0, pageWidth, 45, 'F');
-
-        // Brand name
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(28);
-        doc.setFont('helvetica', 'bold');
-        doc.text('BareStack', 20, 22);
-
-        // Invoice label
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.text('INVOICE', pageWidth - 20, 22, { align: 'right' });
-
-        // Invoice number next to brand
+        // Header - simple text only, no bar
+        doc.setTextColor(...black);
         doc.setFontSize(11);
-        doc.setTextColor(...brandLight);
-        doc.text(invoice.invoice_number, 20, 35);
-
-        // Status badge
-        const statusColors: Record<string, [number, number, number]> = {
-            Draft: [100, 116, 139],
-            Sent: [37, 99, 235],
-            Paid: [34, 197, 94],
-            Overdue: [239, 68, 68]
-        };
-        const statusColor = statusColors[invoice.status] || textMuted;
-        doc.setFillColor(...statusColor);
-        const statusText = invoice.status.toUpperCase();
-        const statusWidth = doc.getTextWidth(statusText) + 12;
-        doc.roundedRect(pageWidth - statusWidth - 20, 28, statusWidth, 10, 2, 2, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        doc.text(statusText, pageWidth - statusWidth - 26, 35, { align: 'right' });
-
-        // Reset text color
-        doc.setTextColor(...textDark);
-
-        // From/To section
-        const sectionY = 60;
-
-        // From
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...accent);
-        doc.text('FROM', 20, sectionY);
-        doc.setTextColor(...textMuted);
         doc.setFont('helvetica', 'normal');
-        doc.text('BareStack', 20, sectionY + 7);
-        doc.setFontSize(8);
-        doc.text('Your Business Address', 20, sectionY + 14);
-        doc.text('contact@barestack.org', 20, sectionY + 21);
+        doc.text('BareStack', margin, 25);
 
-        // To
         doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...accent);
-        doc.text('BILL TO', 110, sectionY);
-        doc.setTextColor(...textDark);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text(clientName, 110, sectionY + 7);
+        doc.setTextColor(...midGray);
+        doc.text('INVOICE', rightMargin, 25, { align: 'right' });
 
-        // Invoice meta on right
+        // Invoice meta - clean two column layout
+        doc.setTextColor(...darkGray);
         doc.setFontSize(9);
+        const metaY = 40;
+
+        // Left: Bill To
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...black);
+        doc.text('Bill To:', margin, metaY);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...textMuted);
+        doc.text(clientName, margin, metaY + 6);
 
-        const metaX = 155;
-        const metaRightX = pageWidth - 20;
-        doc.text('Invoice Date:', metaX, sectionY);
-        doc.text('Due Date:', metaX, sectionY + 10);
-        doc.text('Invoice #:', metaX, sectionY + 20);
+        // Right: Meta info
+        const rightCol = 140;
+        doc.setTextColor(...midGray);
+        doc.text('Invoice Number', rightCol, metaY);
+        doc.text('Invoice Date', rightCol, metaY + 6);
+        doc.text('Due Date', rightCol, metaY + 12);
 
-        doc.setTextColor(...textDark);
-        doc.text(new Date(invoice.issue_date).toLocaleDateString(), metaRightX, sectionY, { align: 'right' });
-        doc.text(new Date(invoice.due_date).toLocaleDateString(), metaRightX, sectionY + 10, { align: 'right' });
-        doc.text(invoice.invoice_number, metaRightX, sectionY + 20, { align: 'right' });
+        doc.setTextColor(...darkGray);
+        doc.text(invoice.invoice_number, rightMargin, metaY, { align: 'right' });
+        doc.text(new Date(invoice.issue_date).toLocaleDateString(), rightMargin, metaY + 6, { align: 'right' });
+        doc.text(new Date(invoice.due_date).toLocaleDateString(), rightMargin, metaY + 12, { align: 'right' });
 
-        // Divider line
-        doc.setDrawColor(...brandDark);
-        doc.setLineWidth(0.5);
-        doc.line(20, sectionY + 32, pageWidth - 20, sectionY + 32);
+        // Thin line separator
+        doc.setDrawColor(...lightGray);
+        doc.setLineWidth(0.3);
+        doc.line(margin, metaY + 20, rightMargin, metaY + 20);
+
+        // Status - small text, not a badge
+        doc.setFontSize(8);
+        doc.setTextColor(...midGray);
+        doc.text(`Status: ${invoice.status}`, margin, metaY + 28);
 
         // Line items table
-        const tableY = sectionY + 42;
+        const tableY = metaY + 38;
         const tableData = invoice.line_items.map(item => [
             item.description,
             item.quantity.toString(),
@@ -136,19 +96,19 @@ const Invoices: React.FC = () => {
             body: tableData,
             theme: 'plain',
             headStyles: {
-                fillColor: brandDark,
-                textColor: [255, 255, 255],
+                fillColor: black,
+                textColor: white,
                 fontStyle: 'bold',
-                fontSize: 9,
-                cellPadding: 5,
+                fontSize: 8,
+                cellPadding: 4,
             },
             bodyStyles: {
                 fontSize: 9,
-                cellPadding: 5,
-                textColor: textDark,
+                cellPadding: 4,
+                textColor: darkGray,
             },
             alternateRowStyles: {
-                fillColor: [249, 250, 251],
+                fillColor: [248, 248, 248],
             },
             columnStyles: {
                 0: { cellWidth: 'auto' },
@@ -156,50 +116,48 @@ const Invoices: React.FC = () => {
                 2: { halign: 'right', cellWidth: 35 },
                 3: { halign: 'right', cellWidth: 35 },
             },
-            margin: { left: 20, right: 20 },
+            margin: { left: margin, right: margin },
         });
 
-        // Totals section
-        const finalY = (doc as any).lastAutoTable?.finalY || tableY + 50;
-        const totalsX = 120;
-        const totalsRightX = pageWidth - 20;
+        // Totals - right aligned, clean
+        const finalY = (doc as any).lastAutoTable?.finalY || tableY + 40;
+        const totalsX = 140;
+        const totalsRightX = rightMargin;
 
-        doc.setFillColor(...brandLight);
-        doc.rect(totalsX, finalY + 5, totalsRightX - totalsX, 35, 'F');
+        doc.setDrawColor(...lightGray);
+        doc.setLineWidth(0.3);
+        doc.line(totalsX, finalY + 5, totalsRightX, finalY + 5);
 
         doc.setFontSize(9);
-        doc.setTextColor(...textMuted);
-        doc.text('Subtotal:', totalsX + 5, finalY + 17);
+        doc.setTextColor(...midGray);
+        doc.text('Subtotal', totalsX, finalY + 14);
         if (invoice.tax_rate > 0) {
-            doc.text(`Tax (${invoice.tax_rate}%):`, totalsX + 5, finalY + 25);
+            doc.text(`Tax (${invoice.tax_rate}%)`, totalsX, finalY + 22);
         }
 
-        doc.setTextColor(...textDark);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`$${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX - 5, finalY + 17, { align: 'right' });
+        doc.setTextColor(...darkGray);
+        doc.text(`$${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX, finalY + 14, { align: 'right' });
         if (invoice.tax_rate > 0) {
             const taxAmount = subtotal * (invoice.tax_rate / 100);
-            doc.text(`$${taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX - 5, finalY + 25, { align: 'right' });
+            doc.text(`$${taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX, finalY + 22, { align: 'right' });
         }
 
         // Total line
-        doc.setDrawColor(...brandDark);
-        doc.setLineWidth(1);
-        doc.line(totalsX + 5, finalY + 30, totalsRightX - 5, finalY + 30);
+        doc.setDrawColor(...black);
+        doc.setLineWidth(0.5);
+        doc.line(totalsX, finalY + 30, totalsRightX, finalY + 30);
 
-        doc.setFontSize(11);
-        doc.setTextColor(...brandDark);
-        doc.text('TOTAL:', totalsX + 5, finalY + 38);
-        doc.setFontSize(14);
-        doc.text(`$${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX - 5, finalY + 38, { align: 'right' });
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...black);
+        doc.text('Total', totalsX, finalY + 38);
+        doc.text(`$${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX, finalY + 38, { align: 'right' });
 
-        // Footer
+        // Footer - minimal
         doc.setFontSize(8);
-        doc.setTextColor(...textMuted);
         doc.setFont('helvetica', 'normal');
-        const footerY = doc.internal.pageSize.getHeight() - 15;
-        doc.text('Thank you for your business. Payment is due within 30 days.', pageWidth / 2, footerY, { align: 'center' });
-        doc.text('BareStack CRM • contact@barestack.org', pageWidth / 2, footerY + 6, { align: 'center' });
+        doc.setTextColor(...midGray);
+        doc.text('Payment due within 30 days', pageWidth / 2, doc.internal.pageSize.getHeight() - 15, { align: 'center' });
 
         return doc;
     };
