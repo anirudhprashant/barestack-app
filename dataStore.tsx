@@ -327,6 +327,7 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         deleteInvoice: invoicesApi.del,
         addTimeEntry: timeEntriesApi.add,
         addExpense: expensesApi.add,
+        deleteExpense: expensesApi.del,
         addRecentActivity,
         addNote: notesApi.add,
         undoImport,
