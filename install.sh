@@ -30,7 +30,13 @@ if [ ! -f "./pocketbase" ]; then
 fi
 
 echo "🔨 Building BareStack CRM..."
-VITE_POCKETBASE_URL="http://127.0.0.1:8092" npm run build
+if [ "$1" = "--local" ]; then
+    echo "   Building for LOCAL deployment..."
+    VITE_POCKETBASE_URL="http://127.0.0.1:8092" npm run build
+else
+    echo "   Building for CLOUD deployment..."
+    VITE_POCKETBASE_URL="https://api.barestack.org" npm run build
+fi
 
 echo "📡 Setting up PocketBase (first-time only)..."
 ./pocketbase serve --dir ./pb_data --http="127.0.0.1:8092" &
