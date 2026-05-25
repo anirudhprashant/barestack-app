@@ -69,7 +69,7 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
                 }, 0);
 
                 const newInvoice: Omit<Invoice, 'id' | 'user_id' | 'created_at'> = {
-                    invoice_number: `2024-${String(lastInvoiceNumber + 1).padStart(3, '0')}`,
+                    invoice_number: `${new Date().getFullYear()}-${String(lastInvoiceNumber + 1).padStart(3, '0')}`,
                     client_id: clientId,
                     issue_date: new Date(issueDate).toISOString(),
                     due_date: new Date(dueDate).toISOString(),

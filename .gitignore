@@ -25,3 +25,13 @@ dist-ssr
 
 # Trae IDE workspace metadata
 .trae/
+
+# PocketBase
+.pb_admin_token
+*.db
+*.db-shm
+*.db-wal
+
+# Environment
+.env.local
+.env.production

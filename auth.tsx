@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
-import { supabase } from './services/supabaseClient';
-import type { AuthSession } from '@supabase/supabase-js';
+import { pb, onAuthChange } from './src/lib/pocketbase';
+import { signOut as pbSignOut } from './src/lib/auth';
+import type { PBAuthModel, PBSession } from './src/types/pb-types';
 
 interface AuthContextType {
-    session: AuthSession | null;
+    session: PBSession | null;
     isAuthenticated: boolean;
     logout: () => void;
+    currentUser: PBAuthModel | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -19,38 +21,54 @@ export function useAuth() {
 }
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [session, setSession] = useState<AuthSession | null>(null);
+    const [session, setSession] = useState<PBSession | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const init = async () => {
-            if (!supabase) {
-                setSession(null);
-                setLoading(false);
-                return;
+            if (pb.authStore.isValid && pb.authStore.model) {
+                const model = pb.authStore.model as unknown as PBAuthModel;
+                setSession({
+                    id: model.id || '',
+                    created: model.created || '',
+                    updated: model.updated || '',
+                    token: pb.authStore.token,
+                    user: model,
+                });
             }
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
             setLoading(false);
         };
+
         init();
 
-        if (!supabase) return;
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
+        const unsub = onAuthChange((model) => {
+            if (model) {
+                const m = model as unknown as PBAuthModel;
+                setSession({
+                    id: m.id || '',
+                    created: m.created || '',
+                    updated: m.updated || '',
+                    token: pb.authStore.token,
+                    user: m,
+                });
+            } else {
+                setSession(null);
+            }
         });
-        return () => subscription.unsubscribe();
+
+        return () => { unsub(); };
     }, []);
 
-    const logout = () => {
-        if (!supabase) return;
-        supabase.auth.signOut();
+    const logout = async () => {
+        await pbSignOut();
+        setSession(null);
     };
 
     const value = useMemo(() => ({
         session,
-        isAuthenticated: !!session,
-        logout
+        isAuthenticated: pb.authStore.isValid,
+        logout,
+        currentUser: pb.authStore.model as PBAuthModel | null,
     }), [session]);
 
     if (loading) {

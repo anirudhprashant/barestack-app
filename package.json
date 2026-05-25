@@ -1,25 +1,33 @@
 {
-  "name": "barestack",
-  "private": true,
-  "version": "0.0.0",
+  "name": "barestack-crm",
+  "description": "Modern CRM for agencies and freelancers with React, TypeScript, and PocketBase",
+  "private": false,
+  "version": "1.0.0",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anirudhprashant/barestack-crm"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "vite preview --port 3000 --host --strictPort"
+    "start": "vite preview --port 3000 --host --strictPort",
+    "stress-test": "./scripts/stress-test.sh"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.78.0",
     "@types/file-saver": "^2.0.7",
     "@types/jszip": "^3.4.0",
     "date-fns": "^3.6.0",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
+    "pocketbase": "^0.21.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
@@ -28,5 +36,13 @@
     "tailwindcss": "^4.0.0",
     "typescript": "~5.8.2",
     "vite": "^5.4.11"
-  }
+  },
+  "keywords": [
+    "crm",
+    "react",
+    "typescript",
+    "pocketbase",
+    "freelancer",
+    "agency"
+  ]
 }
