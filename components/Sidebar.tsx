@@ -7,7 +7,8 @@ import { navItems } from '../constants';
 const Sidebar: React.FC = () => {
     const { session } = useAuth();
 
-    const userInitial = session?.user?.email ? session.user.email[0].toUpperCase() : '?';
+    const userName = session?.user?.name || session?.user?.email || 'User';
+    const userInitial = userName[0].toUpperCase();
 
     const iconMap: Record<string, React.ReactNode> = {
         grid: <Icons.LayoutGrid className="w-4 h-4" />,
@@ -64,10 +65,13 @@ const Sidebar: React.FC = () => {
                     </div>
                 </nav>
 
-                {/* User Initial */}
-                <div className="pt-3 border-t border-zinc-800 flex justify-center">
-                    <div className="w-9 h-9 bg-zinc-800 text-zinc-400 font-semibold text-sm flex items-center justify-center rounded-md">
+                {/* User */}
+                <div className="pt-3 border-t border-zinc-800 flex items-center justify-center gap-2 px-2">
+                    <div className="w-9 h-9 bg-zinc-800 text-zinc-400 font-semibold text-sm flex items-center justify-center rounded-md flex-shrink-0">
                         {userInitial}
+                    </div>
+                    <div className="text-zinc-400 text-xs font-medium truncate max-w-[120px]" title={userName}>
+                        {userName}
                     </div>
                 </div>
             </div>
