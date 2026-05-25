@@ -131,9 +131,6 @@ const Expenses: React.FC = () => {
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-1">No expenses recorded</h3>
                     <p className="text-gray-500 mb-6">Keep track of your business spending here.</p>
-                    <Button variant="primary" onClick={() => setIsAddExpenseModalOpen(true)}>
-                        <Icon name="plus" className="w-4 h-4 mr-2" /> Add Expense
-                    </Button>
                 </div>
             )}
 
