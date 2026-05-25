@@ -55,18 +55,18 @@ const ProTipCard: React.FC = () => {
     const tip = TIPS[currentIndex];
 
     return (
-        <div className="bg-white text-black border border-gray-200 p-6 relative overflow-hidden transition-all duration-500">
+        <div className="bg-black text-white border-2 border-white p-6 relative overflow-hidden transition-all duration-500">
             <div className={`relative z-10 transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
                 <div className="flex items-center mb-3">
                     <Icon name={tip.icon as any} className={`w-5 h-5 ${tip.color} mr-2`} />
                     <h3 className="text-lg font-bold">{tip.title}</h3>
                 </div>
-                <p className="text-gray-400 text-sm mb-4 leading-relaxed min-h-[60px]">
+                <p className="text-gray-300 text-sm mb-4 leading-relaxed min-h-[60px]">
                     {tip.description}
                 </p>
                 <Button
                     variant="secondary"
-                    className="w-full justify-center bg-black text-white border-transparent hover:bg-gray-800 text-sm py-2 transition-all rounded-none"
+                    className="w-full justify-center bg-white text-black border-transparent hover:bg-gray-100 text-sm py-2 transition-all rounded-none"
                     onClick={() => navigate(tip.action)}
                 >
                     {tip.buttonText}
@@ -78,7 +78,7 @@ const ProTipCard: React.FC = () => {
                 {TIPS.map((_, idx) => (
                     <div
                         key={idx}
-                        className={`h-1 transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-black' : 'w-1 bg-gray-300'}`}
+                        className={`h-1 transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-white' : 'w-1 bg-gray-600'}`}
                     />
                 ))}
             </div>
