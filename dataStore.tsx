@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { supabase } from './services/supabaseClient';
-import type { AuthSession } from '@supabase/supabase-js';
+import { pb } from './src/lib/pocketbase';
+import * as api from './src/lib/api';
+import type { PBAuthModel, PBSession } from './src/types/pb-types';
 import {
     AppState,
     Contact,
@@ -62,13 +63,15 @@ const initialState: AppState = {
     userProfile: { name: 'User', email: 'user@example.com' },
 };
 
-export const DataProvider: React.FC<{ children: ReactNode; session: AuthSession | null }> = ({ children, session }) => {
+export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | null }> = ({ children, session }) => {
     const [data, setData] = useState<AppState>(initialState);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const userId = (session?.user as PBAuthModel | null)?.id || '';
+
     const fetchData = useCallback(async () => {
-        if (!session?.user) {
+        if (!userId) {
             setLoading(false);
             return;
         }
@@ -81,69 +84,68 @@ export const DataProvider: React.FC<{ children: ReactNode; session: AuthSession 
                 contacts, deals, projects, tasks, invoices,
                 timeEntries, expenses, recentActivity, notes, importBatches
             ] = await Promise.all([
-                supabase.from('contacts').select('*').eq('user_id', session.user.id),
-                supabase.from('deals').select('*').eq('user_id', session.user.id),
-                supabase.from('projects').select('*').eq('user_id', session.user.id),
-                supabase.from('tasks').select('*').eq('user_id', session.user.id),
-                supabase.from('invoices').select('*').eq('user_id', session.user.id),
-                supabase.from('time_entries').select('*').eq('user_id', session.user.id),
-                supabase.from('expenses').select('*').eq('user_id', session.user.id),
-                supabase.from('recent_activity').select('*').eq('user_id', session.user.id).order('timestamp', { ascending: false }).limit(20),
-                supabase.from('notes').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }),
-                supabase.from('import_batches').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }),
+                api.fetchContacts(userId),
+                api.fetchDeals(userId),
+                api.fetchProjects(userId),
+                api.fetchTasks(userId),
+                api.fetchInvoices(userId),
+                api.fetchTimeEntries(userId),
+                api.fetchExpenses(userId),
+                api.fetchRecentActivity(userId, 20),
+                api.fetchNotes(userId),
+                api.fetchImportBatches(userId),
             ]);
-
-            const responses = [contacts, deals, projects, tasks, invoices, timeEntries, expenses, recentActivity, notes, importBatches];
-            for (const res of responses) {
-                if (res.error) throw res.error;
-            }
 
             setData(prev => ({
                 ...prev,
-                contacts: contacts.data || [],
-                deals: deals.data || [],
-                projects: projects.data || [],
-                tasks: tasks.data || [],
-                invoices: invoices.data || [],
-                timeEntries: timeEntries.data || [],
-                expenses: expenses.data || [],
-                recentActivity: recentActivity.data || [],
-                notes: notes.data || [],
-                importBatches: importBatches.data || [],
+                contacts: contacts as unknown as Contact[],
+                deals: deals as unknown as Deal[],
+                projects: projects as unknown as Project[],
+                tasks: tasks as unknown as Task[],
+                invoices: invoices as unknown as Invoice[],
+                timeEntries: timeEntries as unknown as TimeEntry[],
+                expenses: expenses as unknown as Expense[],
+                recentActivity: recentActivity as unknown as RecentActivity[],
+                notes: notes as unknown as Note[],
+                importBatches: importBatches as unknown as ImportBatch[],
             }));
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError((err as Error).message);
         } finally {
             setLoading(false);
         }
-    }, [session]);
+    }, [userId]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
-    const createApiHandler = useCallback(<T extends { id?: string }>(table: string, stateKey: keyof AppState) => {
-        const add = async (item: Omit<T, 'id' | 'user_id' | 'created_at'>): Promise<T> => {
-            if (!session?.user) throw new Error("User not authenticated");
-            const itemWithUser = { ...item, user_id: session.user.id };
-            const { data: newData, error } = await supabase.from(table).insert(itemWithUser).select().single();
-            if (error) throw error;
-            setData(prev => ({ ...prev, [stateKey]: [newData, ...(prev[stateKey] as any[])] }));
-            return newData as T;
+    // Helper to cast and shape PocketBase record to our types
+    const pbRecord = <T extends object>(record: unknown): T => record as T;
+
+    const createApiHandler = useCallback(<T extends { id?: string }>(table: string, stateKey: keyof AppState, createFn: (data: Partial<Record<string, unknown>>) => Promise<unknown>, updateFn: (id: string, data: Partial<Record<string, unknown>>) => Promise<unknown>, deleteFn: (id: string) => Promise<void>) => {
+        const add = async (item: Omit<T, 'id' | 'user_id' | 'created'>): Promise<T> => {
+            if (!userId) throw new Error("User not authenticated");
+            const itemWithUser = { ...item, user: userId };
+            const newData = await createFn(itemWithUser) as Record<string, unknown>;
+            const newRecord = pbRecord<T>(newData);
+            setData(prev => ({ ...prev, [stateKey]: [newRecord, ...(prev[stateKey] as unknown as any[])] }));
+            return newRecord;
         };
 
         const update = async (item: T): Promise<void> => {
-            if (!session?.user) throw new Error("User not authenticated");
-            const { id, ...updateData } = item;
+            if (!userId) throw new Error("User not authenticated");
+            const { id, ...updateData } = item as any;
             // @ts-ignore
-            delete updateData.user_id; // prevent user_id from being updated
+            delete updateData.user_id;
             // @ts-ignore
-            delete updateData.created_at; // prevent created_at from being updated
-            const { error } = await supabase.from(table).update(updateData).eq('id', id);
-            if (error) throw error;
+            delete updateData.created;
+            // @ts-ignore
+            delete updateData.updated;
+            await updateFn(id, updateData);
             setData(prev => {
                 const items = prev[stateKey] as unknown as T[];
-                const index = items.findIndex(i => i.id === id);
+                const index = items.findIndex(i => (i as any).id === id);
                 if (index > -1) {
                     const newItems = [...items];
                     newItems[index] = item;
@@ -154,50 +156,86 @@ export const DataProvider: React.FC<{ children: ReactNode; session: AuthSession 
         };
 
         const del = async (id: string): Promise<void> => {
-            if (!session?.user) throw new Error("User not authenticated");
-            const { error } = await supabase.from(table).delete().eq('id', id);
-            if (error) throw error;
-            setData(prev => ({ ...prev, [stateKey]: (prev[stateKey] as unknown as T[]).filter(item => item.id !== id) }));
+            if (!userId) throw new Error("User not authenticated");
+            await deleteFn(id);
+            setData(prev => ({ ...prev, [stateKey]: (prev[stateKey] as unknown as T[]).filter(item => (item as any).id !== id) }));
         };
 
         return { add, update, del };
-    }, [session]);
+    }, [userId]);
 
-    const contactsApi = createApiHandler<Contact>('contacts', 'contacts');
-    const dealsApi = createApiHandler<Deal>('deals', 'deals');
-    const projectsApi = createApiHandler<Project>('projects', 'projects');
-    const tasksApi = createApiHandler<Task>('tasks', 'tasks');
-    const invoicesApi = createApiHandler<Invoice>('invoices', 'invoices');
-    const timeEntriesApi = createApiHandler<TimeEntry>('time_entries', 'timeEntries');
-    const expensesApi = createApiHandler<Expense>('expenses', 'expenses');
-    const notesApi = createApiHandler<Note>('notes', 'notes');
+    const contactsApi = createApiHandler<Contact>(
+        'contacts', 'contacts',
+        (d) => api.createContact(d),
+        (id, d) => api.updateContact(id, d),
+        (id) => api.deleteContact(id)
+    );
+    const dealsApi = createApiHandler<Deal>(
+        'deals', 'deals',
+        (d) => api.createDeal(d),
+        (id, d) => api.updateDeal(id, d),
+        (id) => api.deleteDeal(id)
+    );
+    const projectsApi = createApiHandler<Project>(
+        'projects', 'projects',
+        (d) => api.createProject(d),
+        (id, d) => api.updateProject(id, d),
+        (id) => api.deleteProject(id)
+    );
+    const tasksApi = createApiHandler<Task>(
+        'tasks', 'tasks',
+        (d) => api.createTask(d),
+        (id, d) => api.updateTask(id, d),
+        (id) => api.deleteTask(id)
+    );
+    const invoicesApi = createApiHandler<Invoice>(
+        'invoices', 'invoices',
+        (d) => api.createInvoice(d),
+        (id, d) => api.updateInvoice(id, d),
+        (id) => api.deleteInvoice(id)
+    );
+    const timeEntriesApi = createApiHandler<TimeEntry>(
+        'time_entries', 'timeEntries',
+        (d) => api.createTimeEntry(d),
+        (id, d) => api.updateTimeEntry(id, d as any),
+        (id) => api.deleteTimeEntry(id)
+    );
+    const expensesApi = createApiHandler<Expense>(
+        'expenses', 'expenses',
+        (d) => api.createExpense(d),
+        (id, d) => api.updateExpense(id, d as any),
+        (id) => api.deleteExpense(id)
+    );
+    const notesApi = createApiHandler<Note>(
+        'notes', 'notes',
+        (d) => api.createNote(d),
+        (id, d) => api.updateNote(id, d as any),
+        (id) => api.deleteNote(id)
+    );
 
     const addRecentActivity = async (activity: Omit<RecentActivity, 'id' | 'user_id'>) => {
-        if (!session?.user) throw new Error("User not authenticated");
-        const itemWithUser = { ...activity, user_id: session.user.id };
-        const { data: newData, error } = await supabase.from('recent_activity').insert(itemWithUser).select().single();
-        if (error) throw error;
-        setData(prev => ({ ...prev, recentActivity: [newData, ...prev.recentActivity] }));
+        if (!userId) throw new Error("User not authenticated");
+        const itemWithUser = { ...activity, user: userId };
+        const newData = await api.createRecentActivity(itemWithUser) as Record<string, unknown>;
+        setData(prev => ({ ...prev, recentActivity: [newData as unknown as RecentActivity, ...prev.recentActivity] }));
     };
 
-    const addMultipleContacts = async (contacts: Creatable<Contact>[], batchDetails: Creatable<ImportBatch>) => {
-        if (!session?.user) throw new Error("User not authenticated");
+    const addMultipleContacts = async (contactsToAdd: Creatable<Contact>[], batchDetails: Creatable<ImportBatch>) => {
+        if (!userId) throw new Error("User not authenticated");
 
         // 1. Create the import batch record
-        const batchWithUser = { ...batchDetails, user_id: session.user.id };
-        const { data: newBatch, error: batchError } = await supabase.from('import_batches').insert(batchWithUser).select().single();
-        if (batchError) throw batchError;
+        const batchWithUser = { ...batchDetails, user: userId };
+        const newBatch = await api.createImportBatch(batchWithUser) as unknown as ImportBatch;
 
         // 2. Add batch ID and user ID to each contact
-        const contactsToInsert = contacts.map(c => ({
+        const contactsToInsert = contactsToAdd.map(c => ({
             ...c,
-            user_id: session.user.id,
+            user: userId,
             import_batch_id: newBatch.id,
         }));
 
         // 3. Bulk insert contacts
-        const { data: newContacts, error: contactsError } = await supabase.from('contacts').insert(contactsToInsert).select();
-        if (contactsError) throw contactsError;
+        const newContacts = await api.createContactsBulk(contactsToInsert) as unknown as Contact[];
 
         // 4. Update local state
         setData(prev => ({
@@ -208,30 +246,29 @@ export const DataProvider: React.FC<{ children: ReactNode; session: AuthSession 
     };
 
     const undoImport = async (batchId: string) => {
-        if (!session?.user) throw new Error("User not authenticated");
+        if (!userId) throw new Error("User not authenticated");
 
-        // It's crucial to update local state first to get the list of contacts to delete
-        // and avoid race conditions.
+        // Determine contacts to delete from local state
         const contactsToDelete = data.contacts.filter(c => c.import_batch_id === batchId);
         const contactIdsToDelete = new Set(contactsToDelete.map(c => c.id!));
 
         // 1. Delete contacts associated with the batch
-        const { error: contactsError } = await supabase.from('contacts').delete().eq('import_batch_id', batchId);
-        if (contactsError) throw contactsError;
+        for (const c of contactsToDelete) {
+            if (c.id) await api.deleteContact(c.id);
+        }
 
         // 2. Delete the batch record itself
-        const { error: batchError } = await supabase.from('import_batches').delete().eq('id', batchId);
-        if (batchError) throw batchError;
+        await api.deleteImportBatch(batchId);
 
-        // 3. Update local state completely, removing all associated data
+        // 3. Update local state completely
         setData(prev => ({
             ...prev,
             contacts: prev.contacts.filter(c => c.import_batch_id !== batchId),
             importBatches: prev.importBatches.filter(b => b.id !== batchId),
-            deals: prev.deals.filter(d => !contactIdsToDelete.has(d.contact_id)),
-            projects: prev.projects.filter(p => !contactIdsToDelete.has(p.client_id)),
-            invoices: prev.invoices.filter(i => !contactIdsToDelete.has(i.client_id)),
-            notes: prev.notes.filter(n => !contactIdsToDelete.has(n.contact_id)),
+            deals: prev.deals.filter(d => d.contact_id && !contactIdsToDelete.has(d.contact_id)),
+            projects: prev.projects.filter(p => p.client_id && !contactIdsToDelete.has(p.client_id)),
+            invoices: prev.invoices.filter(i => i.client_id && !contactIdsToDelete.has(i.client_id)),
+            notes: prev.notes.filter(n => n.contact_id && !contactIdsToDelete.has(n.contact_id)),
         }));
     };
 
@@ -242,14 +279,17 @@ export const DataProvider: React.FC<{ children: ReactNode; session: AuthSession 
         const affectedProjectIds = data.projects.filter(p => p.client_id === id).map(p => p.id!).filter(Boolean);
 
         try {
-            // Clean up related records in the database to avoid orphans
-            if (affectedProjectIds.length > 0) {
-                await supabase.from('tasks').delete().in('project_id', affectedProjectIds);
-                await supabase.from('time_entries').delete().in('project_id', affectedProjectIds);
-                await supabase.from('expenses').delete().in('project_id', affectedProjectIds);
+            // Best-effort cleanup of related records
+            for (const pid of affectedProjectIds) {
+                const tasks = data.tasks.filter(t => t.project_id === pid);
+                const timeEntries = data.timeEntries.filter(te => te.project_id === pid);
+                const expenses = data.expenses.filter(ex => ex.project_id === pid);
+                for (const t of tasks) { if (t.id) await api.deleteTask(t.id); }
+                for (const te of timeEntries) { if (te.id) await api.deleteTimeEntry(te.id as string); }
+                for (const ex of expenses) { if (ex.id) await api.deleteExpense(ex.id); }
             }
         } catch (e) {
-            // Best-effort cleanup; UI state will still be consistent below
+            // Best-effort; UI state will still be consistent below
         }
 
         // Update local state to remove all associated entities
@@ -261,7 +301,7 @@ export const DataProvider: React.FC<{ children: ReactNode; session: AuthSession 
             notes: prev.notes.filter(n => n.contact_id !== id),
             tasks: prev.tasks.filter(t => !affectedProjectIds.includes(t.project_id)),
             timeEntries: prev.timeEntries.filter(te => !affectedProjectIds.includes(te.project_id)),
-            expenses: prev.expenses.filter(ex => !affectedProjectIds.includes(ex.project_id || '')),
+            expenses: prev.expenses.filter(ex => ex.project_id && !affectedProjectIds.includes(ex.project_id)),
         }));
     };
 
