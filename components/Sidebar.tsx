@@ -1,13 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAuth } from '../auth';
+import { useData } from '../dataStore';
 import * as Icons from 'lucide-react';
 import { navItems } from '../constants';
 
 const Sidebar: React.FC = () => {
-    const { session } = useAuth();
+    const { data } = useData();
 
-    const userName = session?.user?.name || session?.user?.email || 'User';
+    const userName = data.userProfile.name || data.userProfile.email || 'User';
     const userInitial = userName[0].toUpperCase();
 
     const iconMap: Record<string, React.ReactNode> = {
