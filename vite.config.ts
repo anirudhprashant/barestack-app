@@ -44,7 +44,7 @@ export default defineConfig(({ mode }) => {
           'X-Frame-Options': 'DENY',
           'Referrer-Policy': 'strict-origin-when-cross-origin',
           'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-          'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.pocketbase.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.barestack.org https://cdn.pocketbase.io wss://api.barestack.org; img-src 'self' data: https:; frame-ancestors 'none';",
+          'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.pocketbase.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.barestack.org https://cdn.pocketbase.io wss://api.barestack.org; img-src 'self' data: https:; media-src 'self' data: blob:; frame-ancestors 'none';",
         },
       },
       plugins: [react(), tailwindcss()],

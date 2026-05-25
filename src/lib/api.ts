@@ -39,14 +39,17 @@ async function getList<T extends RecordModel>(
         limit?: number;
     }
 ): Promise<{ items: T[]; totalItems: number }> {
+    const fetchOptions: Record<string, unknown> = {
+        filter: options?.filter,
+        sort: options?.sort,
+    };
+    if (options?.expand) {
+        fetchOptions.expand = options.expand;
+    }
     const { items, totalItems } = await pb.collection(collection).getList<T>(
         options?.skip || 1,
         options?.limit || 500,
-        {
-            filter: options?.filter,
-            sort: options?.sort,
-            expand: options?.expand,
-        }
+        fetchOptions
     );
     return { items, totalItems };
 }
@@ -58,7 +61,7 @@ export async function fetchContacts(userId: string): Promise<RecordModel[]> {
     const safeId = sanitizeId(userId);
     const result = await getList('contacts', {
         filter: `user="${safeId}"`,
-        sort: '-created',
+        sort: '-id',
     });
     return result.items;
 }
@@ -80,7 +83,7 @@ export async function fetchDeals(userId: string): Promise<RecordModel[]> {
     const safeId = sanitizeId(userId);
     const result = await getList('deals', {
         filter: `user="${safeId}"`,
-        sort: '-created',
+        sort: '-id',
     });
     return result.items;
 }
@@ -102,7 +105,7 @@ export async function fetchProjects(userId: string): Promise<RecordModel[]> {
     const safeId = sanitizeId(userId);
     const result = await getList('projects', {
         filter: `user="${safeId}"`,
-        sort: '-created',
+        sort: '-id',
     });
     return result.items;
 }
@@ -124,7 +127,7 @@ export async function fetchTasks(userId: string): Promise<RecordModel[]> {
     const safeId = sanitizeId(userId);
     const result = await getList('tasks', {
         filter: `user="${safeId}"`,
-        sort: '-created',
+        sort: '-id',
     });
     return result.items;
 }
@@ -146,7 +149,7 @@ export async function fetchInvoices(userId: string): Promise<RecordModel[]> {
     const safeId = sanitizeId(userId);
     const result = await getList('invoices', {
         filter: `user="${safeId}"`,
-        sort: '-created',
+        sort: '-id',
     });
     return result.items;
 }
@@ -168,7 +171,7 @@ export async function fetchTimeEntries(userId: string): Promise<RecordModel[]> {
     const safeId = sanitizeId(userId);
     const result = await getList('time_entries', {
         filter: `user="${safeId}"`,
-        sort: '-created',
+        sort: '-id',
     });
     return result.items;
 }
@@ -190,7 +193,7 @@ export async function fetchExpenses(userId: string): Promise<RecordModel[]> {
     const safeId = sanitizeId(userId);
     const result = await getList('expenses', {
         filter: `user="${safeId}"`,
-        sort: '-created',
+        sort: '-id',
     });
     return result.items;
 }
@@ -227,7 +230,7 @@ export async function fetchNotes(userId: string): Promise<RecordModel[]> {
     const safeId = sanitizeId(userId);
     const result = await getList('notes', {
         filter: `user="${safeId}"`,
-        sort: '-created',
+        sort: '-id',
     });
     return result.items;
 }
@@ -249,7 +252,7 @@ export async function fetchImportBatches(userId: string): Promise<RecordModel[]>
     const safeId = sanitizeId(userId);
     const result = await getList('import_batches', {
         filter: `user="${safeId}"`,
-        sort: '-created',
+        sort: '-id',
     });
     return result.items;
 }
