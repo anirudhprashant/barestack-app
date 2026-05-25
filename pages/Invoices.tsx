@@ -4,8 +4,7 @@ import { Invoice, InvoiceStatus } from '../types';
 import { useData } from '../dataStore';
 import { InvoiceForm } from '../components/InvoiceForm';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
-import { saveAs } from 'file-saver';
+import { autoTable } from 'jspdf-autotable';
 
 const Invoices: React.FC = () => {
     const { data, updateInvoice, deleteInvoice, addRecentActivity } = useData();
@@ -52,7 +51,7 @@ const Invoices: React.FC = () => {
             `$${(item.quantity * item.rate).toFixed(2)}`
         ]);
 
-        doc.autoTable({
+        autoTable(doc, {
             startY: 70,
             head: [['Description', 'Qty', 'Rate', 'Amount']],
             body: tableData,
@@ -62,7 +61,7 @@ const Invoices: React.FC = () => {
             footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
         });
 
-        const finalY = (doc as any).lastAutoTable.finalY || 120;
+        const finalY = (doc as any).lastAutoTable?.finalY || 120;
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.text(`Total: $${total.toFixed(2)}`, 140, finalY + 15);
