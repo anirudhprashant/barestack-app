@@ -58,13 +58,19 @@ const AddExpenseForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
 
 const Expenses: React.FC = () => {
-    const { data } = useData();
+    const { data, deleteExpense } = useData();
     const { expenses, projects } = data;
     const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false);
 
     const getProjectName = (projectId?: string) => {
         if (!projectId) return '-';
         return projects.find(p => p.id === projectId)?.name || 'Unknown Project';
+    };
+
+    const handleDelete = async (expense: Expense) => {
+        if (window.confirm(`Delete expense "${expense.description}"?`)) {
+            await deleteExpense(expense.id!);
+        }
     };
 
     const categoryColors: Record<string, string> = {
@@ -115,9 +121,15 @@ const Expenses: React.FC = () => {
                                         <span className="font-bold text-gray-900">${expense.amount.toFixed(2)}</span>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                                            <Icon name="more-horizontal" className="w-5 h-5" />
-                                        </button>
+                                        <div className="flex justify-end space-x-2">
+                                            <button
+                                                onClick={() => handleDelete(expense)}
+                                                className="text-gray-400 hover:text-red-600 transition-colors"
+                                                title="Delete Expense"
+                                            >
+                                                <Icon name="trash" className="w-5 h-5" />
+                                            </button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
