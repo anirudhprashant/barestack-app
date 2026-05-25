@@ -125,9 +125,6 @@ const Invoices: React.FC = () => {
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-1">No invoices yet</h3>
                     <p className="text-gray-500 mb-6">Create your first invoice to get paid.</p>
-                    <Button variant="primary" onClick={() => setIsAddInvoiceModalOpen(true)}>
-                        <Icon name="plus" className="w-4 h-4 mr-2" /> Create Invoice
-                    </Button>
                 </div>
             )}
 

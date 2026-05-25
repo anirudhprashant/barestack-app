@@ -75,9 +75,6 @@ const Projects: React.FC = () => {
                     <p className="text-gray-500 mb-6">
                         {searchTerm ? "Try adjusting your search terms." : "Create your first project to get started."}
                     </p>
-                    <Button variant="primary" onClick={() => setIsAddProjectModalOpen(true)}>
-                        <Icon name="plus" className="w-4 h-4 mr-2" /> New Project
-                    </Button>
                 </div>
             )}
 
