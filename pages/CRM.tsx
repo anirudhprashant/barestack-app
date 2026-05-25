@@ -72,6 +72,8 @@ const CRM: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [viewMode, setViewMode] = useState<ViewMode>('table');
+    const [draggedContact, setDraggedContact] = useState<Contact | null>(null);
+    const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
 
     // Filter contacts
     const filteredContacts = contacts.filter(contact =>
@@ -426,77 +428,93 @@ const CRM: React.FC = () => {
         </>
     );
 
-    const renderKanbanView = () => (
-        <div className="overflow-x-auto pb-4">
-            <div className="flex gap-4 min-w-max">
-                {kanbanData.map(({ stage, contacts: stageContacts }) => {
-                    const { bg, border, badge } = stageColors[stage];
-                    const totalValue = stageContacts.reduce((sum, c) => {
-                        const contactDeals = deals.filter(d => d.contact_id === c.id);
-                        return sum + (contactDeals[0]?.value || 0);
-                    }, 0);
+    const handleDragStart = (e: React.DragEvent, contact: Contact) => {
+        setDraggedContact(contact);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', contact.id!);
+    };
 
-                    return (
-                        <div key={stage} className={`w-72 flex-shrink-0 ${bg} border-2 ${border} rounded-xl p-4`}>
-                            <div className="flex items-center justify-between mb-4 pb-3 border-b-2 ${border}">
-                                <div>
-                                    <h3 className="font-bold text-gray-900 uppercase tracking-wider text-sm">{stage}</h3>
-                                    <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-bold rounded ${badge}`}>
-                                        {stageContacts.length}
-                                    </span>
-                                </div>
-                                <span className="text-xs font-bold text-gray-600">
-                                    ${totalValue.toLocaleString()}
+    const handleDragOver = (e: React.DragEvent, stage: DealStage) => {
+        e.preventDefault();
+        if (draggedContact && getContactStage(draggedContact.id!) !== stage) {
+            setDragOverStage(stage);
+        }
+    };
+
+    const handleDragLeave = () => {
+        setDragOverStage(null);
+    };
+
+    const handleDrop = async (e: React.DragEvent, newStage: DealStage) => {
+        e.preventDefault();
+        if (draggedContact && getContactStage(draggedContact.id!) !== newStage) {
+            await handleStageChange(draggedContact, newStage);
+        }
+        setDraggedContact(null);
+        setDragOverStage(null);
+    };
+
+    const renderKanbanView = () => (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {kanbanData.map(({ stage, contacts: stageContacts }) => {
+                const { bg, border, badge } = stageColors[stage];
+                const totalValue = stageContacts.reduce((sum, c) => {
+                    const contactDeals = deals.filter(d => d.contact_id === c.id);
+                    return sum + (contactDeals[0]?.value || 0);
+                }, 0);
+                const isDragOver = dragOverStage === stage;
+
+                return (
+                    <div
+                        key={stage}
+                        className={`${bg} border-2 ${isDragOver ? 'border-black ring-2 ring-offset-2 ring-black' : border} rounded-xl p-3 flex flex-col min-h-[280px] lg:min-h-[400px]`}
+                        onDragOver={(e) => handleDragOver(e, stage)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, stage)}
+                    >
+                        <div className={`flex items-center justify-between mb-3 pb-2 border-b-2 ${border}`}>
+                            <div>
+                                <h3 className="font-bold text-gray-900 uppercase tracking-wider text-xs">{stage}</h3>
+                                <span className={`inline-block mt-0.5 px-1.5 py-0.5 text-xs font-bold rounded ${badge}`}>
+                                    {stageContacts.length}
                                 </span>
                             </div>
+                            <span className="text-xs font-bold text-gray-600">
+                                ${totalValue.toLocaleString()}
+                            </span>
+                        </div>
 
-                            <div className="space-y-3 min-h-[200px]">
-                                {stageContacts.length > 0 ? (
-                                    stageContacts.map(contact => (
-                                        <div
-                                            key={contact.id}
-                                            className="bg-white border border-gray-200 rounded-lg p-3 hover:border-black hover:shadow-md transition-all duration-200 cursor-pointer"
-                                            onClick={() => setSelectedContact(contact)}
-                                        >
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div className="flex items-center space-x-2">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${getRandomColor(contact.name)}`}>
-                                                        {getInitials(contact.name)}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-gray-900 text-sm">{contact.name}</p>
-                                                        <p className="text-xs text-gray-500">{contact.company || 'No company'}</p>
-                                                    </div>
-                                                </div>
+                        <div className="flex-1 space-y-2 overflow-y-auto">
+                            {stageContacts.length > 0 ? (
+                                stageContacts.map(contact => (
+                                    <div
+                                        key={contact.id}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, contact)}
+                                        onClick={() => setSelectedContact(contact)}
+                                        className={`bg-white border border-gray-200 rounded-lg p-2.5 cursor-grab active:cursor-grabbing hover:border-black hover:shadow-sm transition-all duration-150 ${draggedContact?.id === contact.id ? 'opacity-50' : ''}`}
+                                    >
+                                        <div className="flex items-center space-x-2 mb-1.5">
+                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${getRandomColor(contact.name)}`}>
+                                                {getInitials(contact.name)}
                                             </div>
-                                            <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
-                                                <span className="text-xs text-gray-500 truncate">{contact.email}</span>
-                                                <select
-                                                    value={stage}
-                                                    onChange={(e) => {
-                                                        e.stopPropagation();
-                                                        handleStageChange(contact, e.target.value as DealStage);
-                                                    }}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className={`text-xs font-medium px-2 py-1 rounded border-0 cursor-pointer ${badge}`}
-                                                >
-                                                    {Object.values(DealStage).map(s => (
-                                                        <option key={s} value={s}>{s}</option>
-                                                    ))}
-                                                </select>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-semibold text-gray-900 text-xs truncate">{contact.name}</p>
+                                                <p className="text-[10px] text-gray-500 truncate">{contact.company || 'No company'}</p>
                                             </div>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="flex items-center justify-center h-24 text-gray-400 text-sm font-medium border-2 border-dashed border-gray-200 rounded-lg">
-                                        No contacts
+                                        <p className="text-[10px] text-gray-400 truncate pl-9">{contact.email}</p>
                                     </div>
-                                )}
-                            </div>
+                                ))
+                            ) : (
+                                <div className={`flex items-center justify-center h-16 text-gray-400 text-xs font-medium border-2 border-dashed ${isDragOver ? 'border-black bg-gray-100' : 'border-gray-200'} rounded-lg`}>
+                                    {isDragOver ? 'Drop here' : 'No contacts'}
+                                </div>
+                            )}
                         </div>
-                    );
-                })}
-            </div>
+                    </div>
+                );
+            })}
         </div>
     );
 
