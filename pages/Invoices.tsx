@@ -25,46 +25,181 @@ const Invoices: React.FC = () => {
         const doc = new jsPDF();
         const clientName = getClientName(invoice.client_id);
         const total = getInvoiceTotal(invoice);
+        const subtotal = invoice.line_items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+        const pageWidth = doc.internal.pageSize.getWidth();
 
-        doc.setFontSize(24);
+        // Colors
+        const brandDark = [15, 23, 42] as [number, number, number];
+        const brandLight = [248, 250, 252] as [number, number, number];
+        const accent = [37, 99, 235] as [number, number, number];
+        const textDark = [15, 23, 42] as [number, number, number];
+        const textMuted = [100, 116, 139] as [number, number, number];
+
+        // Header bar
+        doc.setFillColor(...brandDark);
+        doc.rect(0, 0, pageWidth, 45, 'F');
+
+        // Brand name
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(28);
         doc.setFont('helvetica', 'bold');
-        doc.text('INVOICE', 20, 25);
+        doc.text('BareStack', 20, 22);
 
-        doc.setFontSize(10);
+        // Invoice label
+        doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Number: ${invoice.invoice_number}`, 20, 35);
-        doc.text(`Date: ${new Date(invoice.issue_date).toLocaleDateString()}`, 20, 42);
-        doc.text(`Due: ${new Date(invoice.due_date).toLocaleDateString()}`, 20, 49);
-        doc.text(`Status: ${invoice.status}`, 20, 56);
+        doc.text('INVOICE', pageWidth - 20, 22, { align: 'right' });
 
-        doc.setFontSize(14);
+        // Invoice number next to brand
+        doc.setFontSize(11);
+        doc.setTextColor(...brandLight);
+        doc.text(invoice.invoice_number, 20, 35);
+
+        // Status badge
+        const statusColors: Record<string, [number, number, number]> = {
+            Draft: [100, 116, 139],
+            Sent: [37, 99, 235],
+            Paid: [34, 197, 94],
+            Overdue: [239, 68, 68]
+        };
+        const statusColor = statusColors[invoice.status] || textMuted;
+        doc.setFillColor(...statusColor);
+        const statusText = invoice.status.toUpperCase();
+        const statusWidth = doc.getTextWidth(statusText) + 12;
+        doc.roundedRect(pageWidth - statusWidth - 20, 28, statusWidth, 10, 2, 2, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
-        doc.text('Bill To:', 120, 35);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(clientName, 120, 42);
+        doc.text(statusText, pageWidth - statusWidth - 26, 35, { align: 'right' });
 
+        // Reset text color
+        doc.setTextColor(...textDark);
+
+        // From/To section
+        const sectionY = 60;
+
+        // From
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...accent);
+        doc.text('FROM', 20, sectionY);
+        doc.setTextColor(...textMuted);
+        doc.setFont('helvetica', 'normal');
+        doc.text('BareStack', 20, sectionY + 7);
+        doc.setFontSize(8);
+        doc.text('Your Business Address', 20, sectionY + 14);
+        doc.text('contact@barestack.org', 20, sectionY + 21);
+
+        // To
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...accent);
+        doc.text('BILL TO', 110, sectionY);
+        doc.setTextColor(...textDark);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(clientName, 110, sectionY + 7);
+
+        // Invoice meta on right
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...textMuted);
+
+        const metaX = 155;
+        const metaRightX = pageWidth - 20;
+        doc.text('Invoice Date:', metaX, sectionY);
+        doc.text('Due Date:', metaX, sectionY + 10);
+        doc.text('Invoice #:', metaX, sectionY + 20);
+
+        doc.setTextColor(...textDark);
+        doc.text(new Date(invoice.issue_date).toLocaleDateString(), metaRightX, sectionY, { align: 'right' });
+        doc.text(new Date(invoice.due_date).toLocaleDateString(), metaRightX, sectionY + 10, { align: 'right' });
+        doc.text(invoice.invoice_number, metaRightX, sectionY + 20, { align: 'right' });
+
+        // Divider line
+        doc.setDrawColor(...brandDark);
+        doc.setLineWidth(0.5);
+        doc.line(20, sectionY + 32, pageWidth - 20, sectionY + 32);
+
+        // Line items table
+        const tableY = sectionY + 42;
         const tableData = invoice.line_items.map(item => [
             item.description,
             item.quantity.toString(),
-            `$${item.rate.toFixed(2)}`,
-            `$${(item.quantity * item.rate).toFixed(2)}`
+            `$${item.rate.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `$${(item.quantity * item.rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
         ]);
 
         autoTable(doc, {
-            startY: 70,
+            startY: tableY,
             head: [['Description', 'Qty', 'Rate', 'Amount']],
             body: tableData,
-            foot: [['', '', 'Subtotal:', `$${invoice.line_items.reduce((s, i) => s + i.quantity * i.rate, 0).toFixed(2)}`]],
-            theme: 'striped',
-            headStyles: { fillColor: [0, 0, 0] },
-            footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+            theme: 'plain',
+            headStyles: {
+                fillColor: brandDark,
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 9,
+                cellPadding: 5,
+            },
+            bodyStyles: {
+                fontSize: 9,
+                cellPadding: 5,
+                textColor: textDark,
+            },
+            alternateRowStyles: {
+                fillColor: [249, 250, 251],
+            },
+            columnStyles: {
+                0: { cellWidth: 'auto' },
+                1: { halign: 'center', cellWidth: 25 },
+                2: { halign: 'right', cellWidth: 35 },
+                3: { halign: 'right', cellWidth: 35 },
+            },
+            margin: { left: 20, right: 20 },
         });
 
-        const finalY = (doc as any).lastAutoTable?.finalY || 120;
-        doc.setFontSize(12);
+        // Totals section
+        const finalY = (doc as any).lastAutoTable?.finalY || tableY + 50;
+        const totalsX = 120;
+        const totalsRightX = pageWidth - 20;
+
+        doc.setFillColor(...brandLight);
+        doc.rect(totalsX, finalY + 5, totalsRightX - totalsX, 35, 'F');
+
+        doc.setFontSize(9);
+        doc.setTextColor(...textMuted);
+        doc.text('Subtotal:', totalsX + 5, finalY + 17);
+        if (invoice.tax_rate > 0) {
+            doc.text(`Tax (${invoice.tax_rate}%):`, totalsX + 5, finalY + 25);
+        }
+
+        doc.setTextColor(...textDark);
         doc.setFont('helvetica', 'bold');
-        doc.text(`Total: $${total.toFixed(2)}`, 140, finalY + 15);
+        doc.text(`$${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX - 5, finalY + 17, { align: 'right' });
+        if (invoice.tax_rate > 0) {
+            const taxAmount = subtotal * (invoice.tax_rate / 100);
+            doc.text(`$${taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX - 5, finalY + 25, { align: 'right' });
+        }
+
+        // Total line
+        doc.setDrawColor(...brandDark);
+        doc.setLineWidth(1);
+        doc.line(totalsX + 5, finalY + 30, totalsRightX - 5, finalY + 30);
+
+        doc.setFontSize(11);
+        doc.setTextColor(...brandDark);
+        doc.text('TOTAL:', totalsX + 5, finalY + 38);
+        doc.setFontSize(14);
+        doc.text(`$${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX - 5, finalY + 38, { align: 'right' });
+
+        // Footer
+        doc.setFontSize(8);
+        doc.setTextColor(...textMuted);
+        doc.setFont('helvetica', 'normal');
+        const footerY = doc.internal.pageSize.getHeight() - 15;
+        doc.text('Thank you for your business. Payment is due within 30 days.', pageWidth / 2, footerY, { align: 'center' });
+        doc.text('BareStack CRM • contact@barestack.org', pageWidth / 2, footerY + 6, { align: 'center' });
 
         return doc;
     };
