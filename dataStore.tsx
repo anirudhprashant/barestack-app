@@ -344,7 +344,17 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         addRecentActivity,
         addNote: notesApi.add,
         undoImport,
-        updateUserProfile: (profile: Partial<UserProfile>) => setData(prev => ({ ...prev, userProfile: { ...prev.userProfile, ...profile } })),
+        updateUserProfile: async (profile: Partial<UserProfile>) => {
+            setData(prev => ({ ...prev, userProfile: { ...prev.userProfile, ...profile } }));
+            // Also persist to PocketBase user record
+            if (session?.user?.id) {
+                try {
+                    await pb.collection('users').update(session.user.id, { name: profile.name, email: profile.email });
+                } catch (err) {
+                    console.error('Failed to update PocketBase user:', err);
+                }
+            }
+        },
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
