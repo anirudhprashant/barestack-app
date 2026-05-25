@@ -1,47 +1,64 @@
 import React from 'react';
-import { Card, Icon } from '../components/ui';
+import { Icon } from '../components/ui';
 import { useData } from '../dataStore';
-import { formatDistanceToNow } from 'date-fns';
-import CrmHeader from '../components/CrmHeader';
+import { formatDistanceToNow, format } from 'date-fns';
+import { PageHeader } from '../components/ui';
+import { RecentActivity } from '../types';
 
 const Activities: React.FC = () => {
     const { data } = useData();
-    const { notes, contacts } = data;
+    const { recentActivity, notes, contacts } = data;
 
     const getContactName = (contactId: string) => {
         return contacts.find(c => c.id === contactId)?.name || 'Unknown Contact';
     };
 
+    const activityIconMap: Record<RecentActivity['type'], { icon: string, color: string }> = {
+        'CONTACT_ADDED': { icon: 'users', color: 'bg-blue-50 border-blue-200 text-blue-600' },
+        'PROJECT_CREATED': { icon: 'clipboard', color: 'bg-purple-50 border-purple-200 text-purple-600' },
+        'INVOICE_CREATED': { icon: 'document', color: 'bg-green-50 border-green-200 text-green-600' },
+        'INVOICE_SENT': { icon: 'mail', color: 'bg-emerald-50 border-emerald-200 text-emerald-600' },
+        'TASK_COMPLETED': { icon: 'check', color: 'bg-indigo-50 border-indigo-200 text-indigo-600' },
+        'DEAL_ADDED': { icon: 'trending-up', color: 'bg-orange-50 border-orange-200 text-orange-600' },
+        'EXPENSE_ADDED': { icon: 'receipt', color: 'bg-red-50 border-red-200 text-red-600' },
+    };
+
+    const allActivities = [...recentActivity].sort((a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
     return (
-        <div>
-            <CrmHeader />
-            <div className="space-y-6 max-w-4xl mx-auto">
-                {notes.length > 0 ? (
-                    notes.map(note => (
-                        <Card key={note.id} className="relative !p-0">
-                             <div className="p-6">
-                                <div className="flex items-start space-x-4">
-                                    <div className="flex-shrink-0 w-12 h-12 bg-brand-light rounded-full border-[3px] border-brand-dark flex items-center justify-center">
-                                        <Icon name="document" className="w-6 h-6 text-brand-dark" />
+        <div className="max-w-4xl mx-auto">
+            <PageHeader title="Activity Log" />
+
+            <div className="bg-white border border-gray-200">
+                {allActivities.length > 0 ? (
+                    <div className="divide-y divide-gray-100">
+                        {allActivities.map((item, index) => {
+                            const iconConfig = activityIconMap[item.type] || { icon: 'activity', color: 'bg-gray-50 border-gray-200 text-gray-600' };
+                            return (
+                                <div key={item.id || index} className="p-5 hover:bg-gray-50 transition-colors flex items-start space-x-4">
+                                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center border ${iconConfig.color}`}>
+                                        <Icon name={iconConfig.icon as any} className="w-5 h-5" />
                                     </div>
-                                    <div className="flex-grow">
-                                        <p className="font-bold text-lg">
-                                            Note added for <span className="underline">{getContactName(note.contact_id)}</span>
+                                    <div className="flex-grow min-w-0">
+                                        <p className="text-sm font-medium text-gray-900">{item.description}</p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
                                         </p>
-                                        <p className="mt-2 text-brand-dark whitespace-pre-wrap">{note.content}</p>
-                                    </div>
-                                    <div className="text-sm text-brand-dark opacity-70 font-medium flex-shrink-0">
-                                        {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
                                     </div>
                                 </div>
-                            </div>
-                        </Card>
-                    ))
+                            );
+                        })}
+                    </div>
                 ) : (
-                    <Card className="text-center">
-                        <h3 className="text-2xl font-bold">No activities yet.</h3>
-                        <p className="mt-2 text-brand-dark opacity-70">Add a note to a contact to get started!</p>
-                    </Card>
+                    <div className="p-12 text-center">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Icon name="activity" className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">No activity yet</h3>
+                        <p className="text-sm text-gray-500">Activity will appear here as you use the app.</p>
+                    </div>
                 )}
             </div>
         </div>
