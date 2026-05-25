@@ -1,4 +1,4 @@
-import React, { useState, FC } from 'react';
+import React, { useState, FC, useMemo } from 'react';
 import { useData } from '../dataStore';
 import { Contact, Deal, DealStage, Note, Creatable, ImportBatch } from '../types';
 import { Button, Input, Modal, Icon, Card, Select, Textarea, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui';
@@ -7,6 +7,16 @@ import { ImportModal } from '../components/ImportModal';
 import { EditableCell } from '../components/EditableCell';
 
 const ITEMS_PER_PAGE = 10;
+
+type ViewMode = 'table' | 'kanban';
+
+const stageColors: Record<DealStage, { bg: string, border: string, badge: string }> = {
+    [DealStage.Lead]: { bg: 'bg-gray-50', border: 'border-gray-200', badge: 'bg-gray-100 text-gray-700' },
+    [DealStage.Qualified]: { bg: 'bg-purple-50', border: 'border-purple-200', badge: 'bg-purple-100 text-purple-700' },
+    [DealStage.Proposal]: { bg: 'bg-blue-50', border: 'border-blue-200', badge: 'bg-blue-100 text-blue-700' },
+    [DealStage.Won]: { bg: 'bg-green-50', border: 'border-green-200', badge: 'bg-green-100 text-green-700' },
+    [DealStage.Lost]: { bg: 'bg-red-50', border: 'border-red-200', badge: 'bg-red-100 text-red-700' },
+};
 
 // Add Note Form Component
 const AddNoteForm: FC<{ contactId: string }> = ({ contactId }) => {
@@ -61,6 +71,7 @@ const CRM: React.FC = () => {
     const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [viewMode, setViewMode] = useState<ViewMode>('table');
 
     // Filter contacts
     const filteredContacts = contacts.filter(contact =>
@@ -78,7 +89,7 @@ const CRM: React.FC = () => {
 
     const getContactStage = (contactId: string) => {
         const contactDeals = deals.filter(d => d.contact_id === contactId);
-        if (contactDeals.length === 0) return 'Lead';
+        if (contactDeals.length === 0) return DealStage.Lead;
         return contactDeals[0].stage;
     };
 
@@ -176,31 +187,39 @@ const CRM: React.FC = () => {
         }
     };
 
-    return (
-        <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-                <div className="relative w-full max-w-md">
-                    <Icon name="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                        type="text"
-                        placeholder="Search contacts..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        id="search-contacts"
-                        name="search"
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-dark/20 focus:border-brand-dark transition-colors"
-                    />
-                </div>
-                <div className="flex space-x-2 w-full sm:w-auto justify-end">
-                    <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
-                        <Icon name="upload" className="w-4 h-4 mr-2" /> Import CSV
-                    </Button>
-                    <Button className="bg-black text-white hover:bg-gray-800 border border-transparent" onClick={() => setIsAddContactModalOpen(true)}>
-                        <Icon name="plus" className="w-4 h-4 mr-2" /> Add Contact
-                    </Button>
-                </div>
-            </div>
+    // Kanban data
+    const kanbanData = useMemo(() => {
+        return Object.values(DealStage).map(stage => ({
+            stage,
+            contacts: filteredContacts.filter(c => getContactStage(c.id!) === stage),
+        }));
+    }, [filteredContacts, deals]);
 
+    const handleStageChange = async (contact: Contact, newStage: DealStage) => {
+        const contactDeals = deals.filter(d => d.contact_id === contact.id);
+        if (contactDeals.length > 0) {
+            await updateDeal({
+                ...contactDeals[0],
+                stage: newStage,
+                last_interaction: new Date().toISOString()
+            });
+        } else {
+            await addDeal({
+                contact_id: contact.id!,
+                value: 1,
+                stage: newStage,
+                last_interaction: new Date().toISOString()
+            });
+            await addRecentActivity({
+                timestamp: new Date().toISOString(),
+                type: 'DEAL_ADDED',
+                description: `New deal created for ${contact.name} at stage ${newStage}`
+            });
+        }
+    };
+
+    const renderTableView = () => (
+        <>
             {filteredContacts.length > 0 ? (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <Table>
@@ -369,7 +388,6 @@ const CRM: React.FC = () => {
                         </TableBody>
                     </Table>
 
-                    {/* Pagination */}
                     {totalPages > 1 && (
                         <div className="flex justify-between items-center p-4 border-t border-gray-200 bg-gray-50">
                             <div className="text-sm text-gray-500">
@@ -405,6 +423,129 @@ const CRM: React.FC = () => {
                     <p className="text-gray-500 mb-6">Get started by adding a new contact or importing from CSV.</p>
                 </div>
             )}
+        </>
+    );
+
+    const renderKanbanView = () => (
+        <div className="overflow-x-auto pb-4">
+            <div className="flex gap-4 min-w-max">
+                {kanbanData.map(({ stage, contacts: stageContacts }) => {
+                    const { bg, border, badge } = stageColors[stage];
+                    const totalValue = stageContacts.reduce((sum, c) => {
+                        const contactDeals = deals.filter(d => d.contact_id === c.id);
+                        return sum + (contactDeals[0]?.value || 0);
+                    }, 0);
+
+                    return (
+                        <div key={stage} className={`w-72 flex-shrink-0 ${bg} border-2 ${border} rounded-xl p-4`}>
+                            <div className="flex items-center justify-between mb-4 pb-3 border-b-2 ${border}">
+                                <div>
+                                    <h3 className="font-bold text-gray-900 uppercase tracking-wider text-sm">{stage}</h3>
+                                    <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-bold rounded ${badge}`}>
+                                        {stageContacts.length}
+                                    </span>
+                                </div>
+                                <span className="text-xs font-bold text-gray-600">
+                                    ${totalValue.toLocaleString()}
+                                </span>
+                            </div>
+
+                            <div className="space-y-3 min-h-[200px]">
+                                {stageContacts.length > 0 ? (
+                                    stageContacts.map(contact => (
+                                        <div
+                                            key={contact.id}
+                                            className="bg-white border border-gray-200 rounded-lg p-3 hover:border-black hover:shadow-md transition-all duration-200 cursor-pointer"
+                                            onClick={() => setSelectedContact(contact)}
+                                        >
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex items-center space-x-2">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${getRandomColor(contact.name)}`}>
+                                                        {getInitials(contact.name)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-900 text-sm">{contact.name}</p>
+                                                        <p className="text-xs text-gray-500">{contact.company || 'No company'}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                                                <span className="text-xs text-gray-500 truncate">{contact.email}</span>
+                                                <select
+                                                    value={stage}
+                                                    onChange={(e) => {
+                                                        e.stopPropagation();
+                                                        handleStageChange(contact, e.target.value as DealStage);
+                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className={`text-xs font-medium px-2 py-1 rounded border-0 cursor-pointer ${badge}`}
+                                                >
+                                                    {Object.values(DealStage).map(s => (
+                                                        <option key={s} value={s}>{s}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="flex items-center justify-center h-24 text-gray-400 text-sm font-medium border-2 border-dashed border-gray-200 rounded-lg">
+                                        No contacts
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+                <div className="relative w-full max-w-md">
+                    <Icon name="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                        type="text"
+                        placeholder="Search contacts..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        id="search-contacts"
+                        name="search"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-dark/20 focus:border-brand-dark transition-colors"
+                    />
+                </div>
+                <div className="flex space-x-2 w-full sm:w-auto justify-end items-center">
+                    {/* View Toggle */}
+                    <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+                        <button
+                            onClick={() => setViewMode('table')}
+                            className={`px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'table' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                        >
+                            <Icon name="document" className="w-4 h-4 inline mr-1" /> Table
+                        </button>
+                        <button
+                            onClick={() => setViewMode('kanban')}
+                            className={`px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'kanban' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                        >
+                            <svg className="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="3" width="5" height="18" rx="1" />
+                                <rect x="10" y="3" width="5" height="12" rx="1" />
+                                <rect x="17" y="3" width="5" height="15" rx="1" />
+                            </svg>
+                            Kanban
+                        </button>
+                    </div>
+                    <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
+                        <Icon name="upload" className="w-4 h-4 mr-2" /> Import CSV
+                    </Button>
+                    <Button className="bg-black text-white hover:bg-gray-800 border border-transparent" onClick={() => setIsAddContactModalOpen(true)}>
+                        <Icon name="plus" className="w-4 h-4 mr-2" /> Add Contact
+                    </Button>
+                </div>
+            </div>
+
+            {viewMode === 'table' ? renderTableView() : renderKanbanView()}
 
             {/* Bulk Actions Bar */}
             {selectedIds.size > 0 && (
@@ -465,7 +606,6 @@ const CRM: React.FC = () => {
                 )}
             </Modal>
 
-            {/* Contact Details Modal */}
             {selectedContact && (
                 <Modal isOpen={!!selectedContact} onClose={() => setSelectedContact(null)} title={selectedContact.name}>
                     <div className="p-4">
@@ -488,7 +628,6 @@ const CRM: React.FC = () => {
                                 <p className="text-gray-900">{selectedContact.phone || '-'}</p>
                             </div>
                         </div>
-                        {/* Notes Section */}
                         <div className="border-t border-gray-200 pt-6">
                             <h4 className="text-sm font-semibold text-gray-900 mb-3">Notes</h4>
                             {data.notes.filter(n => n.contact_id === selectedContact.id).length > 0 ? (
@@ -513,7 +652,7 @@ const CRM: React.FC = () => {
                     </div>
                 </Modal>
             )}
-            {/* Delete Confirmation Modal */}
+
             <Modal
                 isOpen={!!contactToDelete}
                 onClose={() => setContactToDelete(null)}
@@ -534,7 +673,6 @@ const CRM: React.FC = () => {
                 </div>
             </Modal>
 
-            {/* Bulk Delete Confirmation Modal */}
             <Modal
                 isOpen={isBulkDeleteModalOpen}
                 onClose={() => setIsBulkDeleteModalOpen(false)}
