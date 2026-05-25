@@ -120,6 +120,19 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         fetchData();
     }, [fetchData]);
 
+    // Sync userProfile with session user data on login/signup
+    useEffect(() => {
+        if (session?.user) {
+            setData(prev => ({
+                ...prev,
+                userProfile: {
+                    name: session.user.name || 'User',
+                    email: session.user.email || '',
+                }
+            }));
+        }
+    }, [session]);
+
     // Helper to cast and shape PocketBase record to our types
     const pbRecord = <T extends object>(record: unknown): T => record as T;
 
