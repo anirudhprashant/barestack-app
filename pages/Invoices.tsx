@@ -311,21 +311,21 @@ const Invoices: React.FC = () => {
                                         <div className="flex justify-end space-x-2">
                                             <button
                                                 onClick={() => handleDownloadPDF(invoice)}
-                                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                                className="p-1.5 text-black hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-black"
                                                 title="Download PDF"
                                             >
                                                 <Icon name="download" className="w-5 h-5" />
                                             </button>
                                             <button
                                                 onClick={() => handleEdit(invoice)}
-                                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                                className="p-1.5 text-black hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-black"
                                                 title="Edit Invoice"
                                             >
                                                 <Icon name="edit" className="w-5 h-5" />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(invoice)}
-                                                className="text-gray-400 hover:text-red-600 transition-colors"
+                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-600"
                                                 title="Delete Invoice"
                                             >
                                                 <Icon name="trash" className="w-5 h-5" />
