@@ -263,7 +263,7 @@ const Dashboard: React.FC = () => {
                             )}
                         </div>
                         <div className="p-3 bg-gray-50 border-t border-gray-200 text-center">
-                            <button className="text-xs font-bold uppercase tracking-wider text-black hover:underline">View All Activity</button>
+                            <button onClick={() => navigate('/crm/activities')} className="text-xs font-bold uppercase tracking-wider text-black hover:underline">View All Activity</button>
                         </div>
                     </div>
                 </div>
