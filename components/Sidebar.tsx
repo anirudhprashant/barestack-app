@@ -24,7 +24,7 @@ const Sidebar: React.FC = () => {
     return (
         <div className="fixed top-0 left-0 h-full w-[220px] bg-charcoal flex flex-col z-20 border-r border-border/50">
             {/* Header */}
-            <div className="h-14 flex items-center px-5 border-b border-border/50">
+            <div className="h-14 flex items-center px-5 border-b border-r border-border/50">
                 <div className="text-xl font-bold font-display tracking-tight text-canvas">
                     BareStack
                 </div>
