@@ -54,35 +54,31 @@ const AddDealForm: FC<{ onClose: () => void; initialContactId?: string; initialS
     );
 };
 
-// --- Deal Card ---
 const DealCard: FC<{ deal: Deal, contactName: string, onDragStart: (e: React.DragEvent, deal: Deal) => void }> = ({ deal, contactName, onDragStart }) => {
     return (
-        <div 
-            draggable 
+        <div
+            draggable
             onDragStart={(e) => onDragStart(e, deal)}
-            className="bg-white p-3 rounded-[10px] border-[3px] border-brand-dark mb-3 cursor-grab active:cursor-grabbing transition-opacity duration-200"
+            className="bg-canvas p-3 border border-border mb-3 cursor-grab active:cursor-grabbing transition-opacity duration-200"
         >
-            <p className="font-bold text-lg">{contactName}</p>
-            <p className="text-xl font-black text-brand-dark">${deal.value.toLocaleString()}</p>
-            <p className="text-sm text-brand-dark opacity-70">Last interaction: {new Date(deal.last_interaction).toLocaleDateString()}</p>
+            <p className="font-bold text-lg text-charcoal">{contactName}</p>
+            <p className="text-xl font-black text-charcoal">${deal.value.toLocaleString()}</p>
+            <p className="text-sm text-muted">Last interaction: {new Date(deal.last_interaction).toLocaleDateString()}</p>
         </div>
     );
 }
 
-// --- MAIN DEAL PIPELINE COMPONENT ---
 const DealPipeline: React.FC = () => {
     const { data, updateDeal } = useData();
     const { contacts, deals } = data;
     const [isAddDealModalOpen, setIsAddDealModalOpen] = useState(false);
-    
-    // Drag and Drop state
+
     const [draggedDeal, setDraggedDeal] = useState<Deal | null>(null);
     const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
 
     const getContactName = (contactId: string) => contacts.find(c => c.id === contactId)?.name || 'Unknown Contact';
     const dealStages = Object.values(DealStage).filter(s => s !== DealStage.Lead);
 
-    // --- Drag and Drop Handlers ---
     const handleDragStart = (e: React.DragEvent, deal: Deal) => {
         setDraggedDeal(deal);
         e.dataTransfer.effectAllowed = 'move';
@@ -95,7 +91,7 @@ const DealPipeline: React.FC = () => {
             setDragOverStage(stage);
         }
     };
-    
+
     const handleDragLeave = () => {
         setDragOverStage(null);
     }
@@ -117,7 +113,6 @@ const DealPipeline: React.FC = () => {
         });
     }, [deals, dealStages]);
 
-
     return (
         <div>
             <CrmHeader>
@@ -125,20 +120,20 @@ const DealPipeline: React.FC = () => {
                     <Icon name="plus" /> Add Deal
                 </Button>
             </CrmHeader>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
                 {stageData.map(({ stage, deals: stageDeals, value, count }) => (
-                    <div key={stage} 
+                    <div key={stage}
                         onDragOver={(e) => handleDragOver(e, stage)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, stage)}
-                        className={`bg-brand-light p-4 rounded-[10px] border-[3px] border-brand-dark transition-colors duration-300 h-full`}
+                        className={`bg-surface p-4 border-2 ${dragOverStage === stage ? 'border-charcoal' : 'border-border'} transition-colors duration-300 h-full`}
                     >
-                        <div className="text-center mb-4 pb-2 border-b-[3px] border-brand-dark">
-                            <h3 className="font-extrabold text-lg">{stage}</h3>
-                            <p className="font-bold text-brand-dark">${value.toLocaleString()} ({count})</p>
+                        <div className="text-center mb-4 pb-2 border-b-2 border-border">
+                            <h3 className="font-extrabold text-charcoal text-lg">{stage}</h3>
+                            <p className="font-bold text-charcoal">${value.toLocaleString()} ({count})</p>
                         </div>
-                        <div className={`min-h-[300px] p-2 rounded-[10px] transition-all ${dragOverStage === stage ? 'border-[3px] border-dashed border-brand-dark bg-white/50' : ''}`}>
+                        <div className={`min-h-[300px] p-2 transition-all ${dragOverStage === stage ? 'border-2 border-dashed border-charcoal bg-canvas/50' : ''}`}>
                             {stageDeals.length > 0 ? (
                                 stageDeals.map(deal => (
                                     <div key={deal.id} style={{ opacity: draggedDeal?.id === deal.id ? 0.5 : 1 }}>
@@ -146,7 +141,7 @@ const DealPipeline: React.FC = () => {
                                     </div>
                                 ))
                             ) : (
-                                <div className="flex items-center justify-center h-full text-center text-brand-dark opacity-70 font-semibold">
+                                <div className="flex items-center justify-center h-full text-center text-muted font-semibold">
                                     No deals in this stage.
                                 </div>
                             )}
@@ -155,7 +150,6 @@ const DealPipeline: React.FC = () => {
                 ))}
             </div>
 
-            {/* Modals */}
             <Modal isOpen={isAddDealModalOpen} onClose={() => setIsAddDealModalOpen(false)} title="Add New Deal">
                 <AddDealForm onClose={() => setIsAddDealModalOpen(false)} />
             </Modal>

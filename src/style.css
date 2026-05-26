@@ -1,140 +1,147 @@
 @import "tailwindcss";
 
-:root {
-  /* Primary Palette */
-  --color-canvas: #FFFFFF;
-  --color-ink: #000000;
-  --color-accent: #E11D48;
-  --color-surface: #F4F4F5;
+/* ─────────────────────────────────────────
+   BARESTACK DESIGN SYSTEM — Tailwind v4 @theme
+   Generated from BareStack-Website DESIGN_SYSTEM.md
+   ───────────────────────────────────────── */
 
-  /* Utility Palette */
-  --color-border: #E4E4E7;
-  --color-muted: #71717A;
+@theme {
+  /* Brand Colors */
+  --color-canvas: #FAF9F5;
+  --color-surface: #EEECEA;
+  --color-content: #141C11;
+  --color-muted: #6B6B6B;
+  --color-accent: #C37624;
+  --color-border: #D4D1C9;
+  --color-charcoal: #151817;
+  --color-off-white: #F5F5F5;
+  --color-forest: #0F1A0F;
+  --color-forest-dark: #090E09;
+  --color-forest-mid: #1E2D1A;
+  --color-fog: #3A4A52;
 
-  /* Mapping to existing semantic variables for compatibility */
+  /* Semantic Aliases */
   --color-bg-main: var(--color-canvas);
-  --color-bg-surface: var(--color-canvas);
-  --color-bg-subtle: var(--color-surface);
-  --color-bg-muted: var(--color-surface);
-
-  --color-text-main: var(--color-ink);
+  --color-bg-surface: var(--color-surface);
+  --color-text-main: var(--color-content);
   --color-text-secondary: var(--color-muted);
-  --color-text-muted: var(--color-muted);
-  --color-text-inverted: var(--color-canvas);
-
+  --color-text-inverted: var(--color-off-white);
   --color-border-default: var(--color-border);
-  --color-border-subtle: var(--color-surface);
 
-  --color-brand-primary: var(--color-ink);
-  --color-brand-accent: var(--color-accent);
-  --color-brand-dark: var(--color-ink);
+  /* Brand Tokens */
+  --color-brand-dark: var(--color-content);
   --color-brand-light: var(--color-canvas);
 
   /* Sidebar */
-  --color-bg-sidebar: var(--color-ink);
-  --color-text-sidebar: var(--color-canvas);
+  --color-sidebar-bg: var(--color-charcoal);
+  --color-sidebar-text: var(--color-off-white);
+  --color-sidebar-border: color-mix(in srgb, var(--color-charcoal) 50%, transparent);
+
+  /* Activity Badge Colors (muted palette) */
+  --color-activity-green: #16A34A;
+  --color-activity-blue: #2563EB;
+  --color-activity-purple: #9333EA;
+  --color-activity-red: #DC2626;
+  --color-activity-orange: #EA580C;
+  --color-activity-emerald: #059669;
+  --color-activity-indigo: #4F46E5;
+
+  /* Fonts */
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-body: 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  /* Border Radius — BareStack brand standard: sharp corners */
+  --radius-none: 0;
+
+  /* Shadows — BareStack uses border-based depth, not blurred shadows */
+  --shadow-hard: 4px 4px 0px 0px var(--color-content);
+  --shadow-hard-sm: 2px 2px 0px 0px var(--color-content);
+  --shadow-none: none;
+}
+
+/* ─────────────────────────────────────────
+   CSS VARIABLES (legacy compat + runtime tokens)
+   ───────────────────────────────────────── */
+
+:root {
+  --color-canvas: #FAF9F5;
+  --color-surface: #EEECEA;
+  --color-content: #141C11;
+  --color-muted: #6B6B6B;
+  --color-accent: #C37624;
+  --color-border: #D4D1C9;
+  --color-charcoal: #151817;
+  --color-off-white: #F5F5F5;
+
+  --color-bg-main: #FAF9F5;
+  --color-bg-surface: #EEECEA;
+  --color-bg-sidebar: #151817;
+  --color-text-main: #141C11;
+  --color-text-sidebar: #F5F5F5;
+  --color-text-secondary: #6B6B6B;
+  --color-text-inverted: #F5F5F5;
+
+  --color-brand-dark: #141C11;
+  --color-brand-light: #FAF9F5;
+  --color-brand-accent: #C37624;
+
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-body: 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
 
   color-scheme: light;
 }
 
-[data-theme="dark"] {
-  /* Dark Theme Palette */
-  --color-canvas: #09090b;
-  /* Zinc 950 */
-  --color-ink: #FFFFFF;
-  --color-accent: #E11D48;
-  --color-surface: #18181b;
-  /* Zinc 900 */
-
-  /* Utility Palette */
-  --color-border: #27272a;
-  /* Zinc 800 */
-  --color-muted: #a1a1aa;
-  /* Zinc 400 */
-
-  /* Mapping */
-  --color-bg-main: var(--color-canvas);
-  --color-bg-surface: var(--color-canvas);
-  --color-bg-subtle: var(--color-surface);
-  --color-bg-muted: var(--color-surface);
-
-  --color-text-main: var(--color-ink);
-  --color-text-secondary: var(--color-muted);
-  --color-text-muted: var(--color-muted);
-  --color-text-inverted: var(--color-canvas);
-
-  --color-border-default: var(--color-border);
-  --color-border-subtle: var(--color-surface);
-
-  --color-brand-primary: var(--color-ink);
-  --color-brand-accent: var(--color-accent);
-  --color-brand-dark: var(--color-ink);
-  --color-brand-light: var(--color-canvas);
-
-  /* Sidebar */
-  --color-bg-sidebar: #000000;
-  --color-gray-50: var(--color-surface);
-  --color-gray-100: var(--color-surface);
-  --color-gray-200: var(--color-border);
-  --color-gray-300: var(--color-border);
-  --color-gray-400: var(--color-muted);
-  --color-gray-500: var(--color-muted);
-  --color-gray-600: var(--color-muted);
-  --color-gray-700: var(--color-muted);
-  --color-gray-800: var(--color-ink);
-  --color-gray-900: var(--color-ink);
-
-  /* Brand Colors */
-  --color-brand-dark: var(--color-brand-primary);
-  --color-brand-light: var(--color-bg-main);
-  --color-brand-accent: var(--color-brand-accent);
-}
-
-.bg-sidebar {
-  background-color: var(--color-bg-sidebar);
-  color: var(--color-text-sidebar);
-}
-
-/* Static Utilities */
-.text-static-white {
-  color: #FFFFFF;
-}
-
-.text-static-black {
-  color: #000000;
-}
-
-.bg-static-dark {
-  background-color: #000000;
-}
+/* ─────────────────────────────────────────
+   BASE STYLES
+   ───────────────────────────────────────── */
 
 body {
   background-color: var(--color-bg-main);
   color: var(--color-text-main);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: -0.025em;
 }
 
-/* Utility Classes for the new design */
-.border-hard {
-  border: 1px solid var(--color-border);
+/* BareStack: no rounded corners by default */
+*, *::before, *::after {
+  border-radius: 0;
 }
 
-.border-hard-2 {
-  border: 2px solid var(--color-ink);
+/* ─────────────────────────────────────────
+   UTILITY CLASSES
+   ───────────────────────────────────────── */
+
+/* Hard offset shadow — BareStack's depth technique */
+.shadow-hard {
+  box-shadow: 4px 4px 0px 0px var(--color-content);
 }
 
-.shadow-none-important {
-  box-shadow: none !important;
+.shadow-hard-sm {
+  box-shadow: 2px 2px 0px 0px var(--color-content);
+}
+
+/* Sidebar styles */
+.sidebar {
+  background-color: var(--color-sidebar-bg);
+  color: var(--color-sidebar-text);
+}
+
+/* Grain texture overlay (optional — apply with fixed inset-0) */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
 }

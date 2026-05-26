@@ -19,19 +19,19 @@ const AppLayout: React.FC = () => {
     const { loading, error } = useData();
 
     return (
-        <div className="font-sans text-brand-dark bg-brand-light min-h-screen">
+        <div className="font-body text-charcoal bg-canvas min-h-screen">
             <Sidebar />
-            <div className="ml-[240px]">
+            <div className="ml-[220px]">
                 <Header />
                 <main className="pt-16">
                     <div className="p-8">
                         {loading ? (
                             <div className="flex justify-center items-center h-64">
-                                <p className="text-2xl font-bold">Loading your dashboard...</p>
+                                <p className="text-2xl font-bold text-charcoal">Loading your dashboard...</p>
                             </div>
                         ) : error ? (
                             <div className="flex justify-center items-center h-64">
-                                <p className="text-2xl font-bold text-brand-dark">Error: {error}</p>
+                                <p className="text-2xl font-bold text-charcoal">Error: {error}</p>
                             </div>
                         ) : (
                             <Routes>
@@ -53,6 +53,6 @@ const AppLayout: React.FC = () => {
             </div>
         </div>
     );
-}
+};
 
 export default AppLayout;

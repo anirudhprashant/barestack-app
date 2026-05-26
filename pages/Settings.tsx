@@ -7,7 +7,6 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
 const Settings: React.FC = () => {
-    const { theme, toggleTheme } = useTheme();
     const { data, updateUserProfile } = useData();
     const [name, setName] = useState(data.userProfile.name);
     const [email, setEmail] = useState(data.userProfile.email);
@@ -45,8 +44,6 @@ const Settings: React.FC = () => {
         setExporting(true);
         try {
             const zip = new JSZip();
-
-            // Add CSVs to zip
             zip.file("contacts.csv", convertToCSV(data.contacts));
             zip.file("projects.csv", convertToCSV(data.projects));
             zip.file("tasks.csv", convertToCSV(data.tasks));
@@ -61,7 +58,6 @@ const Settings: React.FC = () => {
                 compressionOptions: { level: 6 }
             });
 
-            // Create a blob with proper MIME type and filename
             const blob = new Blob([content], { type: 'application/zip' });
             const filename = `barestack_export_${new Date().toISOString().split('T')[0]}.zip`;
 
@@ -80,10 +76,10 @@ const Settings: React.FC = () => {
 
             <div className="space-y-8">
                 {/* Profile Section */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                        <h3 className="text-lg font-bold text-gray-900">Profile</h3>
-                        <p className="text-sm text-gray-500">Manage your account information.</p>
+                <div className="bg-canvas border border-border overflow-hidden">
+                    <div className="px-6 py-4 border-b border-border bg-surface">
+                        <h3 className="text-lg font-bold text-charcoal">Profile</h3>
+                        <p className="text-sm text-muted">Manage your account information.</p>
                     </div>
                     <div className="p-6">
                         <form onSubmit={handleSaveProfile} className="space-y-4 max-w-md">
@@ -96,19 +92,17 @@ const Settings: React.FC = () => {
                     </div>
                 </div>
 
-
-
                 {/* Data Management Section */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                        <h3 className="text-lg font-bold text-gray-900">Data Management</h3>
-                        <p className="text-sm text-gray-500">Export your data or manage your account data.</p>
+                <div className="bg-canvas border border-border overflow-hidden">
+                    <div className="px-6 py-4 border-b border-border bg-surface">
+                        <h3 className="text-lg font-bold text-charcoal">Data Management</h3>
+                        <p className="text-sm text-muted">Export your data or manage your account data.</p>
                     </div>
                     <div className="p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h4 className="font-medium text-gray-900">Export Data</h4>
-                                <p className="text-sm text-gray-500">Download all your data (Contacts, Invoices, Projects) as a ZIP file containing CSVs.</p>
+                                <h4 className="font-semibold text-charcoal">Export Data</h4>
+                                <p className="text-sm text-muted">Download all your data (Contacts, Invoices, Projects) as a ZIP file containing CSVs.</p>
                             </div>
                             <Button variant="secondary" onClick={handleExportData} disabled={exporting}>
                                 {exporting ? 'Exporting...' : 'Export All Data'}

@@ -59,7 +59,7 @@ interface CardProps {
 
 export const Card: React.FC<CardProps> = ({ children, className = '', onClick }) => {
     return (
-        <div onClick={onClick} className={`bg-white p-6 border border-gray-200 ${className}`}>
+        <div onClick={onClick} className={`bg-canvas p-6 border border-border ${className}`}>
             {children}
         </div>
     );
@@ -68,22 +68,22 @@ export const Card: React.FC<CardProps> = ({ children, className = '', onClick })
 // --- BUTTON COMPONENT ---
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     children: React.ReactNode;
-    variant?: 'primary' | 'secondary' | 'danger';
+    variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
     className?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', className = '', ...props }) => {
-    const baseClasses = "font-medium py-2 px-4 rounded-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1";
+    const baseClasses = "font-semibold py-2 px-4 rounded-none transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1";
 
     let variantClasses = "";
     if (variant === 'primary') {
-        variantClasses = "bg-black text-white hover:bg-gray-800 focus:ring-gray-800 border border-transparent";
+        variantClasses = "bg-charcoal text-canvas hover:bg-content focus:ring-charcoal border border-charcoal";
     } else if (variant === 'secondary') {
-        variantClasses = "bg-white text-black border border-black hover:bg-gray-50 focus:ring-gray-300";
+        variantClasses = "bg-canvas text-charcoal border border-charcoal hover:bg-surface focus:ring-border";
     } else if (variant === 'danger') {
-        variantClasses = "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 focus:ring-red-200";
+        variantClasses = "bg-surface text-activity-red border border-activity-red/30 hover:bg-activity-red/10 focus:ring-activity-red";
     } else if (variant === 'ghost') {
-        variantClasses = "bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-300 border border-transparent";
+        variantClasses = "bg-transparent text-charcoal hover:bg-surface focus:ring-border border border-transparent";
     }
 
     return (
@@ -101,11 +101,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export const Input: React.FC<InputProps> = ({ label, id, ...props }) => {
     return (
         <div>
-            <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
-            <input id={id} {...props} className="w-full p-2.5 bg-white text-gray-900 rounded-none border border-gray-300 focus:outline-none focus:border-brand-dark focus:border-2 transition-colors" />
+            <label htmlFor={id} className="block text-sm font-semibold text-charcoal mb-1.5">{label}</label>
+            <input id={id} {...props} className="w-full p-2.5 bg-canvas text-charcoal rounded-none border border-border focus:outline-none focus:border-content focus:border-2 transition-colors" />
         </div>
     );
-}
+};
 
 // --- TEXTAREA COMPONENT ---
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -114,8 +114,8 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 export const Textarea: React.FC<TextareaProps> = ({ label, id, ...props }) => {
     return (
         <div>
-            <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
-            <textarea id={id} {...props} className="w-full p-2.5 bg-white text-gray-900 rounded-none border border-gray-300 focus:outline-none focus:border-brand-dark focus:border-2 transition-colors" />
+            <label htmlFor={id} className="block text-sm font-semibold text-charcoal mb-1.5">{label}</label>
+            <textarea id={id} {...props} className="w-full p-2.5 bg-canvas text-charcoal rounded-none border border-border focus:outline-none focus:border-content focus:border-2 transition-colors" />
         </div>
     );
 };
@@ -128,8 +128,8 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 export const Select: React.FC<SelectProps> = ({ label, id, children, ...props }) => {
     return (
         <div>
-            <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
-            <select id={id} {...props} className="w-full p-2.5 bg-white text-gray-900 rounded-none border border-gray-300 focus:outline-none focus:border-brand-dark focus:border-2 appearance-none bg-no-repeat bg-right pr-8 transition-colors" style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23000000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")` }}>
+            <label htmlFor={id} className="block text-sm font-semibold text-charcoal mb-1.5">{label}</label>
+            <select id={id} {...props} className="w-full p-2.5 bg-canvas text-charcoal rounded-none border border-border focus:outline-none focus:border-content focus:border-2 appearance-none bg-no-repeat bg-right pr-8 transition-colors" style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23141C11' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")` }}>
                 {children}
             </select>
         </div>
@@ -148,14 +148,14 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+        <div className="fixed inset-0 bg-charcoal/80 backdrop-blur-none z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div
-                className="bg-white p-6 shadow-none w-full max-w-lg relative animate-in fade-in zoom-in duration-200 border-2 border-brand-dark"
+                className="bg-canvas p-6 w-full max-w-lg relative border border-border"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
-                    <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 text-gray-500 transition-colors rounded-none">
+                <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
+                    <h2 className="text-2xl font-bold text-charcoal">{title}</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-surface text-muted transition-colors rounded-none">
                         <Icon name="x" className="w-5 h-5" />
                     </button>
                 </div>
@@ -179,12 +179,12 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, icon }) => {
         <Card className="flex flex-col justify-between h-full">
             <div>
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-                    <div className="p-2 bg-gray-50 border border-gray-200">
-                        <Icon name={icon} className="w-5 h-5 text-gray-700" />
+                    <h3 className="text-sm font-medium text-muted">{title}</h3>
+                    <div className="p-2 bg-surface border border-border">
+                        <Icon name={icon} className="w-5 h-5 text-charcoal" />
                     </div>
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{value}</p>
+                <p className="text-3xl font-bold text-charcoal">{value}</p>
             </div>
         </Card>
     );
@@ -192,21 +192,21 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, icon }) => {
 
 // --- TABLE COMPONENTS ---
 export const Table: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <div className={`overflow-x-auto border border-gray-200 ${className}`}>
-        <table className="w-full text-left border-collapse bg-white">
+    <div className={`overflow-x-auto border border-border ${className}`}>
+        <table className="w-full text-left border-collapse bg-canvas">
             {children}
         </table>
     </div>
 );
 
 export const TableHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <thead className="bg-gray-50 border-b border-gray-200">
+    <thead className="bg-surface border-b border-border">
         {children}
     </thead>
 );
 
 export const TableBody: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <tbody className="divide-y divide-gray-100">
+    <tbody className="divide-y divide-border/50">
         {children}
     </tbody>
 );
@@ -214,20 +214,20 @@ export const TableBody: React.FC<{ children: React.ReactNode }> = ({ children })
 export const TableRow: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className = '', onClick }) => (
     <tr
         onClick={onClick}
-        className={`transition-colors hover:bg-gray-50/50 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+        className={`transition-colors hover:bg-surface/50 ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
         {children}
     </tr>
 );
 
 export const TableHead: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <th className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500 ${className}`}>
+    <th className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider text-muted ${className}`}>
         {children}
     </th>
 );
 
 export const TableCell: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <td className={`py-3 px-4 text-sm text-gray-700 ${className}`}>
+    <td className={`py-3 px-4 text-sm text-charcoal ${className}`}>
         {children}
     </td>
 );
@@ -240,7 +240,7 @@ interface PageHeaderProps {
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, children }) => {
     return (
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+            <h2 className="text-2xl font-bold text-charcoal">{title}</h2>
             {children && <div className="flex space-x-3">{children}</div>}
         </div>
     );

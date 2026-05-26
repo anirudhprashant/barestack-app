@@ -73,33 +73,33 @@ const TimeTracking: React.FC = () => {
 
             {/* Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white text-black p-7 border border-gray-200 hover:border-black transition-all duration-300">
+                <div className="bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="flex justify-between items-start mb-5">
-                        <Icon name="clock" className="w-8 h-8 text-black" />
-                        <span className="text-xs font-bold px-2.5 py-1 bg-orange-600 text-white rounded-none">Time</span>
+                        <Icon name="clock" className="w-8 h-8 text-charcoal" />
+                        <span className="text-xs font-bold px-2.5 py-1 bg-activity-orange text-canvas rounded-none">Time</span>
                     </div>
-                    <div className="text-4xl font-bold text-black mb-2 tracking-tight">{totalHoursThisWeek}h</div>
-                    <div className="text-sm text-gray-600 font-medium">Logged this week</div>
+                    <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{totalHoursThisWeek}h</div>
+                    <div className="text-sm text-muted font-medium">Logged this week</div>
                 </div>
 
-                <div className="bg-white text-black p-7 border border-gray-200 hover:border-black transition-all duration-300">
+                <div className="bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="flex justify-between items-start mb-5">
-                        <Icon name="document" className="w-8 h-8 text-black" />
-                        <span className="text-xs font-bold px-2.5 py-1 bg-green-600 text-white rounded-none">Billable</span>
+                        <Icon name="document" className="w-8 h-8 text-charcoal" />
+                        <span className="text-xs font-bold px-2.5 py-1 bg-activity-green text-canvas rounded-none">Billable</span>
                     </div>
-                    <div className="text-4xl font-bold text-black mb-2 tracking-tight">
+                    <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">
                         {timeEntries.filter(e => e.is_billable).reduce((sum, e) => sum + e.hours, 0)}h
                     </div>
-                    <div className="text-sm text-gray-600 font-medium">Billable hours total</div>
+                    <div className="text-sm text-muted font-medium">Billable hours total</div>
                 </div>
 
-                <div className="bg-white text-black p-7 border border-gray-200 hover:border-black transition-all duration-300">
+                <div className="bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="flex justify-between items-start mb-5">
-                        <Icon name="clipboard" className="w-8 h-8 text-black" />
-                        <span className="text-xs font-bold px-2.5 py-1 bg-blue-600 text-white rounded-none">Projects</span>
+                        <Icon name="clipboard" className="w-8 h-8 text-charcoal" />
+                        <span className="text-xs font-bold px-2.5 py-1 bg-activity-blue text-canvas rounded-none">Projects</span>
                     </div>
-                    <div className="text-4xl font-bold text-black mb-2 tracking-tight">{projects.length}</div>
-                    <div className="text-sm text-gray-600 font-medium">Active projects tracked</div>
+                    <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{projects.length}</div>
+                    <div className="text-sm text-muted font-medium">Active projects tracked</div>
                 </div>
             </div>
 
@@ -107,10 +107,10 @@ const TimeTracking: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Entry Form */}
                 <div className="lg:col-span-1">
-                    <div className="bg-white border border-gray-200">
-                        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center">
-                            <Icon name="clock" className="w-5 h-5 mr-2 text-black" />
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Log Time</h3>
+                    <div className="bg-canvas border border-border">
+                        <div className="px-6 py-4 border-b border-border bg-surface flex items-center">
+                            <Icon name="clock" className="w-5 h-5 mr-2 text-charcoal" />
+                            <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider">Log Time</h3>
                         </div>
                         <div className="p-6">
                             <form className="space-y-4" onSubmit={handleManualSubmit}>
@@ -130,10 +130,10 @@ const TimeTracking: React.FC = () => {
 
                 {/* Weekly Overview */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white border border-gray-200 h-full">
-                        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">This Week</h3>
-                            <span className="text-xs text-gray-500 font-medium">{format(week[0], 'MMM d')} - {format(week[6], 'MMM d')}</span>
+                    <div className="bg-canvas border border-border h-full">
+                        <div className="px-6 py-4 border-b border-border bg-surface flex justify-between items-center">
+                            <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider">This Week</h3>
+                            <span className="text-xs text-muted font-medium">{format(week[0], 'MMM d')} - {format(week[6], 'MMM d')}</span>
                         </div>
                         <div className="p-6">
                             <div className="grid grid-cols-7 gap-3">
@@ -141,23 +141,23 @@ const TimeTracking: React.FC = () => {
                                     const isToday = isSameDay(day, new Date());
                                     const hours = getHoursForDay(day);
                                     return (
-                                        <div key={day.toString()} className={`flex flex-col items-center p-4 border ${isToday ? 'border-black bg-gray-50' : 'border-gray-200'}`}>
-                                            <span className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isToday ? 'text-black' : 'text-gray-500'}`}>
+                                        <div key={day.toString()} className={`flex flex-col items-center p-4 border ${isToday ? 'border-charcoal bg-surface' : 'border-border'}`}>
+                                            <span className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isToday ? 'text-charcoal' : 'text-muted'}`}>
                                                 {format(day, 'EEE')}
                                             </span>
-                                            <span className={`text-2xl font-bold mb-3 ${isToday ? 'text-black' : 'text-gray-900'}`}>
+                                            <span className={`text-2xl font-bold mb-3 ${isToday ? 'text-charcoal' : 'text-charcoal'}`}>
                                                 {format(day, 'd')}
                                             </span>
-                                            <div className={`w-full py-3 text-center border ${hours > 0 ? 'bg-black text-white border-black' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>
+                                            <div className={`w-full py-3 text-center border ${hours > 0 ? 'bg-charcoal text-canvas border-charcoal' : 'bg-surface text-muted border-border'}`}>
                                                 <span className="text-sm font-bold">{hours > 0 ? `${hours}h` : '-'}</span>
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
-                            <div className="mt-6 pt-6 border-t border-gray-200 flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-600 uppercase tracking-wider">Weekly Total</span>
-                                <span className="text-3xl font-bold text-black tracking-tight">{totalHoursThisWeek}h</span>
+                            <div className="mt-6 pt-6 border-t border-border flex justify-between items-center">
+                                <span className="text-sm font-medium text-muted uppercase tracking-wider">Weekly Total</span>
+                                <span className="text-3xl font-bold text-charcoal tracking-tight">{totalHoursThisWeek}h</span>
                             </div>
                         </div>
                     </div>
@@ -165,9 +165,9 @@ const TimeTracking: React.FC = () => {
             </div>
 
             {/* Recent Entries */}
-            <div className="bg-white border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Recent Entries</h3>
+            <div className="bg-canvas border border-border overflow-hidden">
+                <div className="px-6 py-4 border-b border-border bg-surface">
+                    <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider">Recent Entries</h3>
                 </div>
                 {recentEntries.length > 0 ? (
                     <Table>
@@ -183,23 +183,23 @@ const TimeTracking: React.FC = () => {
                         <TableBody>
                             {recentEntries.map(entry => (
                                 <TableRow key={entry.id}>
-                                    <TableCell className="font-medium text-gray-900">
+                                    <TableCell className="font-medium text-charcoal">
                                         {format(parseISO(entry.date), 'MMM d, yyyy')}
                                     </TableCell>
                                     <TableCell>
-                                        <span className="font-medium text-gray-900">{getProjectName(entry.project_id)}</span>
+                                        <span className="font-medium text-charcoal">{getProjectName(entry.project_id)}</span>
                                     </TableCell>
                                     <TableCell>
-                                        <span className="text-gray-600 truncate max-w-xs block">{entry.description || '-'}</span>
+                                        <span className="text-muted truncate max-w-xs block">{entry.description || '-'}</span>
                                     </TableCell>
                                     <TableCell>
-                                        <span className="font-bold text-gray-900">{entry.hours}h</span>
+                                        <span className="font-bold text-charcoal">{entry.hours}h</span>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {entry.is_billable ? (
-                                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-green-600 text-white">YES</span>
+                                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-activity-green text-canvas">YES</span>
                                         ) : (
-                                            <span className="text-gray-400 text-xs">-</span>
+                                            <span className="text-muted text-xs">-</span>
                                         )}
                                     </TableCell>
                                 </TableRow>
@@ -207,8 +207,8 @@ const TimeTracking: React.FC = () => {
                         </TableBody>
                     </Table>
                 ) : (
-                    <div className="p-12 text-center text-gray-500 border-t border-gray-200">
-                        <Icon name="clock" className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                    <div className="p-12 text-center text-muted border-t border-border">
+                        <Icon name="clock" className="w-12 h-12 mx-auto text-border mb-4" />
                         <p className="font-medium">No time entries yet</p>
                         <p className="text-sm mt-1">Start tracking your time above</p>
                     </div>

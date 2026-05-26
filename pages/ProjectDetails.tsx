@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../dataStore';
 import { useAuth } from '../auth';
@@ -57,29 +57,29 @@ const TaskCard: React.FC<{ task: Task, onDragStart: (e: React.DragEvent, task: T
         <div
             draggable
             onDragStart={(e) => onDragStart(e, task)}
-            className="bg-white p-4 border border-gray-200 mb-3 cursor-grab active:cursor-grabbing hover:border-black transition-colors group"
+            className="bg-canvas p-4 border border-border mb-3 cursor-grab active:cursor-grabbing hover:border-charcoal transition-colors group"
         >
             <div className="flex justify-between items-start mb-2">
-                <p className="font-medium text-gray-900 leading-snug">{task.title}</p>
+                <p className="font-medium text-charcoal leading-snug">{task.title}</p>
                 {task.status !== TaskStatus.Done && (
                     <button
                         title="Mark as Done"
                         onClick={() => onComplete(task)}
-                        className="text-gray-400 hover:text-black transition-colors p-1 opacity-0 group-hover:opacity-100"
+                        className="text-muted hover:text-charcoal transition-colors p-1 opacity-0 group-hover:opacity-100"
                     >
                         <Icon name="check" className="w-4 h-4" />
                     </button>
                 )}
             </div>
 
-            <div className="flex items-center justify-between text-xs text-gray-500 mt-3">
+            <div className="flex items-center justify-between text-xs text-muted mt-3">
                 <div className="flex items-center space-x-2">
                     <span className="flex items-center">
                         <Icon name="clock" className="w-3 h-3 mr-1" />
                         {new Date(task.due_date).toLocaleDateString()}
                     </span>
                 </div>
-                <span className="bg-gray-100 text-gray-600 px-2 py-1 font-medium border border-gray-200">{task.estimated_hours} hrs</span>
+                <span className="bg-surface text-muted px-2 py-1 font-medium border border-border">{task.estimated_hours} hrs</span>
             </div>
         </div>
     );
@@ -102,7 +102,7 @@ const ProjectDetails: React.FC = () => {
     if (!project) {
         return (
             <div className="p-8 text-center">
-                <p className="text-gray-500 mb-4">Project not found.</p>
+                <p className="text-muted mb-4">Project not found.</p>
                 <Button onClick={() => navigate('/projects')}>Back to Projects</Button>
             </div>
         );
@@ -161,7 +161,7 @@ const ProjectDetails: React.FC = () => {
             <div className="mb-6">
                 <button
                     onClick={() => navigate('/projects')}
-                    className="text-gray-500 hover:text-gray-900 flex items-center text-sm font-medium transition-colors"
+                    className="text-muted hover:text-charcoal flex items-center text-sm font-medium transition-colors"
                 >
                     <Icon name="chevron-down" className="w-4 h-4 rotate-90 mr-1" />
                     Back to Projects
@@ -171,20 +171,20 @@ const ProjectDetails: React.FC = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{project.name}</h1>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span className={`px-2.5 py-0.5 text-xs font-medium border ${project.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' :
-                            project.status === 'Completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                'bg-gray-50 text-gray-700 border-gray-200'
+                    <h1 className="text-3xl font-bold text-charcoal mb-2 tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>{project.name}</h1>
+                    <div className="flex items-center space-x-4 text-sm text-muted">
+                        <span className={`px-2.5 py-0.5 text-xs font-medium border ${project.status === 'Active' ? 'bg-activity-green/10 text-activity-green border-activity-green/20' :
+                                project.status === 'Completed' ? 'bg-activity-blue/10 text-activity-blue border-activity-blue/20' :
+                                    'bg-surface text-muted border-border'
                             }`}>
                             {project.status}
                         </span>
                         <span className="flex items-center">
-                            <Icon name="receipt" className="w-4 h-4 mr-1.5 text-gray-400" />
+                            <Icon name="receipt" className="w-4 h-4 mr-1.5 text-muted" />
                             ${project.budget.toLocaleString()}
                         </span>
                         <span className="flex items-center">
-                            <Icon name="clock" className="w-4 h-4 mr-1.5 text-gray-400" />
+                            <Icon name="clock" className="w-4 h-4 mr-1.5 text-muted" />
                             {project.estimated_hours} hrs est.
                         </span>
                     </div>
@@ -204,27 +204,27 @@ const ProjectDetails: React.FC = () => {
                             onDragOver={(e) => handleDragOver(e, stage)}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, stage)}
-                            className={`flex flex-col h-full border border-black bg-gray-50 transition-colors ${dragOverStatus === stage
-                                ? 'bg-gray-100 ring-2 ring-black'
-                                : ''
+                            className={`flex flex-col h-full border ${dragOverStatus === stage
+                                    ? 'border-charcoal ring-2 ring-charcoal bg-surface'
+                                    : 'border-border bg-surface'
                                 }`}
                         >
-                            <div className="p-4 flex items-center justify-between border-b border-black bg-white">
-                                <h3 className="font-bold text-black text-sm uppercase tracking-wide">{stage}</h3>
-                                <span className="bg-black text-white text-xs font-bold px-2 py-0.5">
+                            <div className="p-4 flex items-center justify-between border-b border-border bg-canvas">
+                                <h3 className="font-bold text-charcoal text-sm uppercase tracking-wide">{stage}</h3>
+                                <span className="bg-charcoal text-canvas text-xs font-bold px-2 py-0.5">
                                     {projectTasks.filter(t => t.status === stage).length}
                                 </span>
                             </div>
 
-                            <div className="p-3 flex-1 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-gray-300">
+                            <div className="p-3 flex-1 overflow-y-auto space-y-3">
                                 {projectTasks.filter(t => t.status === stage).map(task => (
                                     <div key={task.id} style={{ opacity: draggedTask?.id === task.id ? 0.5 : 1 }}>
                                         <TaskCard task={task} onDragStart={handleDragStart} onComplete={handleCompleteTask} />
                                     </div>
                                 ))}
                                 {projectTasks.filter(t => t.status === stage).length === 0 && (
-                                    <div className="h-32 border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 text-sm">
-                                        <Icon name="clipboard" className="w-8 h-8 mb-2 opacity-20" />
+                                    <div className="h-32 border border-dashed border-border flex flex-col items-center justify-center text-muted text-sm">
+                                        <Icon name="clipboard" className="w-8 h-8 mb-2 opacity-30" />
                                         <span>No tasks</span>
                                     </div>
                                 )}

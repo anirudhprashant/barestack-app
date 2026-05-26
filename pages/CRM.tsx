@@ -11,11 +11,11 @@ const ITEMS_PER_PAGE = 10;
 type ViewMode = 'table' | 'kanban';
 
 const stageColors: Record<DealStage, { bg: string, border: string, badge: string }> = {
-    [DealStage.Lead]: { bg: 'bg-gray-50', border: 'border-gray-200', badge: 'bg-gray-100 text-gray-700' },
-    [DealStage.Qualified]: { bg: 'bg-purple-50', border: 'border-purple-200', badge: 'bg-purple-100 text-purple-700' },
-    [DealStage.Proposal]: { bg: 'bg-blue-50', border: 'border-blue-200', badge: 'bg-blue-100 text-blue-700' },
-    [DealStage.Won]: { bg: 'bg-green-50', border: 'border-green-200', badge: 'bg-green-100 text-green-700' },
-    [DealStage.Lost]: { bg: 'bg-red-50', border: 'border-red-200', badge: 'bg-red-100 text-red-700' },
+    [DealStage.Lead]: { bg: 'bg-surface', border: 'border-border', badge: 'bg-surface text-muted' },
+    [DealStage.Qualified]: { bg: 'bg-activity-purple/10', border: 'border-activity-purple/20', badge: 'bg-activity-purple/10 text-activity-purple' },
+    [DealStage.Proposal]: { bg: 'bg-activity-blue/10', border: 'border-activity-blue/20', badge: 'bg-activity-blue/10 text-activity-blue' },
+    [DealStage.Won]: { bg: 'bg-activity-green/10', border: 'border-activity-green/20', badge: 'bg-activity-green/10 text-activity-green' },
+    [DealStage.Lost]: { bg: 'bg-activity-red/10', border: 'border-activity-red/20', badge: 'bg-activity-red/10 text-activity-red' },
 };
 
 // Add Note Form Component
@@ -75,14 +75,12 @@ const CRM: React.FC = () => {
     const [draggedContact, setDraggedContact] = useState<Contact | null>(null);
     const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
 
-    // Filter contacts
     const filteredContacts = contacts.filter(contact =>
         contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (contact.company && contact.company.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    // Pagination
     const totalPages = Math.ceil(filteredContacts.length / ITEMS_PER_PAGE);
     const paginatedContacts = filteredContacts.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
@@ -122,7 +120,7 @@ const CRM: React.FC = () => {
     };
 
     const getRandomColor = (name: string) => {
-        const colors = ['bg-red-100 text-red-600', 'bg-green-100 text-green-600', 'bg-blue-100 text-blue-600', 'bg-yellow-100 text-yellow-600', 'bg-purple-100 text-purple-600', 'bg-pink-100 text-pink-600'];
+        const colors = ['bg-activity-red/10 text-activity-red', 'bg-activity-green/10 text-activity-green', 'bg-activity-blue/10 text-activity-blue', 'bg-activity-orange/10 text-activity-orange', 'bg-activity-purple/10 text-activity-purple', 'bg-activity-indigo/10 text-activity-indigo'];
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
             hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -189,7 +187,6 @@ const CRM: React.FC = () => {
         }
     };
 
-    // Kanban data
     const kanbanData = useMemo(() => {
         return Object.values(DealStage).map(stage => ({
             stage,
@@ -223,7 +220,7 @@ const CRM: React.FC = () => {
     const renderTableView = () => (
         <>
             {filteredContacts.length > 0 ? (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-canvas border border-border overflow-hidden">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -232,7 +229,7 @@ const CRM: React.FC = () => {
                                         type="checkbox"
                                         id="select-all-contacts"
                                         name="select-all"
-                                        className="rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                                        className="rounded-none border-border text-charcoal focus:ring-charcoal"
                                         checked={paginatedContacts.length > 0 && selectedIds.size === paginatedContacts.length}
                                         onChange={handleSelectAll}
                                     />
@@ -253,7 +250,7 @@ const CRM: React.FC = () => {
                                             type="checkbox"
                                             id={`select-${contact.id}`}
                                             name={`select-contact-${contact.id}`}
-                                            className="rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                                            className="rounded-none border-border text-charcoal focus:ring-charcoal"
                                             checked={selectedIds.has(contact.id)}
                                             onChange={() => handleSelectOne(contact.id)}
                                         />
@@ -266,7 +263,7 @@ const CRM: React.FC = () => {
                                             <EditableCell
                                                 value={contact.name}
                                                 onSave={(val) => updateContact({ ...contact, name: val })}
-                                                className="font-medium text-gray-900"
+                                                className="font-medium text-charcoal"
                                             />
                                         </div>
                                     </TableCell>
@@ -275,7 +272,7 @@ const CRM: React.FC = () => {
                                             value={contact.email}
                                             onSave={(val) => updateContact({ ...contact, email: val })}
                                             type="email"
-                                            className="text-sm text-gray-500"
+                                            className="text-sm text-muted"
                                         />
                                     </TableCell>
                                     <TableCell>
@@ -284,7 +281,7 @@ const CRM: React.FC = () => {
                                             onSave={(val) => updateContact({ ...contact, phone: val })}
                                             type="tel"
                                             placeholder="Add phone"
-                                            className="text-sm text-gray-500"
+                                            className="text-sm text-muted"
                                         />
                                     </TableCell>
                                     <TableCell>
@@ -292,7 +289,7 @@ const CRM: React.FC = () => {
                                             value={contact.company || ''}
                                             onSave={(val) => updateContact({ ...contact, company: val })}
                                             placeholder="Add company"
-                                            className={contact.company ? "text-gray-700 font-medium" : "text-sm text-gray-500"}
+                                            className={contact.company ? "text-charcoal font-medium" : "text-sm text-muted"}
                                         />
                                     </TableCell>
                                     <TableCell>
@@ -324,12 +321,12 @@ const CRM: React.FC = () => {
                                                         });
                                                     }
                                                 }}
-                                                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border-0 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-brand-dark/20 ${getContactStage(contact.id!) === DealStage.Won ? 'bg-green-100 text-green-800' :
-                                                    getContactStage(contact.id!) === DealStage.Lost ? 'bg-red-100 text-red-800' :
-                                                        getContactStage(contact.id!) === DealStage.Proposal ? 'bg-blue-100 text-blue-800' :
-                                                            getContactStage(contact.id!) === DealStage.Qualified ? 'bg-purple-100 text-purple-800' :
-                                                                'badge-lead'
-                                                    }`}
+                                                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border-0 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-charcoal/20 ${getContactStage(contact.id!) === DealStage.Won ? 'bg-activity-green/10 text-activity-green' :
+                                                            getContactStage(contact.id!) === DealStage.Lost ? 'bg-activity-red/10 text-activity-red' :
+                                                            getContactStage(contact.id!) === DealStage.Proposal ? 'bg-activity-blue/10 text-activity-blue' :
+                                                            getContactStage(contact.id!) === DealStage.Qualified ? 'bg-activity-purple/10 text-activity-purple' :
+                                                            'bg-surface text-muted'
+                                                        }`}
                                             >
                                                 {Object.values(DealStage).map(stage => (
                                                     <option key={stage} value={stage}>{stage}</option>
@@ -345,7 +342,7 @@ const CRM: React.FC = () => {
                                                     e.stopPropagation();
                                                     setSelectedContact(contact);
                                                 }}
-                                                className="p-1.5 text-black hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-black"
+                                                className="p-1.5 text-charcoal hover:bg-surface transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-charcoal"
                                                 title="View Details"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -359,7 +356,7 @@ const CRM: React.FC = () => {
                                                     e.stopPropagation();
                                                     setEditingContact(contact);
                                                 }}
-                                                className="p-1.5 text-black hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-black"
+                                                className="p-1.5 text-charcoal hover:bg-surface transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-charcoal"
                                                 title="Edit Contact"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -373,7 +370,7 @@ const CRM: React.FC = () => {
                                                     e.stopPropagation();
                                                     handleDeleteContact(contact);
                                                 }}
-                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-600"
+                                                className="p-1.5 text-activity-red hover:bg-activity-red/10 transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-activity-red"
                                                 title="Delete Contact"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -391,8 +388,8 @@ const CRM: React.FC = () => {
                     </Table>
 
                     {totalPages > 1 && (
-                        <div className="flex justify-between items-center p-4 border-t border-gray-200 bg-gray-50">
-                            <div className="text-sm text-gray-500">
+                        <div className="flex justify-between items-center p-4 border-t border-border bg-surface">
+                            <div className="text-sm text-muted">
                                 Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredContacts.length)} of {filteredContacts.length} results
                             </div>
                             <div className="flex space-x-2">
@@ -417,12 +414,12 @@ const CRM: React.FC = () => {
                     )}
                 </div>
             ) : (
-                <div className="text-center py-12 bg-white rounded-xl border border-gray-200 border-dashed">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Icon name="users" className="w-8 h-8 text-gray-400" />
+                <div className="text-center py-12 bg-canvas border border-dashed border-border">
+                    <div className="w-16 h-16 bg-surface rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Icon name="users" className="w-8 h-8 text-muted" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-1">No contacts found</h3>
-                    <p className="text-gray-500 mb-6">Get started by adding a new contact or importing from CSV.</p>
+                    <h3 className="text-lg font-medium text-charcoal mb-1">No contacts found</h3>
+                    <p className="text-muted mb-6">Get started by adding a new contact or importing from CSV.</p>
                 </div>
             )}
         </>
@@ -467,19 +464,19 @@ const CRM: React.FC = () => {
                 return (
                     <div
                         key={stage}
-                        className={`${bg} border-2 ${isDragOver ? 'border-black ring-2 ring-offset-2 ring-black' : border} rounded-xl p-3 flex flex-col min-h-[280px] lg:min-h-[400px]`}
+                        className={`${bg} border-2 ${isDragOver ? 'border-charcoal ring-2 ring-offset-2 ring-charcoal' : border} p-3 flex flex-col min-h-[280px] lg:min-h-[400px]`}
                         onDragOver={(e) => handleDragOver(e, stage)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, stage)}
                     >
                         <div className={`flex items-center justify-between mb-3 pb-2 border-b-2 ${border}`}>
                             <div>
-                                <h3 className="font-bold text-gray-900 uppercase tracking-wider text-xs">{stage}</h3>
-                                <span className={`inline-block mt-0.5 px-1.5 py-0.5 text-xs font-bold rounded ${badge}`}>
+                                <h3 className="font-bold text-charcoal uppercase tracking-wider text-xs">{stage}</h3>
+                                <span className={`inline-block mt-0.5 px-1.5 py-0.5 text-xs font-bold rounded-full ${badge}`}>
                                     {stageContacts.length}
                                 </span>
                             </div>
-                            <span className="text-xs font-bold text-gray-600">
+                            <span className="text-xs font-bold text-muted">
                                 ${totalValue.toLocaleString()}
                             </span>
                         </div>
@@ -492,22 +489,22 @@ const CRM: React.FC = () => {
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, contact)}
                                         onClick={() => setSelectedContact(contact)}
-                                        className={`bg-white border border-gray-200 rounded-lg p-2.5 cursor-grab active:cursor-grabbing hover:border-black hover:shadow-sm transition-all duration-150 ${draggedContact?.id === contact.id ? 'opacity-50' : ''}`}
+                                        className={`bg-canvas border border-border p-2.5 cursor-grab active:cursor-grabbing hover:border-charcoal transition-all duration-150 ${draggedContact?.id === contact.id ? 'opacity-50' : ''}`}
                                     >
                                         <div className="flex items-center space-x-2 mb-1.5">
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${getRandomColor(contact.name)}`}>
                                                 {getInitials(contact.name)}
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <p className="font-semibold text-gray-900 text-xs truncate">{contact.name}</p>
-                                                <p className="text-[10px] text-gray-500 truncate">{contact.company || 'No company'}</p>
+                                                <p className="font-semibold text-charcoal text-xs truncate">{contact.name}</p>
+                                                <p className="text-[10px] text-muted truncate">{contact.company || 'No company'}</p>
                                             </div>
                                         </div>
-                                        <p className="text-[10px] text-gray-400 truncate pl-9">{contact.email}</p>
+                                        <p className="text-[10px] text-muted truncate pl-9">{contact.email}</p>
                                     </div>
                                 ))
                             ) : (
-                                <div className={`flex items-center justify-center h-16 text-gray-400 text-xs font-medium border-2 border-dashed ${isDragOver ? 'border-black bg-gray-100' : 'border-gray-200'} rounded-lg`}>
+                                <div className={`flex items-center justify-center h-16 text-xs font-medium border-2 border-dashed ${isDragOver ? 'border-charcoal bg-surface' : 'border-border'} text-muted`}>
                                     {isDragOver ? 'Drop here' : 'No contacts'}
                                 </div>
                             )}
@@ -522,7 +519,7 @@ const CRM: React.FC = () => {
         <div className="max-w-7xl mx-auto">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
                 <div className="relative w-full max-w-md">
-                    <Icon name="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Icon name="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted w-5 h-5" />
                     <input
                         type="text"
                         placeholder="Search contacts..."
@@ -530,21 +527,21 @@ const CRM: React.FC = () => {
                         onChange={e => setSearchTerm(e.target.value)}
                         id="search-contacts"
                         name="search"
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-dark/20 focus:border-brand-dark transition-colors"
+                        className="w-full pl-10 pr-4 py-2 border border-border bg-canvas rounded-none focus:outline-none focus:border-content focus:border-2 transition-colors text-charcoal"
                     />
                 </div>
                 <div className="flex space-x-2 w-full sm:w-auto justify-end items-center">
                     {/* View Toggle */}
-                    <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="flex border border-border overflow-hidden">
                         <button
                             onClick={() => setViewMode('table')}
-                            className={`px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'table' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                            className={`px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'table' ? 'bg-charcoal text-canvas' : 'bg-canvas text-muted hover:bg-surface'}`}
                         >
                             <Icon name="document" className="w-4 h-4 inline mr-1" /> Table
                         </button>
                         <button
                             onClick={() => setViewMode('kanban')}
-                            className={`px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'kanban' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                            className={`px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'kanban' ? 'bg-charcoal text-canvas' : 'bg-canvas text-muted hover:bg-surface'}`}
                         >
                             <svg className="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <rect x="3" y="3" width="5" height="18" rx="1" />
@@ -557,7 +554,7 @@ const CRM: React.FC = () => {
                     <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
                         <Icon name="upload" className="w-4 h-4 mr-2" /> Import CSV
                     </Button>
-                    <Button className="bg-black text-white hover:bg-gray-800 border border-transparent" onClick={() => setIsAddContactModalOpen(true)}>
+                    <Button className="bg-charcoal text-canvas hover:bg-content border-charcoal" onClick={() => setIsAddContactModalOpen(true)}>
                         <Icon name="plus" className="w-4 h-4 mr-2" /> Add Contact
                     </Button>
                 </div>
@@ -567,37 +564,35 @@ const CRM: React.FC = () => {
 
             {/* Bulk Actions Bar */}
             {selectedIds.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 shadow-xl rounded-full px-6 py-3 flex items-center space-x-4 animate-in slide-in-from-bottom-4 z-50">
-                    <span className="text-sm font-medium text-gray-700">{selectedIds.size} selected</span>
-                    <div className="h-4 w-px bg-gray-200" />
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-canvas border border-border px-6 py-3 flex items-center space-x-4 animate-in slide-in-from-bottom-4 z-50">
+                    <span className="text-sm font-medium text-charcoal">{selectedIds.size} selected</span>
+                    <div className="h-4 w-px bg-border" />
                     <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Set Stage:</span>
+                        <span className="text-xs text-muted uppercase font-bold tracking-wider">Set Stage:</span>
                         <div className="flex space-x-1">
                             {Object.values(DealStage).filter(s => typeof s === 'string').map((stage) => (
                                 <button
                                     key={stage}
                                     onClick={() => handleBulkStageUpdate(stage as DealStage)}
-                                    className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                                    className="px-2 py-1 text-xs rounded-full bg-surface hover:bg-border text-charcoal transition-colors"
                                 >
                                     {stage}
                                 </button>
                             ))}
                         </div>
                     </div>
-                    <div className="h-4 w-px bg-gray-200" />
+                    <div className="h-4 w-px bg-border" />
                     <Button
                         variant="ghost"
-                        size="sm"
                         onClick={handleBulkDelete}
-                        className="text-red-600 hover:bg-red-50"
+                        className="text-activity-red hover:bg-activity-red/10"
                     >
                         <Icon name="trash" className="w-4 h-4 mr-2" /> Delete
                     </Button>
                     <Button
                         variant="ghost"
-                        size="sm"
                         onClick={() => setSelectedIds(new Set())}
-                        className="text-gray-500"
+                        className="text-muted"
                     >
                         <Icon name="x" className="w-4 h-4" />
                     </Button>
@@ -632,38 +627,37 @@ const CRM: React.FC = () => {
                                 {getInitials(selectedContact.name)}
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900">{selectedContact.name}</h3>
-                                <p className="text-gray-500">{selectedContact.company}</p>
+                                <h3 className="text-xl font-bold text-charcoal">{selectedContact.name}</h3>
+                                <p className="text-muted">{selectedContact.company}</p>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="p-3 bg-gray-50 rounded-lg">
-                                <label className="text-xs text-gray-500 uppercase font-semibold">Email</label>
-                                <p className="text-gray-900">{selectedContact.email}</p>
+                            <div className="p-3 bg-surface border border-border">
+                                <label className="text-xs text-muted uppercase font-semibold">Email</label>
+                                <p className="text-charcoal">{selectedContact.email}</p>
                             </div>
-                            <div className="p-3 bg-gray-50 rounded-lg">
-                                <label className="text-xs text-gray-500 uppercase font-semibold">Phone</label>
-                                <p className="text-gray-900">{selectedContact.phone || '-'}</p>
+                            <div className="p-3 bg-surface border border-border">
+                                <label className="text-xs text-muted uppercase font-semibold">Phone</label>
+                                <p className="text-charcoal">{selectedContact.phone || '-'}</p>
                             </div>
                         </div>
-                        <div className="border-t border-gray-200 pt-6">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-3">Notes</h4>
+                        <div className="border-t border-border pt-6">
+                            <h4 className="text-sm font-semibold text-charcoal mb-3">Notes</h4>
                             {data.notes.filter(n => n.contact_id === selectedContact.id).length > 0 ? (
                                 <div className="space-y-3 mb-4">
                                     {data.notes
                                         .filter(n => n.contact_id === selectedContact.id)
                                         .map(note => (
-                                            <div key={note.id} className="p-3 bg-gray-50 rounded-lg">
-                                                <p className="text-sm text-gray-900">{note.content}</p>
-                                                <p className="text-xs text-gray-500 mt-1">
+                                            <div key={note.id} className="p-3 bg-surface border border-border">
+                                                <p className="text-sm text-charcoal">{note.content}</p>
+                                                <p className="text-xs text-muted mt-1">
                                                     {new Date(note.created_at).toLocaleString()}
                                                 </p>
                                             </div>
-                                        ))
-                                    }
+                                        ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-gray-500 mb-4">No notes yet.</p>
+                                <p className="text-sm text-muted mb-4">No notes yet.</p>
                             )}
                             <AddNoteForm contactId={selectedContact.id!} />
                         </div>
@@ -677,7 +671,7 @@ const CRM: React.FC = () => {
                 title="Delete Contact"
             >
                 <div className="space-y-4">
-                    <p className="text-gray-600">
+                    <p className="text-charcoal">
                         Are you sure you want to delete <strong>{contactToDelete?.name}</strong>? This action cannot be undone and will delete all associated deals.
                     </p>
                     <div className="flex justify-end space-x-3">
@@ -697,7 +691,7 @@ const CRM: React.FC = () => {
                 title="Delete Contacts"
             >
                 <div className="space-y-4">
-                    <p className="text-gray-600">
+                    <p className="text-charcoal">
                         Are you sure you want to delete <strong>{selectedIds.size}</strong> contacts? This action cannot be undone and will delete all associated deals.
                     </p>
                     <div className="flex justify-end space-x-3">

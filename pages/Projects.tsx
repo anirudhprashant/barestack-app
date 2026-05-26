@@ -43,23 +43,23 @@ const Projects: React.FC = () => {
                     {filteredProjects.map(project => (
                         <Card
                             key={project.id}
-                            className="cursor-pointer hover:shadow-md transition-all duration-200"
+                            className="cursor-pointer hover:border-charcoal transition-all duration-200"
                             onClick={() => navigate(`/projects/${project.id}`)}
                         >
                             <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-lg font-bold text-gray-900 truncate pr-2">{project.name}</h3>
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${project.status === ProjectStatus.Active ? 'bg-green-100 text-green-800' :
-                                    project.status === ProjectStatus.Completed ? 'bg-blue-100 text-blue-800' :
-                                        'bg-gray-100 text-gray-800'
+                                <h3 className="text-lg font-bold text-charcoal truncate pr-2">{project.name}</h3>
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${project.status === ProjectStatus.Active ? 'bg-activity-green/10 text-activity-green' :
+                                        project.status === ProjectStatus.Completed ? 'bg-activity-blue/10 text-activity-blue' :
+                                            'bg-surface text-muted'
                                     }`}>
                                     {project.status}
                                 </span>
                             </div>
-                            <p className="text-gray-500 text-sm mb-4 flex items-center">
-                                <Icon name="users" className="w-4 h-4 mr-2 text-gray-400" />
+                            <p className="text-muted text-sm flex items-center">
+                                <Icon name="users" className="w-4 h-4 mr-2 text-muted" />
                                 {getClientName(project.client_id)}
                             </p>
-                            <div className="flex justify-between text-sm font-medium pt-4 border-t border-gray-100 text-gray-600">
+                            <div className="flex justify-between text-sm font-medium pt-4 border-t border-border/50 text-muted">
                                 <span>${project.budget.toLocaleString()}</span>
                                 <span>{project.estimated_hours} hrs</span>
                             </div>
@@ -67,12 +67,12 @@ const Projects: React.FC = () => {
                     ))}
                 </div>
             ) : (
-                <div className="text-center py-12 bg-white rounded-xl border border-gray-200 border-dashed">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Icon name="clipboard" className="w-8 h-8 text-gray-400" />
+                <div className="text-center py-12 bg-canvas border border-dashed border-border">
+                    <div className="w-16 h-16 bg-surface flex items-center justify-center mx-auto mb-4">
+                        <Icon name="clipboard" className="w-8 h-8 text-muted" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-1">No projects found</h3>
-                    <p className="text-gray-500 mb-6">
+                    <h3 className="text-lg font-medium text-charcoal mb-1">No projects found</h3>
+                    <p className="text-muted mb-6">
                         {searchTerm ? "Try adjusting your search terms." : "Create your first project to get started."}
                     </p>
                 </div>
