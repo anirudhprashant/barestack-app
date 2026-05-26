@@ -151,7 +151,7 @@ const Dashboard: React.FC = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold text-charcoal mb-2 tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                    <h1 className="text-4xl font-bold font-display text-charcoal mb-2 tracking-tight">
                         {getGreeting()}, {userProfile.name}
                     </h1>
                     <p className="text-sm text-muted font-medium tracking-wide">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>

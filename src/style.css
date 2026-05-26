@@ -48,7 +48,7 @@
 
   /* Fonts */
   --font-display: 'Instrument Serif', Georgia, serif;
-  --font-body: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
 
   /* Border Radius — BareStack brand standard: sharp corners */
@@ -87,7 +87,7 @@
   --color-brand-accent: #C37624;
 
   --font-display: 'Instrument Serif', Georgia, serif;
-  --font-body: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
 
   color-scheme: light;
@@ -108,7 +108,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.015em;
 }
 
 /* BareStack: no rounded corners by default */
