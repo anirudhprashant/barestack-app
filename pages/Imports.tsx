@@ -19,7 +19,6 @@ const Imports: React.FC = () => {
             await undoImport(undoingBatch.id);
         } catch (error) {
             console.error("Failed to undo import:", error);
-            // Here you would show a toast to the user
         } finally {
             setLoading(false);
             setUndoingBatch(null);
@@ -30,24 +29,24 @@ const Imports: React.FC = () => {
         <div>
             <CrmHeader />
             <Card>
-                <h3 className="text-2xl font-bold mb-4">Import History</h3>
+                <h3 className="text-2xl font-bold text-charcoal mb-4">Import History</h3>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="border-b-[3px] border-brand-dark">
-                                <th className="p-4 font-black">File Name</th>
-                                <th className="p-4 font-black">Date</th>
-                                <th className="p-4 font-black">Contacts Imported</th>
-                                <th className="p-4 font-black">Actions</th>
+                            <tr className="border-b-2 border-border">
+                                <th className="p-4 font-bold text-charcoal">File Name</th>
+                                <th className="p-4 font-bold text-charcoal">Date</th>
+                                <th className="p-4 font-bold text-charcoal">Contacts Imported</th>
+                                <th className="p-4 font-bold text-charcoal">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {importBatches.length > 0 ? (
                                 importBatches.map(batch => (
-                                    <tr key={batch.id} className="border-b-2 border-brand-light last:border-b-0">
-                                        <td className="p-4 font-bold">{batch.file_name}</td>
-                                        <td className="p-4">{format(new Date(batch.created_at), 'PPp')}</td>
-                                        <td className="p-4">{batch.contact_count}</td>
+                                    <tr key={batch.id} className="border-b border-border/50 last:border-b-0">
+                                        <td className="p-4 font-bold text-charcoal">{batch.file_name}</td>
+                                        <td className="p-4 text-muted">{format(new Date(batch.created_at), 'PPp')}</td>
+                                        <td className="p-4 text-charcoal">{batch.contact_count}</td>
                                         <td className="p-4">
                                             <Button
                                                 variant="secondary"
@@ -60,7 +59,7 @@ const Imports: React.FC = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="text-center p-8 text-brand-dark opacity-70 font-semibold">
+                                    <td colSpan={4} className="text-center p-8 text-muted font-semibold">
                                         You haven't imported any contacts yet.
                                     </td>
                                 </tr>
@@ -71,7 +70,7 @@ const Imports: React.FC = () => {
             </Card>
 
             <Modal isOpen={!!undoingBatch} onClose={() => setUndoingBatch(null)} title="Confirm Undo Import">
-                <p className="mb-6">
+                <p className="mb-6 text-charcoal">
                     Are you sure you want to undo the import of <strong>{undoingBatch?.contact_count} contacts</strong> from the file "{undoingBatch?.file_name}"? This action will permanently delete these contacts and cannot be undone.
                 </p>
                 <div className="flex justify-end space-x-2">

@@ -11,7 +11,7 @@ import { InvoiceForm } from '../components/InvoiceForm';
 const TIPS = [
     {
         icon: 'zap',
-        color: 'text-yellow-400',
+        color: 'text-accent',
         title: 'Pro Tip',
         description: 'Track billable hours directly from your projects to keep your invoicing accurate and effortless.',
         buttonText: 'Go to Projects',
@@ -19,7 +19,7 @@ const TIPS = [
     },
     {
         icon: 'chart',
-        color: 'text-blue-400',
+        color: 'text-accent',
         title: 'Did you know?',
         description: 'You can export your financial reports to CSV for easier accounting and tax preparation.',
         buttonText: 'View Reports',
@@ -27,7 +27,7 @@ const TIPS = [
     },
     {
         icon: 'users',
-        color: 'text-green-400',
+        color: 'text-accent',
         title: 'Teamwork',
         description: 'Add team members to projects to collaborate and track time together in real-time.',
         buttonText: 'Manage Team',
@@ -46,8 +46,8 @@ const ProTipCard: React.FC = () => {
             setTimeout(() => {
                 setCurrentIndex((prev) => (prev + 1) % TIPS.length);
                 setIsAnimating(false);
-            }, 300); // Wait for fade out
-        }, 8000); // Change every 8 seconds
+            }, 300);
+        }, 8000);
 
         return () => clearInterval(interval);
     }, []);
@@ -55,18 +55,18 @@ const ProTipCard: React.FC = () => {
     const tip = TIPS[currentIndex];
 
     return (
-        <div className="bg-black text-white border-2 border-white p-6 relative overflow-hidden transition-all duration-500">
+        <div className="bg-charcoal text-canvas border border-border p-6 relative overflow-hidden transition-all duration-500">
             <div className={`relative z-10 transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
                 <div className="flex items-center mb-3">
                     <Icon name={tip.icon as any} className={`w-5 h-5 ${tip.color} mr-2`} />
                     <h3 className="text-lg font-bold">{tip.title}</h3>
                 </div>
-                <p className="text-gray-300 text-sm mb-4 leading-relaxed min-h-[60px]">
+                <p className="text-muted text-sm mb-4 leading-relaxed min-h-[60px]">
                     {tip.description}
                 </p>
                 <Button
                     variant="secondary"
-                    className="w-full justify-center bg-white text-black border-transparent hover:bg-gray-100 text-sm py-2 transition-all rounded-none"
+                    className="w-full justify-center bg-canvas text-charcoal border-canvas hover:bg-surface text-sm py-2 transition-all rounded-none"
                     onClick={() => navigate(tip.action)}
                 >
                     {tip.buttonText}
@@ -78,7 +78,7 @@ const ProTipCard: React.FC = () => {
                 {TIPS.map((_, idx) => (
                     <div
                         key={idx}
-                        className={`h-1 transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-white' : 'w-1 bg-gray-600'}`}
+                        className={`h-1 transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-canvas' : 'w-1 bg-charcoal/40'}`}
                     />
                 ))}
             </div>
@@ -96,23 +96,23 @@ const Dashboard: React.FC = () => {
     const [isAddInvoiceModalOpen, setIsAddInvoiceModalOpen] = useState(false);
 
     const activityIconMap: Record<RecentActivity['type'], React.ReactNode> = {
-        'CONTACT_ADDED': <Icon name="users" className="w-5 h-5 text-blue-600" />,
-        'PROJECT_CREATED': <Icon name="clipboard" className="w-5 h-5 text-purple-600" />,
-        'INVOICE_CREATED': <Icon name="document" className="w-5 h-5 text-green-600" />,
-        'INVOICE_SENT': <Icon name="document" className="w-5 h-5 text-emerald-600" />,
-        'TASK_COMPLETED': <Icon name="check" className="w-5 h-5 text-indigo-600" />,
-        'DEAL_ADDED': <Icon name="users" className="w-5 h-5 text-orange-600" />,
-        'EXPENSE_ADDED': <Icon name="receipt" className="w-5 h-5 text-red-600" />,
+        'CONTACT_ADDED': <Icon name="users" className="w-5 h-5 text-activity-blue" />,
+        'PROJECT_CREATED': <Icon name="clipboard" className="w-5 h-5 text-activity-purple" />,
+        'INVOICE_CREATED': <Icon name="document" className="w-5 h-5 text-activity-green" />,
+        'INVOICE_SENT': <Icon name="document" className="w-5 h-5 text-activity-emerald" />,
+        'TASK_COMPLETED': <Icon name="check" className="w-5 h-5 text-activity-indigo" />,
+        'DEAL_ADDED': <Icon name="users" className="w-5 h-5 text-activity-orange" />,
+        'EXPENSE_ADDED': <Icon name="receipt" className="w-5 h-5 text-activity-red" />,
     };
 
     const activityBgMap: Record<RecentActivity['type'], string> = {
-        'CONTACT_ADDED': 'bg-blue-50 border-blue-100',
-        'PROJECT_CREATED': 'bg-purple-50 border-purple-100',
-        'INVOICE_CREATED': 'bg-green-50 border-green-100',
-        'INVOICE_SENT': 'bg-emerald-50 border-emerald-100',
-        'TASK_COMPLETED': 'bg-indigo-50 border-indigo-100',
-        'DEAL_ADDED': 'bg-orange-50 border-orange-100',
-        'EXPENSE_ADDED': 'bg-red-50 border-red-100',
+        'CONTACT_ADDED': 'bg-activity-blue/10 border-activity-blue/20',
+        'PROJECT_CREATED': 'bg-activity-purple/10 border-activity-purple/20',
+        'INVOICE_CREATED': 'bg-activity-green/10 border-activity-green/20',
+        'INVOICE_SENT': 'bg-activity-emerald/10 border-activity-emerald/20',
+        'TASK_COMPLETED': 'bg-activity-indigo/10 border-activity-indigo/20',
+        'DEAL_ADDED': 'bg-activity-orange/10 border-activity-orange/20',
+        'EXPENSE_ADDED': 'bg-activity-red/10 border-activity-red/20',
     };
 
     // Calculate stats
@@ -151,13 +151,13 @@ const Dashboard: React.FC = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">
+                    <h1 className="text-4xl font-bold text-charcoal mb-2 tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                         {getGreeting()}, {userProfile.name}
                     </h1>
-                    <p className="text-sm text-gray-500 font-medium tracking-wide">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
+                    <p className="text-sm text-muted font-medium tracking-wide">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
                 </div>
                 <div className="flex space-x-3">
-                    <Button variant="secondary" className="bg-white shadow-sm border border-gray-200 hover:bg-gray-50 text-gray-700" onClick={() => navigate('/settings')}>
+                    <Button variant="secondary" className="bg-canvas border-border hover:bg-surface text-charcoal" onClick={() => navigate('/settings')}>
                         <Icon name="settings" className="w-4 h-4 mr-2" /> Settings
                     </Button>
                 </div>
@@ -165,68 +165,68 @@ const Dashboard: React.FC = () => {
 
             {/* Hero Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="group relative bg-white text-black p-7 border border-gray-200 hover:border-black transition-all duration-300">
+                <div className="group relative bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-5">
-                            <Icon name="trending-up" className="w-8 h-8 text-black" />
-                            <span className="text-xs font-bold px-2.5 py-1 bg-green-600 text-white rounded-none">Revenue</span>
+                            <Icon name="trending-up" className="w-8 h-8 text-charcoal" />
+                            <span className="text-xs font-bold px-2.5 py-1 bg-activity-green text-canvas rounded-none">Revenue</span>
                         </div>
-                        <div className="text-4xl font-bold text-black mb-2 tracking-tight">${stats.outstandingRevenue.toLocaleString()}</div>
-                        <div className="text-sm text-gray-600 font-medium">Outstanding from {stats.unpaidInvoices} invoices</div>
+                        <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">${stats.outstandingRevenue.toLocaleString()}</div>
+                        <div className="text-sm text-muted font-medium">Outstanding from {stats.unpaidInvoices} invoices</div>
                     </div>
                 </div>
 
-                <div className="group relative bg-white text-black p-7 border border-gray-200 hover:border-black transition-all duration-300">
+                <div className="group relative bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-5">
-                            <Icon name="clipboard" className="w-8 h-8 text-black" />
-                            <span className="text-xs font-bold px-2.5 py-1 bg-blue-600 text-white rounded-none">Projects</span>
+                            <Icon name="clipboard" className="w-8 h-8 text-charcoal" />
+                            <span className="text-xs font-bold px-2.5 py-1 bg-activity-blue text-canvas rounded-none">Projects</span>
                         </div>
-                        <div className="text-4xl font-bold text-black mb-2 tracking-tight">{stats.activeProjects}</div>
-                        <div className="text-sm text-gray-600 font-medium">Active projects with {stats.activeTasks} tasks</div>
+                        <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{stats.activeProjects}</div>
+                        <div className="text-sm text-muted font-medium">Active projects with {stats.activeTasks} tasks</div>
                     </div>
                 </div>
 
-                <div className="group relative bg-white text-black p-7 border border-gray-200 hover:border-black transition-all duration-300">
+                <div className="group relative bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-5">
-                            <Icon name="clock" className="w-8 h-8 text-black" />
-                            <span className="text-xs font-bold px-2.5 py-1 bg-orange-600 text-white rounded-none">Time</span>
+                            <Icon name="clock" className="w-8 h-8 text-charcoal" />
+                            <span className="text-xs font-bold px-2.5 py-1 bg-activity-orange text-canvas rounded-none">Time</span>
                         </div>
-                        <div className="text-4xl font-bold text-black mb-2 tracking-tight">{stats.hoursLoggedThisWeek}</div>
-                        <div className="text-sm text-gray-600 font-medium">Hours logged this week</div>
+                        <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{stats.hoursLoggedThisWeek}</div>
+                        <div className="text-sm text-muted font-medium">Hours logged this week</div>
                     </div>
                 </div>
             </div>
 
             {/* Quick Actions */}
             <div>
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Quick Actions</h3>
+                <h3 className="text-sm font-bold text-muted uppercase tracking-wider mb-4">Quick Actions</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <button
                         onClick={() => setIsAddContactModalOpen(true)}
-                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-white text-black border border-gray-200 hover:border-black transition-all duration-200"
+                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
                     >
                         <Icon name="users" className="w-4 h-4" />
                         <span className="font-semibold text-xs uppercase tracking-wider">Add Contact</span>
                     </button>
                     <button
                         onClick={() => setIsAddProjectModalOpen(true)}
-                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-white text-black border border-gray-200 hover:border-black transition-all duration-200"
+                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
                     >
                         <Icon name="plus" className="w-4 h-4" />
                         <span className="font-semibold text-xs uppercase tracking-wider">New Project</span>
                     </button>
                     <button
                         onClick={() => setIsAddInvoiceModalOpen(true)}
-                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-white text-black border border-gray-200 hover:border-black transition-all duration-200"
+                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
                     >
                         <Icon name="document" className="w-4 h-4" />
                         <span className="font-semibold text-xs uppercase tracking-wider">Create Invoice</span>
                     </button>
                     <button
                         onClick={() => navigate('/time-tracking')}
-                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-white text-black border border-gray-200 hover:border-black transition-all duration-200"
+                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
                     >
                         <Icon name="clock" className="w-4 h-4" />
                         <span className="font-semibold text-xs uppercase tracking-wider">Log Time</span>
@@ -238,32 +238,32 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Recent Activity Feed */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white border border-gray-200">
-                        <div className="p-5 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Recent Activity</h3>
+                    <div className="bg-canvas border border-border">
+                        <div className="p-5 border-b border-border flex justify-between items-center">
+                            <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider">Recent Activity</h3>
                         </div>
-                        <div className="divide-y divide-gray-100">
+                        <div className="divide-y divide-border/50">
                             {sortedActivity.length > 0 ? sortedActivity.slice(0, 6).map(item => (
-                                <div key={item.id} className="p-4 hover:bg-gray-50 transition-colors flex items-start space-x-4">
-                                    <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center border ${activityBgMap[item.type] || 'bg-gray-100 border-gray-200'}`}>
+                                <div key={item.id} className="p-4 hover:bg-surface/50 transition-colors flex items-start space-x-4">
+                                    <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center border ${activityBgMap[item.type] || 'bg-surface border-border'}`}>
                                         {activityIconMap[item.type]}
                                     </div>
                                     <div className="flex-grow pt-0.5">
-                                        <p className="text-sm font-medium text-gray-900">{item.description}</p>
-                                        <p className="text-xs text-gray-500 mt-0.5 flex items-center">
+                                        <p className="text-sm font-medium text-charcoal">{item.description}</p>
+                                        <p className="text-xs text-muted mt-0.5 flex items-center">
                                             {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
                                         </p>
                                     </div>
                                 </div>
                             )) : (
-                                <div className="text-center py-12 text-gray-500">
-                                    <Icon name="activity" className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                                <div className="text-center py-12 text-muted">
+                                    <Icon name="activity" className="w-12 h-12 mx-auto text-border mb-3" />
                                     <p>No recent activity to show.</p>
                                 </div>
                             )}
                         </div>
-                        <div className="p-3 bg-gray-50 border-t border-gray-200 text-center">
-                            <button onClick={() => navigate('/crm/activities')} className="text-xs font-bold uppercase tracking-wider text-black hover:underline">View All Activity</button>
+                        <div className="p-3 bg-surface border-t border-border text-center">
+                            <button onClick={() => navigate('/crm/activities')} className="text-xs font-bold uppercase tracking-wider text-charcoal hover:underline">View All Activity</button>
                         </div>
                     </div>
                 </div>
@@ -274,25 +274,25 @@ const Dashboard: React.FC = () => {
                     <ProTipCard />
 
                     {/* Mini Stats */}
-                    <div className="bg-white border border-gray-200 p-5">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Overview</h3>
+                    <div className="bg-canvas border border-border p-5">
+                        <h3 className="text-xs font-bold text-muted uppercase tracking-wider mb-4">Overview</h3>
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
-                                <span className="text-sm text-gray-600">Total Contacts</span>
-                                <span className="text-sm font-bold text-gray-900">{stats.totalContacts}</span>
+                                <span className="text-sm text-muted">Total Contacts</span>
+                                <span className="text-sm font-bold text-charcoal">{stats.totalContacts}</span>
                             </div>
-                            <div className="w-full bg-gray-100 h-1.5 overflow-hidden">
-                                <div className="bg-black h-full" style={{ width: '70%' }}></div>
+                            <div className="w-full bg-surface h-1.5 overflow-hidden">
+                                <div className="bg-charcoal h-full" style={{ width: '70%' }}></div>
                             </div>
 
                             <div className="flex justify-between items-center pt-2">
-                                <span className="text-sm text-gray-600">Tasks Completed</span>
-                                <span className="text-sm font-bold text-gray-900">
+                                <span className="text-sm text-muted">Tasks Completed</span>
+                                <span className="text-sm font-bold text-charcoal">
                                     {tasks.filter(t => t.status === TaskStatus.Done).length} / {tasks.length}
                                 </span>
                             </div>
-                            <div className="w-full bg-gray-100 h-1.5 overflow-hidden">
-                                <div className="bg-black h-full" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === TaskStatus.Done).length / tasks.length) * 100 : 0}%` }}></div>
+                            <div className="w-full bg-surface h-1.5 overflow-hidden">
+                                <div className="bg-charcoal h-full" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === TaskStatus.Done).length / tasks.length) * 100 : 0}%` }}></div>
                             </div>
                         </div>
                     </div>

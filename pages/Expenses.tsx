@@ -3,7 +3,6 @@ import { Button, Icon, Modal, Input, Select, PageHeader, Table, TableHeader, Tab
 import { Expense, ExpenseCategory } from '../types';
 import { useData } from '../dataStore';
 
-// --- Add Expense Form ---
 const AddExpenseForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { data, addExpense, addRecentActivity } = useData();
     const [description, setDescription] = useState('');
@@ -16,19 +15,17 @@ const AddExpenseForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        const newExpense: Omit<Expense, 'id' | 'user_id' | 'created_at'> = {
+        await addExpense({
             date: new Date(date).toISOString(),
             category,
             amount: parseFloat(amount) || 0,
             description,
             project_id: projectId,
-        };
-
-        await addExpense(newExpense);
+        });
         await addRecentActivity({
             timestamp: new Date().toISOString(),
             type: 'EXPENSE_ADDED',
-            description: `Added expense: ${description} for $${newExpense.amount}`
+            description: `Added expense: ${description} for $${amount}`
         });
         setLoading(false);
         onClose();
@@ -44,7 +41,7 @@ const AddExpenseForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <Select label="Category" id="category" value={category} onChange={e => setCategory(e.target.value as ExpenseCategory)}>
                 {Object.values(ExpenseCategory).map(c => <option key={c} value={c}>{c}</option>)}
             </Select>
-            <Select label="Project (Optional)" id="project" value={projectId} onChange={e => setProjectId(e.target.value)}>
+            <Select label="Project (Optional)" id="project" value={projectId || ''} onChange={e => setProjectId(e.target.value || undefined)}>
                 <option value="">None</option>
                 {data.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </Select>
@@ -55,7 +52,6 @@ const AddExpenseForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </form>
     );
 };
-
 
 const Expenses: React.FC = () => {
     const { data, deleteExpense } = useData();
@@ -74,11 +70,11 @@ const Expenses: React.FC = () => {
     };
 
     const categoryColors: Record<string, string> = {
-        [ExpenseCategory.Travel]: 'bg-blue-100 text-blue-700',
-        [ExpenseCategory.Meals]: 'bg-orange-100 text-orange-700',
-        [ExpenseCategory.Software]: 'bg-purple-100 text-purple-700',
-        [ExpenseCategory.Office]: 'bg-gray-100 text-gray-700',
-        [ExpenseCategory.Other]: 'bg-gray-100 text-gray-600',
+        [ExpenseCategory.Travel]: 'bg-activity-blue/10 text-activity-blue',
+        [ExpenseCategory.Meals]: 'bg-activity-orange/10 text-activity-orange',
+        [ExpenseCategory.Software]: 'bg-activity-purple/10 text-activity-purple',
+        [ExpenseCategory.Office]: 'bg-surface text-muted',
+        [ExpenseCategory.Other]: 'bg-surface text-muted',
     };
 
     return (
@@ -90,7 +86,7 @@ const Expenses: React.FC = () => {
             </PageHeader>
 
             {expenses.length > 0 ? (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-canvas border border-border overflow-hidden">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -107,24 +103,24 @@ const Expenses: React.FC = () => {
                                 <TableRow key={expense.id}>
                                     <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
                                     <TableCell>
-                                        <span className="font-medium text-gray-900">{expense.description}</span>
+                                        <span className="font-medium text-charcoal">{expense.description}</span>
                                     </TableCell>
                                     <TableCell>
-                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${categoryColors[expense.category] || 'bg-gray-100 text-gray-600'}`}>
+                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${categoryColors[expense.category] || 'bg-surface text-muted'}`}>
                                             {expense.category}
                                         </span>
                                     </TableCell>
                                     <TableCell>
-                                        <span className="text-gray-600">{getProjectName(expense.project_id)}</span>
+                                        <span className="text-muted">{getProjectName(expense.project_id)}</span>
                                     </TableCell>
                                     <TableCell>
-                                        <span className="font-bold text-gray-900">${expense.amount.toFixed(2)}</span>
+                                        <span className="font-bold text-charcoal">${expense.amount.toFixed(2)}</span>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end space-x-2">
                                             <button
                                                 onClick={() => handleDelete(expense)}
-                                                className="text-gray-400 hover:text-red-600 transition-colors"
+                                                className="text-muted hover:text-activity-red transition-colors"
                                                 title="Delete Expense"
                                             >
                                                 <Icon name="trash" className="w-5 h-5" />
@@ -137,12 +133,12 @@ const Expenses: React.FC = () => {
                     </Table>
                 </div>
             ) : (
-                <div className="text-center py-12 bg-white rounded-xl border border-gray-200 border-dashed">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Icon name="credit-card" className="w-8 h-8 text-gray-400" />
+                <div className="text-center py-12 bg-canvas border border-dashed border-border">
+                    <div className="w-16 h-16 bg-surface flex items-center justify-center mx-auto mb-4">
+                        <Icon name="credit-card" className="w-8 h-8 text-muted" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-1">No expenses recorded</h3>
-                    <p className="text-gray-500 mb-6">Keep track of your business spending here.</p>
+                    <h3 className="text-lg font-medium text-charcoal mb-1">No expenses recorded</h3>
+                    <p className="text-muted mb-6">Keep track of your business spending here.</p>
                 </div>
             )}
 

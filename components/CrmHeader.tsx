@@ -10,7 +10,7 @@ const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
     ];
 
     return (
-        <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
+        <div className="flex justify-between items-center mb-8 border-b border-border pb-4">
             <div className="flex space-x-1">
                 {navLinks.map(link => (
                     <NavLink
@@ -18,10 +18,10 @@ const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
                         to={link.href}
                         end
                         className={({ isActive }) =>
-                            `text-sm font-medium py-2 px-4 border transition-all
+                            `text-sm font-semibold py-2 px-4 border transition-all rounded-none
                             ${isActive
-                                ? 'bg-black text-white border-black'
-                                : 'bg-white text-gray-700 border-transparent hover:border-gray-300 hover:text-black'}`
+                                ? 'bg-charcoal text-canvas border-charcoal'
+                                : 'bg-canvas text-muted border-transparent hover:text-charcoal hover:border-border'}`
                         }
                     >
                         {link.label}

@@ -62,7 +62,7 @@ export const ProjectForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <Input label="Project Name" id="projectName" value={name} onChange={e => setName(e.target.value)} required />
 
                 <div>
-                    <label htmlFor="client" className="block text-sm font-medium text-gray-700 mb-1.5">Client</label>
+                    <label htmlFor="client" className="block text-sm font-semibold text-charcoal mb-1.5">Client</label>
                     <div className="flex space-x-2">
                         <div className="flex-grow">
                             <select
@@ -70,8 +70,8 @@ export const ProjectForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 value={clientId}
                                 onChange={e => setClientId(e.target.value)}
                                 required
-                                className="w-full p-2.5 bg-white text-gray-900 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-dark/20 focus:border-brand-dark appearance-none bg-no-repeat bg-right pr-8 transition-colors"
-                                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")` }}
+                                className="w-full p-2.5 bg-canvas text-charcoal rounded-none border border-border focus:outline-none focus:border-content focus:border-2 appearance-none bg-no-repeat bg-right pr-8 transition-colors"
+                                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23141C11' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")` }}
                             >
                                 <option value="" disabled>Select a Client</option>
                                 {data.contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}

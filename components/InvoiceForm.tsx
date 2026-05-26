@@ -11,7 +11,6 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
     const [issueDate, setIssueDate] = useState(initialData?.issue_date ? new Date(initialData.issue_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     const [dueDate, setDueDate] = useState(initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : addDays(new Date(), 30).toISOString().split('T')[0]);
 
-    // Flatten line items for the form (assuming single item for now as per original form)
     const firstItem = initialData?.line_items[0];
     const [description, setDescription] = useState(firstItem?.description || 'Consulting Services');
     const [rate, setRate] = useState(firstItem?.rate.toString() || '100');
@@ -43,7 +42,6 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
             }];
 
             if (initialData) {
-                // Update existing invoice
                 const updatedInvoice: Invoice = {
                     ...initialData,
                     client_id: clientId,
@@ -62,7 +60,6 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
                     console.error("Failed to log activity:", logError);
                 }
             } else {
-                // Create new invoice
                 const lastInvoiceNumber = data.invoices.reduce((max, inv) => {
                     const num = parseInt(inv.invoice_number.split('-')[1]);
                     return num > max ? num : max;
@@ -110,7 +107,7 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
         <>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label htmlFor="client" className="block text-sm font-medium text-gray-700 mb-1.5">Client</label>
+                    <label htmlFor="client" className="block text-sm font-semibold text-charcoal mb-1.5">Client</label>
                     <div className="flex space-x-2">
                         <div className="flex-grow">
                             <select
@@ -118,8 +115,8 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
                                 value={clientId}
                                 onChange={e => setClientId(e.target.value)}
                                 required
-                                className="w-full p-2.5 bg-white text-gray-900 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-dark/20 focus:border-brand-dark appearance-none bg-no-repeat bg-right pr-8 transition-colors"
-                                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")` }}
+                                className="w-full p-2.5 bg-canvas text-charcoal rounded-none border border-border focus:outline-none focus:border-content focus:border-2 appearance-none bg-no-repeat bg-right pr-8 transition-colors"
+                                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23141C11' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")` }}
                             >
                                 <option value="" disabled>Select a Client</option>
                                 {data.contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -136,8 +133,8 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
                     <Input label="Due Date" id="dueDate" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} required />
                 </div>
 
-                <div className="border-t border-gray-200 pt-4 mt-2">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Line Item</h4>
+                <div className="border-t border-border pt-4 mt-2">
+                    <h4 className="text-sm font-semibold text-charcoal mb-3">Line Item</h4>
                     <Input label="Description" id="description" value={description} onChange={e => setDescription(e.target.value)} required />
                     <div className="grid grid-cols-2 gap-4 mt-3">
                         <Input label="Quantity" id="quantity" type="number" step="0.1" value={quantity} onChange={e => setQuantity(e.target.value)} required />

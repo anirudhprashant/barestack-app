@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Icon, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, PageHeader, Modal } from '../components/ui';
+import { Button, Icon, Modal, Input, PageHeader, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui';
 import { Invoice, InvoiceStatus } from '../types';
 import { useData } from '../dataStore';
 import { InvoiceForm } from '../components/InvoiceForm';
@@ -30,14 +30,19 @@ const Invoices: React.FC = () => {
         const margin = 20;
         const rightMargin = pageWidth - margin;
 
-        // Monochrome palette
-        const black = [0, 0, 0] as [number, number, number];
-        const darkGray = [60, 60, 60] as [number, number, number];
-        const midGray = [120, 120, 120] as [number, number, number];
-        const lightGray = [200, 200, 200] as [number, number, number];
-        const white = [255, 255, 255] as [number, number, number];
+        // Monochrome BareStack palette
+        const black: [number, number, number] = [20, 28, 17];
+        const darkGray: [number, number, number] = [60, 60, 60];
+        const midGray: [number, number, number] = [107, 107, 107];
+        const lightGray: [number, number, number] = [200, 200, 200];
+        const white: [number, number, number] = [255, 255, 255];
+        const canvas: [number, number, number] = [250, 249, 245];
 
-        // Header - simple text only, no bar
+        // Background
+        doc.setFillColor(...canvas);
+        doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), 'F');
+
+        // Header - simple text only
         doc.setTextColor(...black);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
@@ -47,19 +52,17 @@ const Invoices: React.FC = () => {
         doc.setTextColor(...midGray);
         doc.text('INVOICE', rightMargin, 25, { align: 'right' });
 
-        // Invoice meta - clean two column layout
+        // Invoice meta
         doc.setTextColor(...darkGray);
         doc.setFontSize(9);
         const metaY = 40;
 
-        // Left: Bill To
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...black);
         doc.text('Bill To:', margin, metaY);
         doc.setFont('helvetica', 'normal');
         doc.text(clientName, margin, metaY + 6);
 
-        // Right: Meta info
         const rightCol = 140;
         doc.setTextColor(...midGray);
         doc.text('Invoice Number', rightCol, metaY);
@@ -71,12 +74,12 @@ const Invoices: React.FC = () => {
         doc.text(new Date(invoice.issue_date).toLocaleDateString(), rightMargin, metaY + 6, { align: 'right' });
         doc.text(new Date(invoice.due_date).toLocaleDateString(), rightMargin, metaY + 12, { align: 'right' });
 
-        // Thin line separator
+        // Thin line
         doc.setDrawColor(...lightGray);
         doc.setLineWidth(0.3);
         doc.line(margin, metaY + 20, rightMargin, metaY + 20);
 
-        // Status - small text, not a badge
+        // Status
         doc.setFontSize(8);
         doc.setTextColor(...midGray);
         doc.text(`Status: ${invoice.status}`, margin, metaY + 28);
@@ -119,7 +122,7 @@ const Invoices: React.FC = () => {
             margin: { left: margin, right: margin },
         });
 
-        // Totals - right aligned, clean
+        // Totals
         const finalY = (doc as any).lastAutoTable?.finalY || tableY + 40;
         const totalsX = 140;
         const totalsRightX = rightMargin;
@@ -142,7 +145,6 @@ const Invoices: React.FC = () => {
             doc.text(`$${taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX, finalY + 22, { align: 'right' });
         }
 
-        // Total line
         doc.setDrawColor(...black);
         doc.setLineWidth(0.5);
         doc.line(totalsX, finalY + 30, totalsRightX, finalY + 30);
@@ -153,7 +155,7 @@ const Invoices: React.FC = () => {
         doc.text('Total', totalsX, finalY + 38);
         doc.text(`$${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX, finalY + 38, { align: 'right' });
 
-        // Footer - minimal
+        // Footer
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...midGray);
@@ -228,10 +230,10 @@ const Invoices: React.FC = () => {
     };
 
     const statusClasses: Record<InvoiceStatus, string> = {
-        [InvoiceStatus.Draft]: 'bg-gray-100 text-gray-700',
-        [InvoiceStatus.Sent]: 'bg-blue-50 text-blue-700',
-        [InvoiceStatus.Paid]: 'bg-green-50 text-green-700',
-        [InvoiceStatus.Overdue]: 'bg-red-50 text-red-700',
+        [InvoiceStatus.Draft]: 'bg-surface text-muted',
+        [InvoiceStatus.Sent]: 'bg-activity-blue/10 text-activity-blue',
+        [InvoiceStatus.Paid]: 'bg-activity-green/10 text-activity-green',
+        [InvoiceStatus.Overdue]: 'bg-activity-red/10 text-activity-red',
     };
 
     return (
@@ -248,7 +250,7 @@ const Invoices: React.FC = () => {
             </PageHeader>
 
             {invoices.length > 0 ? (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-canvas border border-border overflow-hidden">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -271,7 +273,7 @@ const Invoices: React.FC = () => {
                         </TableHeader>
                         <TableBody>
                             {invoices.map(invoice => (
-                                <TableRow key={invoice.id} className={selectedIds.has(invoice.id!) ? 'bg-brand-light/30' : ''}>
+                                <TableRow key={invoice.id} className={selectedIds.has(invoice.id!) ? 'bg-surface/50' : ''}>
                                     <TableCell>
                                         <input
                                             type="checkbox"
@@ -281,11 +283,11 @@ const Invoices: React.FC = () => {
                                         />
                                     </TableCell>
                                     <TableCell>
-                                        <span className="font-medium text-gray-900">{invoice.invoice_number}</span>
+                                        <span className="font-medium text-charcoal">{invoice.invoice_number}</span>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center">
-                                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 mr-2">
+                                            <div className="w-6 h-6 bg-surface border border-border flex items-center justify-center text-xs font-bold text-muted mr-2">
                                                 {getClientName(invoice.client_id).charAt(0)}
                                             </div>
                                             {getClientName(invoice.client_id)}
@@ -294,7 +296,7 @@ const Invoices: React.FC = () => {
                                     <TableCell>{new Date(invoice.issue_date).toLocaleDateString()}</TableCell>
                                     <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
                                     <TableCell>
-                                        <span className="font-medium text-gray-900">${getInvoiceTotal(invoice).toLocaleString()}</span>
+                                        <span className="font-medium text-charcoal">${getInvoiceTotal(invoice).toLocaleString()}</span>
                                     </TableCell>
                                     <TableCell>
                                         <select
@@ -311,21 +313,21 @@ const Invoices: React.FC = () => {
                                         <div className="flex justify-end space-x-2">
                                             <button
                                                 onClick={() => handleDownloadPDF(invoice)}
-                                                className="p-1.5 text-black hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-black"
+                                                className="p-1.5 text-charcoal hover:bg-surface transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-charcoal"
                                                 title="Download PDF"
                                             >
                                                 <Icon name="download" className="w-5 h-5" />
                                             </button>
                                             <button
                                                 onClick={() => handleEdit(invoice)}
-                                                className="p-1.5 text-black hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-black"
+                                                className="p-1.5 text-charcoal hover:bg-surface transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-charcoal"
                                                 title="Edit Invoice"
                                             >
                                                 <Icon name="edit" className="w-5 h-5" />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(invoice)}
-                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-600"
+                                                className="p-1.5 text-activity-red hover:bg-activity-red/10 transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-activity-red"
                                                 title="Delete Invoice"
                                             >
                                                 <Icon name="trash" className="w-5 h-5" />
@@ -338,12 +340,12 @@ const Invoices: React.FC = () => {
                     </Table>
                 </div>
             ) : (
-                <div className="text-center py-12 bg-white rounded-xl border border-gray-200 border-dashed">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Icon name="receipt" className="w-8 h-8 text-gray-400" />
+                <div className="text-center py-12 bg-canvas border border-dashed border-border">
+                    <div className="w-16 h-16 bg-surface flex items-center justify-center mx-auto mb-4">
+                        <Icon name="receipt" className="w-8 h-8 text-muted" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-1">No invoices yet</h3>
-                    <p className="text-gray-500 mb-6">Create your first invoice to get paid.</p>
+                    <h3 className="text-lg font-medium text-charcoal mb-1">No invoices yet</h3>
+                    <p className="text-muted mb-6">Create your first invoice to get paid.</p>
                 </div>
             )}
 
