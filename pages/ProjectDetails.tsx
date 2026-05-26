@@ -171,7 +171,7 @@ const ProjectDetails: React.FC = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-charcoal mb-2 tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>{project.name}</h1>
+                    <h1 className="text-3xl font-bold font-display text-charcoal mb-2 tracking-tight">{project.name}</h1>
                     <div className="flex items-center space-x-4 text-sm text-muted">
                         <span className={`px-2.5 py-0.5 text-xs font-medium border ${project.status === 'Active' ? 'bg-activity-green/10 text-activity-green border-activity-green/20' :
                                 project.status === 'Completed' ? 'bg-activity-blue/10 text-activity-blue border-activity-blue/20' :

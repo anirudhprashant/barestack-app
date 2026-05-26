@@ -32,7 +32,7 @@ const LoginPage: React.FC = () => {
             <div className="w-full max-w-md">
                 {/* Branding */}
                 <div className="mb-8">
-                    <h1 className="text-5xl font-bold text-canvas tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                    <h1 className="text-5xl font-bold font-display text-canvas tracking-tight">
                         BareStack
                     </h1>
                     <p className="text-sm font-semibold text-muted uppercase tracking-widest mt-2">
@@ -43,7 +43,7 @@ const LoginPage: React.FC = () => {
                 {/* Form Card */}
                 <div className="bg-canvas border border-border p-8">
                     <div className="border-b border-border pb-6 mb-8">
-                        <h2 className="text-2xl font-bold text-charcoal" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                        <h2 className="text-2xl font-bold font-display text-charcoal">
                             {isSignUp ? 'Create account' : 'Sign in'}
                         </h2>
                     </div>
