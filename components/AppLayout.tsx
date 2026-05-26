@@ -23,7 +23,7 @@ const AppLayout: React.FC = () => {
             <Sidebar />
             <div className="ml-[220px]">
                 <Header />
-                <main className="pt-16">
+                <main className="pt-[var(--app-shell-header-height)]">
                     <div className="p-8">
                         {loading ? (
                             <div className="flex justify-center items-center h-64">
