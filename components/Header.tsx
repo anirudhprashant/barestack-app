@@ -17,7 +17,7 @@ const Header: React.FC = () => {
     const currentPage = getPageTitle(location.pathname);
 
     return (
-        <header className="fixed top-0 left-[220px] right-0 h-16 bg-canvas border-b border-border flex items-center justify-end px-6 z-10">
+        <header className="fixed top-0 left-[220px] right-0 h-[var(--app-shell-header-height)] bg-canvas border-b border-border flex items-center justify-end px-6 z-10">
             <div className="flex items-center space-x-3">
                 <button className="p-2 text-muted hover:text-charcoal transition-colors border border-transparent hover:border-border">
                     <Icon name="bell" className="w-5 h-5" />
