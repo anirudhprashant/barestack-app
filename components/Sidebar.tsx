@@ -49,7 +49,7 @@ const Sidebar: React.FC = () => {
                         </NavLink>
                     ))}
 
-                    <div className="pt-3 mt-3 border-t border-border/50">
+                    <div className="pt-3 mt-3">
                         <NavLink
                             to="/settings"
                             className={({ isActive }) =>
@@ -66,7 +66,7 @@ const Sidebar: React.FC = () => {
                 </nav>
 
                 {/* User */}
-                <div className="pt-3 border-t border-border/50 flex items-center justify-center gap-2 px-2">
+                <div className="pt-3 flex items-center justify-center gap-2 px-2">
                     <div className="w-9 h-9 bg-charcoal/80 text-muted font-semibold text-sm flex items-center justify-center rounded-none border border-border/50 flex-shrink-0">
                         {userInitial}
                     </div>
