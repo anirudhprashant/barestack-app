@@ -25,7 +25,7 @@ export type ValidatedContact = z.infer<typeof ContactSchema>;
 // Deal validation
 export const DealSchema = z.object({
     contact_id: z.string().min(1),
-    value: z.number().min(0),
+    value: z.number().min(1),
     stage: z.enum(['Lead', 'Qualified', 'Proposal', 'Won', 'Lost']),
     last_interaction: z.string().optional(),
 });

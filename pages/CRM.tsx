@@ -174,7 +174,7 @@ const CRM: React.FC = () => {
                 } else {
                     await addDeal({
                         contact_id: id,
-                        value: 0,
+                        value: 1,
                         stage,
                         last_interaction: new Date().toISOString()
                     });
