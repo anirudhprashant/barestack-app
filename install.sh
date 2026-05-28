@@ -51,13 +51,15 @@ if [ ! -f "./pocketbase" ]; then
 fi
 
 # --- Build the frontend pointed at the right backend ---
+# Self-hosted by default. A custom VITE_POCKETBASE_URL (e.g. a public URL for
+# your own PocketBase behind a reverse proxy) is honored in the default mode.
 if [ "$MODE" = "cloud" ]; then
-    echo "🔨 Building for CLOUD (${PB_URL_CLOUD})..."
-    VITE_POCKETBASE_URL="$PB_URL_CLOUD" npm run build
+    BUILD_PB_URL="$PB_URL_CLOUD"
 else
-    echo "🔨 Building for SELF-HOSTED (${PB_URL_LOCAL})..."
-    VITE_POCKETBASE_URL="$PB_URL_LOCAL" npm run build
+    BUILD_PB_URL="${VITE_POCKETBASE_URL:-$PB_URL_LOCAL}"
 fi
+echo "🔨 Building frontend against ${BUILD_PB_URL}..."
+VITE_POCKETBASE_URL="$BUILD_PB_URL" npm run build
 
 # Cloud builds use the shared hosted backend — no local PocketBase setup needed.
 if [ "$MODE" = "cloud" ]; then
