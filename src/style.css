@@ -175,3 +175,19 @@ h1, h2, h3, h4, h5, h6 {
   pointer-events: none;
   mix-blend-mode: soft-light;
 }
+
+/* Slow ambient drift for background glows (login screen). */
+@keyframes drift-a {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(24px, -18px); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-26px, 20px); }
+}
+.animate-drift-a { animation: drift-a 19s ease-in-out infinite; }
+.animate-drift-b { animation: drift-b 24s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drift-a, .animate-drift-b { animation: none; }
+}
