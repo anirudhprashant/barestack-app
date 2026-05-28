@@ -6,6 +6,19 @@ import { InvoiceForm } from '../components/InvoiceForm';
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
 
+// Instrument Serif isn't one of jsPDF's three built-in fonts, so embed the real
+// brand font (lazily, as its own chunk) and register it on each document.
+let fontPromise: Promise<{ regular: string; italic: string }> | null = null;
+const loadBrandFont = () => {
+    if (!fontPromise) {
+        fontPromise = import('../src/lib/instrumentSerifFont').then(m => ({
+            regular: m.instrumentSerifRegular,
+            italic: m.instrumentSerifItalic,
+        }));
+    }
+    return fontPromise;
+};
+
 const Invoices: React.FC = () => {
     const { data, updateInvoice, deleteInvoice, addRecentActivity } = useData();
     const { invoices, contacts } = data;
@@ -23,8 +36,17 @@ const Invoices: React.FC = () => {
         return subtotal * (1 + invoice.tax_rate / 100);
     };
 
-    const generatePDF = (invoice: Invoice): jsPDF => {
+    const generatePDF = async (invoice: Invoice): Promise<jsPDF> => {
         const doc = new jsPDF();
+
+        // Register the embedded Instrument Serif (regular + italic).
+        const font = await loadBrandFont();
+        doc.addFileToVFS('InstrumentSerif-Regular.ttf', font.regular);
+        doc.addFont('InstrumentSerif-Regular.ttf', 'InstrumentSerif', 'normal');
+        doc.addFileToVFS('InstrumentSerif-Italic.ttf', font.italic);
+        doc.addFont('InstrumentSerif-Italic.ttf', 'InstrumentSerif', 'italic');
+        const serif = 'InstrumentSerif';
+
         const client = contacts.find(c => c.id === invoice.client_id);
         const clientName = client?.name || 'Unknown Client';
         const clientCompany = client?.company || '';
@@ -74,7 +96,7 @@ const Invoices: React.FC = () => {
         doc.setFillColor(...gold);
         doc.rect(0, bandH - 1.2, pageWidth, 1.2, 'F');
 
-        doc.setFont('times', 'bold');
+        doc.setFont(serif, 'normal');
         doc.setFontSize(28);
         doc.setTextColor(...canvas);
         doc.text('BareStack', margin, 26);
@@ -84,7 +106,7 @@ const Invoices: React.FC = () => {
         doc.setTextColor(...gold);
         doc.text('CRM FOR AGENCIES + FREELANCERS', margin, 33, { charSpace: 0.6 });
 
-        doc.setFont('times', 'normal');
+        doc.setFont(serif, 'normal');
         doc.setFontSize(20);
         doc.setTextColor(...canvas);
         doc.text('INVOICE', rightMargin, 24, { align: 'right' });
@@ -99,7 +121,7 @@ const Invoices: React.FC = () => {
         // Left: FROM + BILLED TO
         labelFont();
         doc.text('FROM', margin, 60, { charSpace: 0.6 });
-        doc.setFont('times', 'normal');
+        doc.setFont(serif, 'normal');
         doc.setFontSize(12);
         doc.setTextColor(...content);
         doc.text(issuer?.name || 'BareStack', margin, 66);
@@ -112,7 +134,7 @@ const Invoices: React.FC = () => {
 
         labelFont();
         doc.text('BILLED TO', margin, 82, { charSpace: 0.6 });
-        doc.setFont('times', 'normal');
+        doc.setFont(serif, 'normal');
         doc.setFontSize(12);
         doc.setTextColor(...content);
         doc.text(clientName, margin, 88);
@@ -237,7 +259,7 @@ const Invoices: React.FC = () => {
         const barX = 118;
         doc.setFillColor(...forest);
         doc.rect(barX, barTop, rightMargin - barX, 12, 'F');
-        doc.setFont('times', 'bold');
+        doc.setFont(serif, 'normal');
         doc.setFontSize(11);
         doc.setTextColor(...canvas);
         doc.text('TOTAL DUE', barX + 4, barTop + 8, { charSpace: 0.4 });
@@ -252,7 +274,7 @@ const Invoices: React.FC = () => {
         doc.setFillColor(...accent);
         doc.rect(margin, fy - 0.4, 20, 0.9, 'F');
 
-        doc.setFont('times', 'italic');
+        doc.setFont(serif, 'italic');
         doc.setFontSize(11);
         doc.setTextColor(...content);
         doc.text('Thank you for your business.', margin, fy + 9);
@@ -265,8 +287,8 @@ const Invoices: React.FC = () => {
         return doc;
     };
 
-    const handleDownloadPDF = (invoice: Invoice) => {
-        const doc = generatePDF(invoice);
+    const handleDownloadPDF = async (invoice: Invoice) => {
+        const doc = await generatePDF(invoice);
         const clientName = getClientName(invoice.client_id).replace(/\s+/g, '_');
         doc.save(`Invoice_${invoice.invoice_number}_${clientName}.pdf`);
     };
@@ -277,10 +299,19 @@ const Invoices: React.FC = () => {
             setPreviewUrl(null);
             return;
         }
-        const url = generatePDF(previewInvoice).output('bloburl') as unknown as string;
-        setPreviewUrl(url);
+        let url: string | null = null;
+        let cancelled = false;
+        generatePDF(previewInvoice).then(doc => {
+            url = doc.output('bloburl') as unknown as string;
+            if (cancelled) {
+                URL.revokeObjectURL(url);
+            } else {
+                setPreviewUrl(url);
+            }
+        });
         return () => {
-            URL.revokeObjectURL(url);
+            cancelled = true;
+            if (url) URL.revokeObjectURL(url);
         };
     }, [previewInvoice]);
 
@@ -295,7 +326,7 @@ const Invoices: React.FC = () => {
         const selectedInvoices = invoices.filter(inv => selectedIds.has(inv.id!));
 
         for (const invoice of selectedInvoices) {
-            const doc = generatePDF(invoice);
+            const doc = await generatePDF(invoice);
             const clientName = getClientName(invoice.client_id).replace(/\s+/g, '_');
             const filename = `Invoice_${invoice.invoice_number}_${clientName}.pdf`;
             doc.save(filename);
