@@ -147,3 +147,28 @@ h1, h2, h3, h4, h5, h6 {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   mix-blend-mode: multiply;
 }
+
+/* Vintage paper grain — mirrors the BareStack website's texture.
+   Apply to any element (e.g. the forest-green surfaces); the ::after sits
+   behind content via the isolated stacking context, so children need no z-index. */
+:root {
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='5' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23grain)' opacity='1'/%3E%3C/svg%3E");
+}
+
+.paper-grain {
+  position: relative;
+  isolation: isolate;
+}
+
+.paper-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--paper-grain), linear-gradient(135deg, rgba(255, 236, 190, 0.10), rgba(87, 57, 25, 0.12));
+  background-repeat: repeat, no-repeat;
+  background-size: 220px 220px, cover;
+  opacity: 0.5;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+}
