@@ -5,7 +5,7 @@ A modern, professional CRM for agencies and freelancers. Built with React, TypeS
 ## Quick Start (One Command)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/anirudhprashant/BareStack-Google/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/anirudhprashant/barestack-app/main/install.sh | bash
 ```
 
 Or if you already have the repo:
@@ -14,13 +14,23 @@ Or if you already have the repo:
 ./install.sh
 ```
 
+By default this is a **fully self-hosted** install: the app talks to a PocketBase
+instance running on your own machine. Your data lives in `./pb_data` and never
+touches the BareStack cloud.
+
 This will:
 1. Install npm dependencies
-2. Download PocketBase (backend)
-3. Build the frontend
-4. Create a `start.sh` script
+2. Download PocketBase (the pinned, tested version)
+3. Apply the database schema from `pb_migrations/` (collections + owner-only access rules)
+4. Create a PocketBase admin with a randomly generated password (printed once)
+5. Build the frontend pointed at your local PocketBase
+6. Create a `start.sh` script
 
 Then run `./start.sh` to launch.
+
+> **Want to use the hosted BareStack cloud instead of your own backend?**
+> Run `./install.sh --cloud`. This builds the frontend against `api.barestack.org`
+> and skips the local PocketBase setup.
 
 ---
 
@@ -34,100 +44,35 @@ npm install
 
 ### 2. Download PocketBase
 
-```bash
-# Download the latest release for your platform
-# Linux:
-wget https://github.com/pocketbase/pocketbase/releases/latest/pocketbase_linux_amd64.zip
-unzip pocketbase_linux_amd64.zip
-chmod +x pocketbase
+Download the **pinned** version (the installer uses the same one; newer majors
+change the admin API and may not match these migrations):
 
-# macOS (Apple Silicon):
-curl -L https://github.com/pocketbase/pocketbase/releases/latest/pocketbase_darwin_arm64.zip -o pocketbase.zip
-unzip pocketbase.zip
+```bash
+PB_VERSION=0.36.2
+# Linux amd64 (use linux_arm64 / darwin_arm64 / darwin_amd64 as appropriate):
+curl -fL "https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip" -o pocketbase.zip
+unzip -o pocketbase.zip pocketbase
 chmod +x pocketbase
 ```
 
-### 3. Set Up PocketBase
+### 3. Apply the Schema
 
-1. Start PocketBase: `./pocketbase serve --http="0.0.0.0:8092"`
-2. Open http://localhost:8092/_/ in your browser
-3. Create an admin account
-4. Create these collections with the following fields:
+The collections and their owner-only access rules are version-controlled in
+`pb_migrations/`. Apply them — no manual collection creation needed:
 
-**users** (built-in auth collection)
-- email (required)
-- password (required)
+```bash
+./pocketbase migrate up --dir ./pb_data --migrationsDir ./pb_migrations
+```
 
-**contacts**
-- name (text, required)
-- email (email)
-- phone (text)
-- company (text)
-- user (relation → users, required)
+Then create an admin (superuser):
 
-**deals**
-- contact_id (relation → contacts, required)
-- value (number, required)
-- stage (select: Lead/Qualified/Proposal/Won/Lost, required)
-- last_interaction (date)
-- user (relation → users, required)
-
-**projects**
-- name (text, required)
-- client_id (relation → contacts)
-- status (select: Active/Completed/On Hold)
-- budget (number)
-- estimated_hours (number)
-- user (relation → users, required)
-
-**tasks**
-- title (text, required)
-- project_id (relation → projects)
-- status (select: Todo/In Progress/Done)
-- priority (select: Low/Medium/High)
-- due_date (date)
-- user (relation → users, required)
-
-**invoices**
-- invoice_number (text, required)
-- client_id (relation → contacts, required)
-- issue_date (date, required)
-- due_date (date, required)
-- line_items (json - array of {description, quantity, rate})
-- tax_rate (number)
-- status (select: Draft/Sent/Paid/Overdue)
-- user (relation → users, required)
-
-**time_entries**
-- project_id (relation → projects)
-- description (text)
-- hours (number, required)
-- date (date, required)
-- user (relation → users, required)
-
-**expenses**
-- description (text, required)
-- amount (number, required)
-- category (select: Travel/Meals/Software/Office/Other)
-- date (date, required)
-- project_id (relation → projects)
-- user (relation → users, required)
-
-**notes**
-- content (text, required)
-- contact_id (relation → contacts)
-- project_id (relation → projects)
-- user (relation → users, required)
-
-**recent_activity**
-- type (text, required)
-- description (text, required)
-- timestamp (date, required)
-- user (relation → users, required)
+```bash
+./pocketbase superuser upsert admin@barestack.local "$(openssl rand -base64 18)" --dir ./pb_data
+```
 
 ### 4. Configure Environment
 
-Create a `.env` file:
+Create a `.env` file pointing at your local PocketBase:
 
 ```env
 VITE_POCKETBASE_URL=http://127.0.0.1:8092
@@ -136,6 +81,7 @@ VITE_POCKETBASE_URL=http://127.0.0.1:8092
 ### 5. Build and Run
 
 ```bash
+./pocketbase serve --dir ./pb_data --migrationsDir ./pb_migrations --http="0.0.0.0:8092" &
 npm run build
 npm run preview -- --port 8080 --host 0.0.0.0
 ```

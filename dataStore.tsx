@@ -41,6 +41,7 @@ interface DataContextType {
     deleteInvoice: (id: string) => Promise<void>;
     addTimeEntry: (timeEntry: Creatable<TimeEntry>) => Promise<TimeEntry>;
     addExpense: (expense: Creatable<Expense>) => Promise<Expense>;
+    deleteExpense: (id: string) => Promise<void>;
     addRecentActivity: (activity: Omit<RecentActivity, 'id' | 'user_id'>) => Promise<void>;
     addNote: (note: Creatable<Note>) => Promise<Note>;
     undoImport: (batchId: string) => Promise<void>;

@@ -49,8 +49,7 @@ export type ValidatedProject = z.infer<typeof ProjectSchema>;
 export const TaskSchema = z.object({
     title: z.string().min(1).max(255),
     project_id: z.string().optional(),
-    status: z.enum(['pending', 'in_progress', 'completed']),
-    priority: z.enum(['low', 'medium', 'high']),
+    status: z.enum(['To Do', 'In Progress', 'Done']),
     due_date: z.string().optional(),
     description: z.string().max(1000).optional(),
 });
@@ -71,7 +70,7 @@ export const InvoiceSchema = z.object({
     due_date: z.string(),
     line_items: z.array(LineItemSchema).min(1, 'At least one line item required'),
     tax_rate: z.number().min(0).max(100),
-    status: z.enum(['Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled']),
+    status: z.enum(['Draft', 'Sent', 'Paid', 'Overdue']),
 });
 
 export type ValidatedInvoice = z.infer<typeof InvoiceSchema>;
@@ -90,7 +89,7 @@ export type ValidatedTimeEntry = z.infer<typeof TimeEntrySchema>;
 export const ExpenseSchema = z.object({
     description: z.string().min(1).max(500),
     amount: z.number().min(0),
-    category: z.enum(['travel', 'meals', 'supplies', 'software', 'other']),
+    category: z.enum(['Travel', 'Meals', 'Equipment', 'Software', 'Other']),
     project_id: z.string().optional(),
     date: z.string(),
     receipt: z.string().optional(),
