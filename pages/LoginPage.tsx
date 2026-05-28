@@ -28,8 +28,24 @@ const LoginPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-charcoal font-body flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
+        <div className="min-h-screen bg-[#192118] font-body flex items-center justify-center p-4 relative overflow-hidden">
+            {/* Ambient radial glows, slowly drifting in the background */}
+            <div
+                aria-hidden
+                className="pointer-events-none absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full blur-3xl animate-drift-a bg-[radial-gradient(circle_at_center,rgba(232,184,109,0.10),transparent_70%)]"
+            />
+            <div
+                aria-hidden
+                className="pointer-events-none absolute -bottom-48 -right-32 w-[560px] h-[560px] rounded-full blur-3xl animate-drift-b bg-[radial-gradient(circle_at_center,rgba(195,118,36,0.09),transparent_70%)]"
+            />
+            {/* Grain overlay */}
+            <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 opacity-[0.22] mix-blend-soft-light"
+                style={{ backgroundImage: 'var(--paper-grain)', backgroundSize: '220px 220px' }}
+            />
+
+            <div className="w-full max-w-md relative z-10">
                 {/* Branding */}
                 <div className="mb-8">
                     <h1 className="text-5xl font-bold font-display text-canvas tracking-tight">
