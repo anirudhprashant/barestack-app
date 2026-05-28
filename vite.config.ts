@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
-    const pbUrl = env.VITE_POCKETBASE_URL || 'https://api.barestack.org';
+    const pbUrl = env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8092';
     const pbHost = pbUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
 
     return {

@@ -73,7 +73,7 @@ const Expenses: React.FC = () => {
         [ExpenseCategory.Travel]: 'bg-activity-blue/10 text-activity-blue',
         [ExpenseCategory.Meals]: 'bg-activity-orange/10 text-activity-orange',
         [ExpenseCategory.Software]: 'bg-activity-purple/10 text-activity-purple',
-        [ExpenseCategory.Office]: 'bg-surface text-muted',
+        [ExpenseCategory.Equipment]: 'bg-surface text-muted',
         [ExpenseCategory.Other]: 'bg-surface text-muted',
     };
 

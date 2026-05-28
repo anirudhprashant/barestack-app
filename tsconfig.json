@@ -25,5 +25,6 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "exclude": ["node_modules", "dist", "pb_migrations", "pb_data"]
 }
