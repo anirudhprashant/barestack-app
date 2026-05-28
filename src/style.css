@@ -155,8 +155,11 @@ h1, h2, h3, h4, h5, h6 {
   --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='5' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23grain)' opacity='1'/%3E%3C/svg%3E");
 }
 
+/* NOTE: intentionally does NOT set `position` — these utilities are unlayered
+   and would override Tailwind's positioning utilities (e.g. `fixed` on the
+   sidebar). Apply only to elements that are already positioned
+   (relative/absolute/fixed); `isolation` alone gives the stacking context. */
 .paper-grain {
-  position: relative;
   isolation: isolate;
 }
 

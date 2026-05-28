@@ -230,7 +230,7 @@ export async function fetchNotes(userId: string): Promise<RecordModel[]> {
     const safeId = sanitizeId(userId);
     const result = await getList('notes', {
         filter: `user="${safeId}"`,
-        sort: '-id',
+        sort: '-created',
     });
     return result.items;
 }
