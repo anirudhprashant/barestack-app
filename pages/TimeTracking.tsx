@@ -76,7 +76,7 @@ const TimeTracking: React.FC = () => {
                 <div className="bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="flex justify-between items-start mb-5">
                         <Icon name="clock" className="w-8 h-8 text-charcoal" />
-                        <span className="text-xs font-bold px-2.5 py-1 bg-activity-orange text-canvas rounded-none">Time</span>
+                        <span className="text-xs font-bold px-2.5 py-1 bg-[#c37624] text-canvas rounded-none">Time</span>
                     </div>
                     <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{totalHoursThisWeek}h</div>
                     <div className="text-sm text-muted font-medium">Logged this week</div>
@@ -85,7 +85,7 @@ const TimeTracking: React.FC = () => {
                 <div className="bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="flex justify-between items-start mb-5">
                         <Icon name="document" className="w-8 h-8 text-charcoal" />
-                        <span className="text-xs font-bold px-2.5 py-1 bg-activity-green text-canvas rounded-none">Billable</span>
+                        <span className="text-xs font-bold px-2.5 py-1 bg-[#192118] text-canvas rounded-none">Billable</span>
                     </div>
                     <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">
                         {timeEntries.filter(e => e.is_billable).reduce((sum, e) => sum + e.hours, 0)}h
@@ -96,7 +96,7 @@ const TimeTracking: React.FC = () => {
                 <div className="bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="flex justify-between items-start mb-5">
                         <Icon name="clipboard" className="w-8 h-8 text-charcoal" />
-                        <span className="text-xs font-bold px-2.5 py-1 bg-activity-blue text-canvas rounded-none">Projects</span>
+                        <span className="text-xs font-bold px-2.5 py-1 bg-[#e8b86d] text-charcoal rounded-none">Projects</span>
                     </div>
                     <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{projects.length}</div>
                     <div className="text-sm text-muted font-medium">Active projects tracked</div>
@@ -197,7 +197,7 @@ const TimeTracking: React.FC = () => {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {entry.is_billable ? (
-                                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-activity-green text-canvas">YES</span>
+                                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-[#192118] text-canvas">YES</span>
                                         ) : (
                                             <span className="text-muted text-xs">-</span>
                                         )}
