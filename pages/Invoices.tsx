@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Icon, Modal, Input, PageHeader, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui';
 import { Invoice, InvoiceStatus } from '../types';
 import { useData } from '../dataStore';
@@ -13,6 +13,8 @@ const Invoices: React.FC = () => {
     const [editingInvoice, setEditingInvoice] = useState<Invoice | undefined>(undefined);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [downloading, setDownloading] = useState(false);
+    const [previewInvoice, setPreviewInvoice] = useState<Invoice | undefined>(undefined);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     const getClientName = (clientId: string) => contacts.find(c => c.id === clientId)?.name || 'Unknown Client';
 
@@ -23,143 +25,242 @@ const Invoices: React.FC = () => {
 
     const generatePDF = (invoice: Invoice): jsPDF => {
         const doc = new jsPDF();
-        const clientName = getClientName(invoice.client_id);
+        const client = contacts.find(c => c.id === invoice.client_id);
+        const clientName = client?.name || 'Unknown Client';
+        const clientCompany = client?.company || '';
+        const issuer = data.userProfile;
         const total = getInvoiceTotal(invoice);
         const subtotal = invoice.line_items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+        const taxAmount = subtotal * (invoice.tax_rate / 100);
+
         const pageWidth = doc.internal.pageSize.getWidth();
-        const margin = 20;
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 18;
         const rightMargin = pageWidth - margin;
 
-        // Monochrome BareStack palette
-        const black: [number, number, number] = [20, 28, 17];
-        const darkGray: [number, number, number] = [60, 60, 60];
-        const midGray: [number, number, number] = [107, 107, 107];
-        const lightGray: [number, number, number] = [200, 200, 200];
-        const white: [number, number, number] = [255, 255, 255];
-        const canvas: [number, number, number] = [250, 249, 245];
+        // BareStack design-system palette (RGB)
+        const canvas: [number, number, number] = [250, 249, 245];   // #FAF9F5
+        const surface: [number, number, number] = [244, 242, 238];
+        const content: [number, number, number] = [20, 28, 17];     // #141C11
+        const forest: [number, number, number] = [25, 33, 24];      // #192118
+        const accent: [number, number, number] = [195, 118, 36];    // #C37624
+        const gold: [number, number, number] = [232, 184, 109];     // #E8B86D
+        const mutedC: [number, number, number] = [107, 107, 107];   // #6B6B6B
+        const border: [number, number, number] = [212, 209, 201];   // #D4D1C9
 
-        // Background
+        const money = (n: number) =>
+            `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const fmtDate = (iso: string) => {
+            const d = new Date(iso);
+            return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        };
+
+        doc.setProperties({
+            title: `Invoice ${invoice.invoice_number}`,
+            subject: `Invoice for ${clientName}`,
+            author: issuer?.name || 'BareStack',
+            creator: 'BareStack',
+        });
+
+        // Cream page background
         doc.setFillColor(...canvas);
-        doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), 'F');
+        doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-        // Header - simple text only
-        doc.setTextColor(...black);
-        doc.setFontSize(11);
+        // ── Forest-green header band ───────────────────────────────
+        const bandH = 46;
+        doc.setFillColor(...forest);
+        doc.rect(0, 0, pageWidth, bandH, 'F');
+        // thin gold rule along the bottom of the band
+        doc.setFillColor(...gold);
+        doc.rect(0, bandH - 1.2, pageWidth, 1.2, 'F');
+
+        doc.setFont('times', 'bold');
+        doc.setFontSize(28);
+        doc.setTextColor(...canvas);
+        doc.text('BareStack', margin, 26);
+
         doc.setFont('helvetica', 'normal');
-        doc.text('BareStack', margin, 25);
+        doc.setFontSize(7.5);
+        doc.setTextColor(...gold);
+        doc.text('CRM FOR AGENCIES + FREELANCERS', margin, 33, { charSpace: 0.6 });
 
-        doc.setFontSize(9);
-        doc.setTextColor(...midGray);
-        doc.text('INVOICE', rightMargin, 25, { align: 'right' });
-
-        // Invoice meta
-        doc.setTextColor(...darkGray);
-        doc.setFontSize(9);
-        const metaY = 40;
-
+        doc.setFont('times', 'normal');
+        doc.setFontSize(20);
+        doc.setTextColor(...canvas);
+        doc.text('INVOICE', rightMargin, 24, { align: 'right' });
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...black);
-        doc.text('Bill To:', margin, metaY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(clientName, margin, metaY + 6);
+        doc.setFontSize(10);
+        doc.setTextColor(...gold);
+        doc.text(`#${invoice.invoice_number}`, rightMargin, 33, { align: 'right' });
 
-        const rightCol = 140;
-        doc.setTextColor(...midGray);
-        doc.text('Invoice Number', rightCol, metaY);
-        doc.text('Invoice Date', rightCol, metaY + 6);
-        doc.text('Due Date', rightCol, metaY + 12);
+        // ── Meta block ─────────────────────────────────────────────
+        const labelFont = () => { doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...mutedC); };
 
-        doc.setTextColor(...darkGray);
-        doc.text(invoice.invoice_number, rightMargin, metaY, { align: 'right' });
-        doc.text(new Date(invoice.issue_date).toLocaleDateString(), rightMargin, metaY + 6, { align: 'right' });
-        doc.text(new Date(invoice.due_date).toLocaleDateString(), rightMargin, metaY + 12, { align: 'right' });
+        // Left: FROM + BILLED TO
+        labelFont();
+        doc.text('FROM', margin, 60, { charSpace: 0.6 });
+        doc.setFont('times', 'normal');
+        doc.setFontSize(12);
+        doc.setTextColor(...content);
+        doc.text(issuer?.name || 'BareStack', margin, 66);
+        if (issuer?.email) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(...mutedC);
+            doc.text(issuer.email, margin, 71);
+        }
 
-        // Thin line
-        doc.setDrawColor(...lightGray);
-        doc.setLineWidth(0.3);
-        doc.line(margin, metaY + 20, rightMargin, metaY + 20);
+        labelFont();
+        doc.text('BILLED TO', margin, 82, { charSpace: 0.6 });
+        doc.setFont('times', 'normal');
+        doc.setFontSize(12);
+        doc.setTextColor(...content);
+        doc.text(clientName, margin, 88);
+        if (clientCompany) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(...mutedC);
+            doc.text(clientCompany, margin, 93);
+        }
 
-        // Status
+        // Right: invoice details (label left of value, value right-aligned)
+        const detailLabelX = 128;
+        const detailRow = (y: number, label: string, value: string) => {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(...mutedC);
+            doc.text(label, detailLabelX, y, { charSpace: 0.4 });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9.5);
+            doc.setTextColor(...content);
+            doc.text(value, rightMargin, y, { align: 'right' });
+        };
+        detailRow(60, 'ISSUE DATE', fmtDate(invoice.issue_date));
+        detailRow(67, 'DUE DATE', fmtDate(invoice.due_date));
+
+        // Status pill (right-aligned)
+        const statusStyles: Record<string, { bg: [number, number, number]; fg: [number, number, number] }> = {
+            Paid: { bg: forest, fg: canvas },
+            Sent: { bg: accent, fg: canvas },
+            Overdue: { bg: [183, 28, 28], fg: canvas },
+            Draft: { bg: surface, fg: content },
+        };
+        const st = statusStyles[invoice.status] || { bg: surface, fg: content };
+        const statusLabel = String(invoice.status).toUpperCase();
+        doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
-        doc.setTextColor(...midGray);
-        doc.text(`Status: ${invoice.status}`, margin, metaY + 28);
+        const pillTextW = doc.getTextWidth(statusLabel) + 2; // includes charSpace slack
+        const pillW = pillTextW + 8;
+        const pillH = 7;
+        const pillY = 74;
+        const pillX = rightMargin - pillW;
+        doc.setFillColor(...st.bg);
+        doc.rect(pillX, pillY, pillW, pillH, 'F');
+        if (invoice.status === 'Draft') {
+            doc.setDrawColor(...border);
+            doc.setLineWidth(0.3);
+            doc.rect(pillX, pillY, pillW, pillH, 'S');
+        }
+        doc.setTextColor(...st.fg);
+        doc.text(statusLabel, pillX + pillW / 2, pillY + 4.8, { align: 'center', charSpace: 0.4 });
 
-        // Line items table
-        const tableY = metaY + 38;
+        // Divider
+        doc.setDrawColor(...border);
+        doc.setLineWidth(0.4);
+        doc.line(margin, 100, rightMargin, 100);
+
+        // ── Line items table ───────────────────────────────────────
         const tableData = invoice.line_items.map(item => [
             item.description,
             item.quantity.toString(),
-            `$${item.rate.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-            `$${(item.quantity * item.rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+            money(item.rate),
+            money(item.quantity * item.rate),
         ]);
 
         autoTable(doc, {
-            startY: tableY,
-            head: [['Description', 'Qty', 'Rate', 'Amount']],
+            startY: 106,
+            head: [['DESCRIPTION', 'QTY', 'RATE', 'AMOUNT']],
             body: tableData,
             theme: 'plain',
             headStyles: {
-                fillColor: black,
-                textColor: white,
+                fillColor: forest,
+                textColor: canvas,
                 fontStyle: 'bold',
                 fontSize: 8,
-                cellPadding: 4,
+                cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
             },
             bodyStyles: {
-                fontSize: 9,
-                cellPadding: 4,
-                textColor: darkGray,
+                fontSize: 9.5,
+                cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
+                textColor: content,
+                lineColor: border,
+                lineWidth: { bottom: 0.2 },
             },
-            alternateRowStyles: {
-                fillColor: [248, 248, 248],
-            },
+            alternateRowStyles: { fillColor: surface },
             columnStyles: {
                 0: { cellWidth: 'auto' },
-                1: { halign: 'center', cellWidth: 25 },
-                2: { halign: 'right', cellWidth: 35 },
-                3: { halign: 'right', cellWidth: 35 },
+                1: { halign: 'center', cellWidth: 22 },
+                2: { halign: 'right', cellWidth: 32 },
+                3: { halign: 'right', cellWidth: 34 },
             },
             margin: { left: margin, right: margin },
+            willDrawPage: (hookData) => {
+                if (hookData.pageNumber > 1) {
+                    doc.setFillColor(...canvas);
+                    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+                }
+            },
         });
 
-        // Totals
-        const finalY = (doc as any).lastAutoTable?.finalY || tableY + 40;
-        const totalsX = 140;
-        const totalsRightX = rightMargin;
+        // ── Totals ─────────────────────────────────────────────────
+        const finalY = (doc as any).lastAutoTable?.finalY || 150;
+        const labelX = 122;
+        let ty = finalY + 10;
 
-        doc.setDrawColor(...lightGray);
-        doc.setLineWidth(0.3);
-        doc.line(totalsX, finalY + 5, totalsRightX, finalY + 5);
-
-        doc.setFontSize(9);
-        doc.setTextColor(...midGray);
-        doc.text('Subtotal', totalsX, finalY + 14);
-        if (invoice.tax_rate > 0) {
-            doc.text(`Tax (${invoice.tax_rate}%)`, totalsX, finalY + 22);
-        }
-
-        doc.setTextColor(...darkGray);
-        doc.text(`$${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX, finalY + 14, { align: 'right' });
-        if (invoice.tax_rate > 0) {
-            const taxAmount = subtotal * (invoice.tax_rate / 100);
-            doc.text(`$${taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX, finalY + 22, { align: 'right' });
-        }
-
-        doc.setDrawColor(...black);
-        doc.setLineWidth(0.5);
-        doc.line(totalsX, finalY + 30, totalsRightX, finalY + 30);
-
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...black);
-        doc.text('Total', totalsX, finalY + 38);
-        doc.text(`$${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsRightX, finalY + 38, { align: 'right' });
-
-        // Footer
-        doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...midGray);
-        doc.text('Payment due within 30 days', pageWidth / 2, doc.internal.pageSize.getHeight() - 15, { align: 'center' });
+        doc.setFontSize(9.5);
+        doc.setTextColor(...mutedC);
+        doc.text('Subtotal', labelX, ty);
+        doc.setTextColor(...content);
+        doc.text(money(subtotal), rightMargin, ty, { align: 'right' });
+
+        if (invoice.tax_rate > 0) {
+            ty += 7;
+            doc.setTextColor(...mutedC);
+            doc.text(`Tax (${invoice.tax_rate}%)`, labelX, ty);
+            doc.setTextColor(...content);
+            doc.text(money(taxAmount), rightMargin, ty, { align: 'right' });
+        }
+
+        // Total-due bar
+        const barTop = ty + 4;
+        const barX = 118;
+        doc.setFillColor(...forest);
+        doc.rect(barX, barTop, rightMargin - barX, 12, 'F');
+        doc.setFont('times', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(...canvas);
+        doc.text('TOTAL DUE', barX + 4, barTop + 8, { charSpace: 0.4 });
+        doc.setFontSize(13);
+        doc.text(money(total), rightMargin - 4, barTop + 8, { align: 'right' });
+
+        // ── Footer ─────────────────────────────────────────────────
+        const fy = pageHeight - 24;
+        doc.setDrawColor(...border);
+        doc.setLineWidth(0.3);
+        doc.line(margin, fy, rightMargin, fy);
+        doc.setFillColor(...accent);
+        doc.rect(margin, fy - 0.4, 20, 0.9, 'F');
+
+        doc.setFont('times', 'italic');
+        doc.setFontSize(11);
+        doc.setTextColor(...content);
+        doc.text('Thank you for your business.', margin, fy + 9);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...mutedC);
+        doc.text('Payment due within 30 days   ·   Generated with BareStack', rightMargin, fy + 9, { align: 'right' });
 
         return doc;
     };
@@ -168,6 +269,23 @@ const Invoices: React.FC = () => {
         const doc = generatePDF(invoice);
         const clientName = getClientName(invoice.client_id).replace(/\s+/g, '_');
         doc.save(`Invoice_${invoice.invoice_number}_${clientName}.pdf`);
+    };
+
+    // Build (and clean up) a blob URL for the preview modal.
+    useEffect(() => {
+        if (!previewInvoice) {
+            setPreviewUrl(null);
+            return;
+        }
+        const url = generatePDF(previewInvoice).output('bloburl') as unknown as string;
+        setPreviewUrl(url);
+        return () => {
+            URL.revokeObjectURL(url);
+        };
+    }, [previewInvoice]);
+
+    const handleDownloadFromPreview = () => {
+        if (previewInvoice) handleDownloadPDF(previewInvoice);
     };
 
     const handleDownloadSelected = async () => {
@@ -312,6 +430,13 @@ const Invoices: React.FC = () => {
                                     <TableCell className="text-right">
                                         <div className="flex justify-end space-x-2">
                                             <button
+                                                onClick={() => setPreviewInvoice(invoice)}
+                                                className="p-1.5 text-charcoal hover:bg-surface transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-charcoal"
+                                                title="Preview PDF"
+                                            >
+                                                <Icon name="eye" className="w-5 h-5" />
+                                            </button>
+                                            <button
                                                 onClick={() => handleDownloadPDF(invoice)}
                                                 className="p-1.5 text-charcoal hover:bg-surface transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-charcoal"
                                                 title="Download PDF"
@@ -351,6 +476,35 @@ const Invoices: React.FC = () => {
 
             <Modal isOpen={isAddInvoiceModalOpen} onClose={handleCloseModal} title={editingInvoice ? "Edit Invoice" : "Create New Invoice"}>
                 <InvoiceForm onClose={handleCloseModal} initialData={editingInvoice} />
+            </Modal>
+
+            <Modal
+                isOpen={!!previewInvoice}
+                onClose={() => setPreviewInvoice(undefined)}
+                title={previewInvoice ? `Invoice ${previewInvoice.invoice_number}` : 'Invoice Preview'}
+                maxWidthClass="max-w-4xl"
+            >
+                <div className="space-y-4">
+                    <div className="border border-border bg-surface" style={{ height: '70vh' }}>
+                        {previewUrl ? (
+                            <iframe
+                                src={previewUrl}
+                                title="Invoice PDF preview"
+                                className="w-full h-full"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <p className="text-2xl font-display text-content animate-pulse">Rendering preview...</p>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex justify-end gap-3">
+                        <Button variant="ghost" onClick={() => setPreviewInvoice(undefined)}>Close</Button>
+                        <Button variant="primary" onClick={handleDownloadFromPreview} disabled={!previewUrl}>
+                            <Icon name="download" className="w-4 h-4 mr-2" /> Download PDF
+                        </Button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );
