@@ -5,6 +5,16 @@ import { ImportBatch } from '../types';
 import { format } from 'date-fns';
 import CrmHeader from '../components/CrmHeader';
 
+// PocketBase exposes the timestamp as the system `created` field. Guard against
+// a missing/invalid value — date-fns `format` throws on an invalid date, which
+// would crash this page.
+const formatBatchDate = (batch: ImportBatch): string => {
+    const raw = (batch as any).created || batch.created_at;
+    if (!raw) return '—';
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return '—';
+    return format(d, 'PPp');
+};
 
 const Imports: React.FC = () => {
     const { data, undoImport } = useData();
@@ -45,7 +55,7 @@ const Imports: React.FC = () => {
                                 importBatches.map(batch => (
                                     <tr key={batch.id} className="border-b border-border/50 last:border-b-0">
                                         <td className="p-4 font-bold text-charcoal">{batch.file_name}</td>
-                                        <td className="p-4 text-muted">{format(new Date(batch.created_at), 'PPp')}</td>
+                                        <td className="p-4 text-muted">{formatBatchDate(batch)}</td>
                                         <td className="p-4 text-charcoal">{batch.contact_count}</td>
                                         <td className="p-4">
                                             <Button

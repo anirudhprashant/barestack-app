@@ -252,7 +252,7 @@ export async function fetchImportBatches(userId: string): Promise<RecordModel[]>
     const safeId = sanitizeId(userId);
     const result = await getList('import_batches', {
         filter: `user="${safeId}"`,
-        sort: '-id',
+        sort: '-created',
     });
     return result.items;
 }
