@@ -142,15 +142,16 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children: React.ReactNode;
+    maxWidthClass?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidthClass = 'max-w-lg' }) => {
     if (!isOpen) return null;
 
     return createPortal(
         <div className="fixed inset-0 bg-charcoal/80 backdrop-blur-none z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div
-                className="bg-canvas p-6 w-full max-w-lg relative border border-border"
+                className={`bg-canvas p-6 w-full ${maxWidthClass} relative border border-border`}
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-6 border-b border-border pb-4">

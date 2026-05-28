@@ -10,6 +10,17 @@ const ITEMS_PER_PAGE = 10;
 
 type ViewMode = 'table' | 'kanban';
 
+// PocketBase exposes the timestamp as the system `created` field; older code
+// referenced `created_at`. Read either and bail out if it isn't a valid date
+// so the UI never renders "Invalid Date".
+const formatNoteDate = (note: Note): string | null => {
+    const raw = (note as any).created || note.created_at;
+    if (!raw) return null;
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleString();
+};
+
 const stageColors: Record<DealStage, { bg: string, border: string, badge: string }> = {
     [DealStage.Lead]: { bg: 'bg-surface', border: 'border-border', badge: 'bg-surface text-muted' },
     [DealStage.Qualified]: { bg: 'bg-activity-purple/10', border: 'border-activity-purple/20', badge: 'bg-activity-purple/10 text-activity-purple' },
@@ -620,25 +631,29 @@ const CRM: React.FC = () => {
             </Modal>
 
             {selectedContact && (
-                <Modal isOpen={!!selectedContact} onClose={() => setSelectedContact(null)} title={selectedContact.name}>
+                <Modal isOpen={!!selectedContact} onClose={() => setSelectedContact(null)} title={selectedContact.name} maxWidthClass="max-w-xl">
                     <div className="p-4">
                         <div className="flex items-center space-x-4 mb-6">
                             <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl ${getRandomColor(selectedContact.name)}`}>
                                 {getInitials(selectedContact.name)}
                             </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-charcoal">{selectedContact.name}</h3>
-                                <p className="text-muted">{selectedContact.company}</p>
+                            <div className="min-w-0">
+                                <h3 className="text-xl font-bold text-charcoal truncate">{selectedContact.name}</h3>
+                                <p className="text-muted truncate">{selectedContact.company}</p>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="p-3 bg-surface border border-border">
-                                <label className="text-xs text-muted uppercase font-semibold">Email</label>
-                                <p className="text-charcoal">{selectedContact.email}</p>
+                            <div className="px-3 py-2 bg-surface border border-border min-w-0">
+                                <label className="text-xs text-muted uppercase font-semibold tracking-wide">Email</label>
+                                <p className="text-charcoal text-sm break-words">
+                                    {selectedContact.email
+                                        ? <a href={`mailto:${selectedContact.email}`} className="hover:text-accent transition-colors">{selectedContact.email}</a>
+                                        : '-'}
+                                </p>
                             </div>
-                            <div className="p-3 bg-surface border border-border">
-                                <label className="text-xs text-muted uppercase font-semibold">Phone</label>
-                                <p className="text-charcoal">{selectedContact.phone || '-'}</p>
+                            <div className="px-3 py-2 bg-surface border border-border min-w-0">
+                                <label className="text-xs text-muted uppercase font-semibold tracking-wide">Phone</label>
+                                <p className="text-charcoal text-sm break-words">{selectedContact.phone || '-'}</p>
                             </div>
                         </div>
                         <div className="border-t border-border pt-6">
@@ -649,10 +664,10 @@ const CRM: React.FC = () => {
                                         .filter(n => n.contact_id === selectedContact.id)
                                         .map(note => (
                                             <div key={note.id} className="p-3 bg-surface border border-border">
-                                                <p className="text-sm text-charcoal">{note.content}</p>
-                                                <p className="text-xs text-muted mt-1">
-                                                    {new Date(note.created_at).toLocaleString()}
-                                                </p>
+                                                <p className="text-sm text-charcoal whitespace-pre-wrap break-words">{note.content}</p>
+                                                {formatNoteDate(note) && (
+                                                    <p className="text-xs text-muted mt-1">{formatNoteDate(note)}</p>
+                                                )}
                                             </div>
                                         ))}
                                 </div>
