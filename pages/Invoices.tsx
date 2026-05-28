@@ -171,8 +171,12 @@ const Invoices: React.FC = () => {
         const statusLabel = String(invoice.status).toUpperCase();
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
-        const pillTextW = doc.getTextWidth(statusLabel) + 2; // includes charSpace slack
-        const pillW = pillTextW + 8;
+        // Width of the glyph run including the letter-spacing between characters
+        // (getTextWidth ignores charSpace), so horizontal padding stays symmetric.
+        const pillCharSpace = 0.4;
+        const runW = doc.getTextWidth(statusLabel) + pillCharSpace * (statusLabel.length - 1);
+        const pillPadX = 5;
+        const pillW = runW + pillPadX * 2;
         const pillH = 7;
         const pillY = 74;
         const pillX = rightMargin - pillW;
@@ -184,7 +188,9 @@ const Invoices: React.FC = () => {
             doc.rect(pillX, pillY, pillW, pillH, 'S');
         }
         doc.setTextColor(...st.fg);
-        doc.text(statusLabel, pillX + pillW / 2, pillY + 4.8, { align: 'center', charSpace: 0.4 });
+        // Left-align the run from the padded start, and center vertically via the
+        // text baseline so the label sits dead-center in the pill.
+        doc.text(statusLabel, pillX + pillPadX, pillY + pillH / 2, { charSpace: pillCharSpace, baseline: 'middle' });
 
         // Divider
         doc.setDrawColor(...border);
