@@ -55,13 +55,13 @@ const ProTipCard: React.FC = () => {
     const tip = TIPS[currentIndex];
 
     return (
-        <div className="bg-charcoal text-canvas border border-border p-6 relative overflow-hidden transition-all duration-500">
+        <div className="bg-[#192118] paper-grain text-canvas border border-border p-6 relative overflow-hidden transition-all duration-500">
             <div className={`relative z-10 transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
                 <div className="flex items-center mb-3">
                     <Icon name={tip.icon as any} className={`w-5 h-5 ${tip.color} mr-2`} />
                     <h3 className="text-lg font-bold">{tip.title}</h3>
                 </div>
-                <p className="text-muted text-sm mb-4 leading-relaxed min-h-[60px]">
+                <p className="text-canvas/70 text-sm mb-4 leading-relaxed min-h-[60px]">
                     {tip.description}
                 </p>
                 <Button
@@ -78,7 +78,7 @@ const ProTipCard: React.FC = () => {
                 {TIPS.map((_, idx) => (
                     <div
                         key={idx}
-                        className={`h-1 transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-canvas' : 'w-1 bg-charcoal/40'}`}
+                        className={`h-1 transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-canvas' : 'w-1 bg-canvas/30'}`}
                     />
                 ))}
             </div>

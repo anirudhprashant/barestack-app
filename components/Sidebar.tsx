@@ -22,7 +22,7 @@ const Sidebar: React.FC = () => {
     };
 
     return (
-        <div className="fixed top-0 left-0 h-full w-[220px] bg-charcoal flex flex-col z-20">
+        <div className="fixed top-0 left-0 h-full w-[220px] bg-[#192118] paper-grain flex flex-col z-20">
             {/* Header */}
             <div className="h-[var(--app-shell-header-height)] flex items-center px-5 border-b border-border/50">
                 <div className="text-xl font-bold font-display tracking-tight text-canvas">
@@ -40,7 +40,7 @@ const Sidebar: React.FC = () => {
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-150 rounded-none ${isActive
                                     ? 'bg-canvas text-charcoal'
-                                    : 'text-muted hover:text-canvas hover:bg-charcoal/80'
+                                    : 'text-canvas/60 hover:text-canvas hover:bg-canvas/10'
                                 }`
                             }
                         >
@@ -55,7 +55,7 @@ const Sidebar: React.FC = () => {
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-150 rounded-none ${isActive
                                     ? 'bg-canvas text-charcoal'
-                                    : 'text-muted hover:text-canvas hover:bg-charcoal/80'
+                                    : 'text-canvas/60 hover:text-canvas hover:bg-canvas/10'
                                 }`
                             }
                         >
@@ -67,10 +67,10 @@ const Sidebar: React.FC = () => {
 
                 {/* User */}
                 <div className="pt-3 flex items-center justify-center gap-2 px-2">
-                    <div className="w-9 h-9 bg-charcoal/80 text-muted font-semibold text-sm flex items-center justify-center rounded-none border border-border/50 flex-shrink-0">
+                    <div className="w-9 h-9 bg-canvas/10 text-canvas font-semibold text-sm flex items-center justify-center rounded-none border border-canvas/20 flex-shrink-0">
                         {userInitial}
                     </div>
-                    <div className="text-muted text-xs font-medium truncate max-w-[120px]" title={userName}>
+                    <div className="text-canvas/60 text-xs font-medium truncate max-w-[120px]" title={userName}>
                         {userName}
                     </div>
                 </div>

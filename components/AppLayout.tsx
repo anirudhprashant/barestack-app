@@ -27,11 +27,11 @@ const AppLayout: React.FC = () => {
                     <div className="p-8">
                         {loading ? (
                             <div className="flex justify-center items-center h-64">
-                                <p className="text-2xl font-bold text-charcoal">Loading your dashboard...</p>
+                                <p className="text-4xl font-display text-content animate-pulse">Loading your dashboard...</p>
                             </div>
                         ) : error ? (
                             <div className="flex justify-center items-center h-64">
-                                <p className="text-2xl font-bold text-charcoal">Error: {error}</p>
+                                <p className="text-4xl font-display text-content">Error: {error}</p>
                             </div>
                         ) : (
                             <Routes>
