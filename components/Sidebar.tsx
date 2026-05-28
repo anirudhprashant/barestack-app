@@ -66,7 +66,7 @@ const Sidebar: React.FC = () => {
                 </nav>
 
                 {/* User */}
-                <div className="pt-3 flex items-center justify-center gap-2 px-2">
+                <div className="pt-3 flex items-center gap-3 px-3">
                     <div className="w-9 h-9 bg-canvas/10 text-canvas font-semibold text-sm flex items-center justify-center rounded-none border border-canvas/20 flex-shrink-0">
                         {userInitial}
                     </div>
