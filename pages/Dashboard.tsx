@@ -169,7 +169,7 @@ const Dashboard: React.FC = () => {
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-5">
                             <Icon name="trending-up" className="w-8 h-8 text-charcoal" />
-                            <span className="text-xs font-bold px-2.5 py-1 bg-activity-green text-canvas rounded-none">Revenue</span>
+                            <span className="text-xs font-bold px-2.5 py-1 bg-[#192118] text-canvas rounded-none">Revenue</span>
                         </div>
                         <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">${stats.outstandingRevenue.toLocaleString()}</div>
                         <div className="text-sm text-muted font-medium">Outstanding from {stats.unpaidInvoices} invoices</div>
@@ -180,7 +180,7 @@ const Dashboard: React.FC = () => {
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-5">
                             <Icon name="clipboard" className="w-8 h-8 text-charcoal" />
-                            <span className="text-xs font-bold px-2.5 py-1 bg-activity-blue text-canvas rounded-none">Projects</span>
+                            <span className="text-xs font-bold px-2.5 py-1 bg-[#e8b86d] text-charcoal rounded-none">Projects</span>
                         </div>
                         <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{stats.activeProjects}</div>
                         <div className="text-sm text-muted font-medium">Active projects with {stats.activeTasks} tasks</div>
@@ -191,7 +191,7 @@ const Dashboard: React.FC = () => {
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-5">
                             <Icon name="clock" className="w-8 h-8 text-charcoal" />
-                            <span className="text-xs font-bold px-2.5 py-1 bg-activity-orange text-canvas rounded-none">Time</span>
+                            <span className="text-xs font-bold px-2.5 py-1 bg-[#c37624] text-canvas rounded-none">Time</span>
                         </div>
                         <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{stats.hoursLoggedThisWeek}</div>
                         <div className="text-sm text-muted font-medium">Hours logged this week</div>
