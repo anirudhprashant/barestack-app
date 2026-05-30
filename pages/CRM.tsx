@@ -29,6 +29,14 @@ const stageColors: Record<DealStage, { bg: string, border: string, badge: string
     [DealStage.Lost]: { bg: 'bg-activity-red/10', border: 'border-activity-red/20', badge: 'bg-activity-red/10 text-activity-red' },
 };
 
+const formatNoteDate = (note: Note): string | null => {
+    const timestamp = note.created_at || (note as Note & { created?: string }).created;
+    if (!timestamp) return null;
+
+    const date = new Date(timestamp);
+    return Number.isNaN(date.getTime()) ? null : date.toLocaleString();
+};
+
 // Add Note Form Component
 const AddNoteForm: FC<{ contactId: string }> = ({ contactId }) => {
     const { addNote, addRecentActivity } = useData();
@@ -633,12 +641,13 @@ const CRM: React.FC = () => {
             {selectedContact && (
                 <Modal isOpen={!!selectedContact} onClose={() => setSelectedContact(null)} title={selectedContact.name} maxWidthClass="max-w-xl">
                     <div className="p-4">
-                        <div className="flex items-center space-x-4 mb-6">
-                            <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl ${getRandomColor(selectedContact.name)}`}>
+                        <div className="flex items-center space-x-4 mb-6 min-w-0">
+                            <div className={`w-16 h-16 shrink-0 rounded-full flex items-center justify-center font-bold text-2xl ${getRandomColor(selectedContact.name)}`}>
                                 {getInitials(selectedContact.name)}
                             </div>
                             <div className="min-w-0">
                                 <h3 className="text-xl font-bold text-charcoal truncate">{selectedContact.name}</h3>
+<<<<<<< Updated upstream
                                 <p className="text-muted truncate">{selectedContact.company}</p>
                             </div>
                         </div>
@@ -654,6 +663,19 @@ const CRM: React.FC = () => {
                             <div className="px-3 py-2 bg-surface border border-border min-w-0">
                                 <label className="text-xs text-muted uppercase font-semibold tracking-wide">Phone</label>
                                 <p className="text-charcoal text-sm break-words">{selectedContact.phone || '-'}</p>
+=======
+                                <p className="text-muted truncate">{selectedContact.company || 'No company'}</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                            <div className="min-w-0 p-3 bg-surface border border-border">
+                                <label className="text-xs text-muted uppercase font-semibold">Email</label>
+                                <p className="text-charcoal break-all leading-snug">{selectedContact.email || '-'}</p>
+                            </div>
+                            <div className="min-w-0 p-3 bg-surface border border-border">
+                                <label className="text-xs text-muted uppercase font-semibold">Phone</label>
+                                <p className="text-charcoal break-words leading-snug">{selectedContact.phone || '-'}</p>
+>>>>>>> Stashed changes
                             </div>
                         </div>
                         <div className="border-t border-border pt-6">
@@ -662,6 +684,7 @@ const CRM: React.FC = () => {
                                 <div className="space-y-3 mb-4">
                                     {data.notes
                                         .filter(n => n.contact_id === selectedContact.id)
+<<<<<<< Updated upstream
                                         .map(note => (
                                             <div key={note.id} className="p-3 bg-surface border border-border">
                                                 <p className="text-sm text-charcoal whitespace-pre-wrap break-words">{note.content}</p>
@@ -670,6 +693,22 @@ const CRM: React.FC = () => {
                                                 )}
                                             </div>
                                         ))}
+=======
+                                        .map(note => {
+                                            const noteDate = formatNoteDate(note);
+
+                                            return (
+                                                <div key={note.id} className="p-3 bg-surface border border-border">
+                                                    <p className="text-sm text-charcoal whitespace-pre-wrap break-words">{note.content}</p>
+                                                    {noteDate && (
+                                                        <p className="text-xs text-muted mt-1">
+                                                            {noteDate}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+>>>>>>> Stashed changes
                                 </div>
                             ) : (
                                 <p className="text-sm text-muted mb-4">No notes yet.</p>

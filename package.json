@@ -4,7 +4,7 @@
   "private": false,
   "version": "1.0.0",
   "type": "module",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/anirudhprashant/barestack-app"

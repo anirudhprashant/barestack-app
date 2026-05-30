@@ -144,4 +144,4 @@ Open http://localhost:8080
 
 ## License
 
-MIT
+GPL-3.0
