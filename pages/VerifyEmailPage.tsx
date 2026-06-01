@@ -4,6 +4,21 @@ import { confirmVerification, refreshAuth, isLoggedIn } from '../src/lib/auth';
 
 type Status = 'verifying' | 'success' | 'error';
 
+// Pull the email out of a PocketBase verification JWT (best-effort, for
+// pre-filling the sign-in form when the link is opened without a session).
+function emailFromToken(token: string): string {
+    try {
+        const part = token.split('.')[1];
+        if (!part) return '';
+        let b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        const payload = JSON.parse(atob(b64)) as { email?: unknown };
+        return typeof payload.email === 'string' ? payload.email : '';
+    } catch {
+        return '';
+    }
+}
+
 const VerifyEmailPage: React.FC = () => {
     const { token } = useParams<{ token: string }>();
     const navigate = useNavigate();
@@ -28,15 +43,19 @@ const VerifyEmailPage: React.FC = () => {
                 setMessage(error);
                 return;
             }
-            // If this is the same browser they signed up in, the session is
-            // already present — refresh it (now verified) and go straight to
-            // the dashboard. Otherwise show success and point them to sign in.
+            // Same browser they signed up in: the session is already present —
+            // refresh it (now verified) and go straight to the dashboard.
             if (isLoggedIn()) {
                 await refreshAuth();
                 navigate('/', { replace: true });
                 return;
             }
-            setStatus('success');
+            // Opened on another device / in-app browser (no session here): send
+            // them to sign-in with the email pre-filled and a verified banner.
+            const verifiedEmail = emailFromToken(token);
+            if (verifiedEmail) sessionStorage.setItem('verifiedEmail', verifiedEmail);
+            sessionStorage.setItem('justVerified', '1');
+            navigate('/', { replace: true });
         });
     }, [token, navigate]);
 

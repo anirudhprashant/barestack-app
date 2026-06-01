@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { signIn, signUp, resendVerification } from '../src/lib/auth';
 
 const LoginPage: React.FC = () => {
@@ -10,6 +10,19 @@ const LoginPage: React.FC = () => {
     const [name, setName] = useState('');
     const [verificationSentTo, setVerificationSentTo] = useState<string | null>(null);
     const [resendNote, setResendNote] = useState<string | null>(null);
+    const [justVerified, setJustVerified] = useState(false);
+
+    // Arriving from the email link on a device without a session: greet them
+    // with a verified banner and pre-fill their email so it's one field.
+    useEffect(() => {
+        if (sessionStorage.getItem('justVerified')) {
+            setJustVerified(true);
+            const e = sessionStorage.getItem('verifiedEmail');
+            if (e) setEmail(e);
+            sessionStorage.removeItem('justVerified');
+            sessionStorage.removeItem('verifiedEmail');
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -115,6 +128,12 @@ const LoginPage: React.FC = () => {
                             {isSignUp ? 'Create account' : 'Sign in'}
                         </h2>
                     </div>
+
+                    {justVerified && (
+                        <div className="bg-surface border border-activity-green/40 text-charcoal font-semibold p-4 mb-6 text-sm">
+                            ✓ Email verified. Sign in to continue.
+                        </div>
+                    )}
 
                     {error && (
                         <div className="bg-surface border border-activity-red/30 text-charcoal font-semibold p-4 mb-6">
