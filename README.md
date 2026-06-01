@@ -1,4 +1,4 @@
-# BareStack CRM
+# BareStack*OS*
 
 A modern, professional CRM for agencies and freelancers. Built with React, TypeScript, PocketBase, and Tailwind CSS.
 

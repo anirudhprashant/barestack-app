@@ -49,7 +49,7 @@ const LoginPage: React.FC = () => {
                 {/* Branding */}
                 <div className="mb-8">
                     <h1 className="text-5xl font-bold font-display text-canvas tracking-tight">
-                        BareStack
+                        BareStack<span className="italic">OS</span>
                     </h1>
                     <p className="text-sm font-semibold text-muted uppercase tracking-widest mt-2">
                         CRM for agencies + freelancers

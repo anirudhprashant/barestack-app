@@ -18,11 +18,33 @@ const mimeTypes = {
   '.woff2': 'font/woff2',
 };
 
+// PocketBase runs on a different origin (its own host/port), so the browser
+// must be allowed to talk to it. Override via CSP_CONNECT_SRC when the backend
+// lives somewhere other than the same-origin / localhost / https defaults.
+const CONNECT_SRC =
+  process.env.CSP_CONNECT_SRC ||
+  "'self' https: http://127.0.0.1:* http://localhost:*";
+
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "script-src 'self'",
+  // React/jsPDF set inline style attributes; Google Fonts injects a stylesheet.
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data: blob:",
+  `connect-src ${CONNECT_SRC}`,
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+].join('; ');
+
 const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Content-Security-Policy': contentSecurityPolicy,
 };
 
 const server = http.createServer((req, res) => {

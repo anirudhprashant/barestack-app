@@ -117,28 +117,48 @@ export const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
         onClose();
     };
 
+    // Drop prototype-polluting keys that a malicious spreadsheet could inject
+    // via crafted header cells (defense-in-depth on top of the patched parser).
+    const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+    const sanitizeRow = (row: Record<string, unknown>): Record<string, unknown> => {
+        const clean: Record<string, unknown> = Object.create(null);
+        for (const key of Object.keys(row)) {
+            if (DANGEROUS_KEYS.has(key)) continue;
+            clean[key] = row[key];
+        }
+        return clean;
+    };
+
     const parseFile = async (file: File): Promise<any[]> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
                     const data = e.target?.result;
-                    const workbook = XLSX.read(data, { type: 'binary' });
+                    const workbook = XLSX.read(data, { type: 'array' });
                     const sheetName = workbook.SheetNames[0];
                     const sheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(sheet);
-                    resolve(json);
+                    const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
+                    resolve(json.map(sanitizeRow));
                 } catch (err) {
                     reject(err);
                 }
             };
             reader.onerror = (err) => reject(err);
-            reader.readAsBinaryString(file);
+            reader.readAsArrayBuffer(file);
         });
     };
 
+    const MAX_IMPORT_BYTES = 10 * 1024 * 1024; // 10MB — matches the UI hint
+
     const handleParseAndCheck = async () => {
         if (!file) return;
+
+        if (file.size > MAX_IMPORT_BYTES) {
+            setError('File is too large. Maximum import size is 10MB.');
+            return;
+        }
+
         setLoading(true);
         setError(null);
 

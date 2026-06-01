@@ -80,8 +80,8 @@ const Invoices: React.FC = () => {
         doc.setProperties({
             title: `Invoice ${invoice.invoice_number}`,
             subject: `Invoice for ${clientName}`,
-            author: issuer?.name || 'BareStack',
-            creator: 'BareStack',
+            author: issuer?.name || 'BareStackOS',
+            creator: 'BareStackOS',
         });
 
         // Cream page background
@@ -100,6 +100,11 @@ const Invoices: React.FC = () => {
         doc.setFontSize(28);
         doc.setTextColor(...canvas);
         doc.text('BareStack', margin, 26);
+        // Render the "OS" suffix in the italic serif to match the app's wordmark.
+        const brandWidth = doc.getTextWidth('BareStack');
+        doc.setFont(serif, 'italic');
+        doc.text('OS', margin + brandWidth, 26);
+        doc.setFont(serif, 'normal');
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
@@ -124,7 +129,7 @@ const Invoices: React.FC = () => {
         doc.setFont(serif, 'normal');
         doc.setFontSize(12);
         doc.setTextColor(...content);
-        doc.text(issuer?.name || 'BareStack', margin, 66);
+        doc.text(issuer?.name || 'BareStackOS', margin, 66);
         if (issuer?.email) {
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8.5);
@@ -288,7 +293,7 @@ const Invoices: React.FC = () => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
         doc.setTextColor(...mutedC);
-        doc.text('Payment due within 30 days   ·   Generated with BareStack', rightMargin, fy + 9, { align: 'right' });
+        doc.text('Payment due within 30 days   ·   Generated with BareStackOS', rightMargin, fy + 9, { align: 'right' });
 
         return doc;
     };
