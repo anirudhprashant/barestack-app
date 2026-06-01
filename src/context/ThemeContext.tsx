@@ -22,14 +22,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem('theme', 'light');
   }, []);
 
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = (_newTheme: Theme) => {
     // Disabled for now, always keep light
-    console.log("Theme switching is disabled.");
   };
 
   const toggleTheme = () => {
-    // Disabled for now
-    console.log("Theme toggling is currently disabled.");
+    // Disabled for now, always keep light
   };
 
   return (
