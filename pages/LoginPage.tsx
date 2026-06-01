@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { signIn, signUp } from '../src/lib/auth';
+import { signIn, signUp, resendVerification } from '../src/lib/auth';
 
 const LoginPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
@@ -8,6 +8,8 @@ const LoginPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
+    const [verificationSentTo, setVerificationSentTo] = useState<string | null>(null);
+    const [resendNote, setResendNote] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -19,12 +21,31 @@ const LoginPage: React.FC = () => {
                 : await signIn(email, password);
             if (result.error) {
                 setError(result.error);
+            } else if (result.verificationSent) {
+                setVerificationSentTo(email);
             }
         } catch (err: any) {
             setError(err.message || 'An unexpected error occurred');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleResend = async () => {
+        if (!email) return;
+        setResendNote(null);
+        setLoading(true);
+        const { error: resendErr } = await resendVerification(email);
+        setLoading(false);
+        setResendNote(resendErr ? resendErr : 'Verification email sent. Check your inbox.');
+    };
+
+    const resetToSignIn = () => {
+        setVerificationSentTo(null);
+        setIsSignUp(false);
+        setError(null);
+        setResendNote(null);
+        setPassword('');
     };
 
     return (
@@ -56,7 +77,38 @@ const LoginPage: React.FC = () => {
                     </p>
                 </div>
 
-                {/* Form Card */}
+                {/* Check-your-email card (shown after sign-up) */}
+                {verificationSentTo ? (
+                <div className="bg-canvas border border-border p-8">
+                    <div className="border-b border-border pb-6 mb-8">
+                        <h2 className="text-2xl font-bold font-display text-charcoal">Check your email</h2>
+                    </div>
+                    <p className="text-charcoal font-semibold mb-1">We sent a verification link to</p>
+                    <p className="text-charcoal font-bold mb-6 break-words">{verificationSentTo}</p>
+                    <p className="text-muted text-sm mb-6">Click the link in that email to activate your account, then sign in. It can take a minute — check your spam folder too.</p>
+                    {resendNote && (
+                        <div className="bg-surface border border-border text-charcoal font-semibold p-4 mb-6 text-sm">{resendNote}</div>
+                    )}
+                    <button
+                        type="button"
+                        disabled={loading}
+                        onClick={handleResend}
+                        className="w-full bg-charcoal text-canvas hover:bg-content font-semibold py-4 px-6 border-2 border-charcoal transition-all uppercase tracking-wider disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Sending...' : 'Resend verification email'}
+                    </button>
+                    <div className="mt-8 border-t border-border pt-6">
+                        <button
+                            type="button"
+                            onClick={resetToSignIn}
+                            className="w-full text-center font-semibold text-charcoal hover:text-accent uppercase tracking-wide transition-colors py-2 px-4 border border-charcoal hover:border-accent"
+                        >
+                            ← Back to sign in
+                        </button>
+                    </div>
+                </div>
+                ) : (
+                /* Form Card */
                 <div className="bg-canvas border border-border p-8">
                     <div className="border-b border-border pb-6 mb-8">
                         <h2 className="text-2xl font-bold font-display text-charcoal">
@@ -67,7 +119,20 @@ const LoginPage: React.FC = () => {
                     {error && (
                         <div className="bg-surface border border-activity-red/30 text-charcoal font-semibold p-4 mb-6">
                             {error}
+                            {!isSignUp && (
+                                <button
+                                    type="button"
+                                    onClick={handleResend}
+                                    className="block mt-2 text-sm font-bold text-accent hover:underline uppercase tracking-wide"
+                                >
+                                    Email not verified? Resend verification →
+                                </button>
+                            )}
                         </div>
+                    )}
+
+                    {resendNote && (
+                        <div className="bg-surface border border-border text-charcoal font-semibold p-4 mb-6 text-sm">{resendNote}</div>
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -126,6 +191,7 @@ const LoginPage: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                )}
 
                 <p className="text-center text-muted/60 text-xs font-semibold uppercase tracking-widest mt-6">
                     Built with AI • Open-source forever

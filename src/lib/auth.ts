@@ -5,6 +5,7 @@ export interface AuthResult {
     user?: PBAuthModel;
     token?: string;
     error?: string;
+    verificationSent?: boolean;
 }
 
 export async function signIn(email: string, password: string): Promise<AuthResult> {
@@ -27,15 +28,31 @@ export async function signUp(email: string, password: string, name: string): Pro
             passwordConfirm: password,
             name,
         };
-        const record = await pb.collection('users').create(data);
-        // Auto sign-in after registration
-        const authData = await pb.collection('users').authWithPassword(email, password);
-        return {
-            user: authData.record as unknown as PBAuthModel,
-            token: authData.token,
-        };
+        await pb.collection('users').create(data);
+        // Send the verification email instead of auto signing-in: login now
+        // requires a verified address (users.authRule = "verified = true").
+        await pb.collection('users').requestVerification(email);
+        return { verificationSent: true };
     } catch (err: unknown) {
         return { error: (err as Error).message || 'Sign-up failed' };
+    }
+}
+
+export async function resendVerification(email: string): Promise<{ error?: string }> {
+    try {
+        await pb.collection('users').requestVerification(email);
+        return {};
+    } catch (err: unknown) {
+        return { error: (err as Error).message || 'Could not send verification email' };
+    }
+}
+
+export async function confirmVerification(token: string): Promise<{ error?: string }> {
+    try {
+        await pb.collection('users').confirmVerification(token);
+        return {};
+    } catch (err: unknown) {
+        return { error: (err as Error).message || 'This verification link is invalid or has expired' };
     }
 }
 
