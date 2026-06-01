@@ -59,7 +59,7 @@ const Settings: React.FC = () => {
             });
 
             const blob = new Blob([content], { type: 'application/zip' });
-            const filename = `barestack_export_${new Date().toISOString().split('T')[0]}.zip`;
+            const filename = `barestackos_export_${new Date().toISOString().split('T')[0]}.zip`;
 
             saveAs(blob, filename);
         } catch (error) {
