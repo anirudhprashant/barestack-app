@@ -6,6 +6,7 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import AppLayout from './components/AppLayout';
 import LoginPage from './pages/LoginPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import VerifyGate from './pages/VerifyGate';
 
 function AppRouter() {
     const { isAuthenticated, session } = useAuth();
@@ -21,11 +22,18 @@ function AppRouter() {
         );
     }
 
-    return isAuthenticated ? (
+    if (!isAuthenticated) return <LoginPage />;
+
+    // Signed in but email not yet confirmed: hold them at the verify gate
+    // instead of the dashboard until they click the link in their email.
+    const verified = !!(session?.user as { verified?: boolean } | undefined)?.verified;
+    if (!verified) return <VerifyGate />;
+
+    return (
         <DataProvider session={session}>
             <AppLayout />
         </DataProvider>
-    ) : <LoginPage />;
+    );
 }
 
 function AppContent() {

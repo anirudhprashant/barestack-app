@@ -29,10 +29,15 @@ export async function signUp(email: string, password: string, name: string): Pro
             name,
         };
         await pb.collection('users').create(data);
-        // Send the verification email instead of auto signing-in: login now
-        // requires a verified address (users.authRule = "verified = true").
+        // Sign the user straight in (still unverified — the app shows a verify
+        // gate) and send the verification email. Clicking the link then refreshes
+        // this same session and drops them into the dashboard, no re-login.
+        const authData = await pb.collection('users').authWithPassword(email, password);
         await pb.collection('users').requestVerification(email);
-        return { verificationSent: true };
+        return {
+            user: authData.record as unknown as PBAuthModel,
+            token: authData.token,
+        };
     } catch (err: unknown) {
         return { error: (err as Error).message || 'Sign-up failed' };
     }
@@ -54,6 +59,22 @@ export async function confirmVerification(token: string): Promise<{ error?: stri
     } catch (err: unknown) {
         return { error: (err as Error).message || 'This verification link is invalid or has expired' };
     }
+}
+
+// Re-pull the current user from the server (e.g. after verifying) so the
+// session's `verified` flag updates. Returns the latest verified state.
+export async function refreshAuth(): Promise<{ verified: boolean; error?: string }> {
+    if (!pb.authStore.isValid) return { verified: false, error: 'Not signed in' };
+    try {
+        const res = await pb.collection('users').authRefresh();
+        return { verified: !!(res.record as unknown as { verified?: boolean }).verified };
+    } catch (err: unknown) {
+        return { verified: false, error: (err as Error).message || 'Could not refresh session' };
+    }
+}
+
+export function isLoggedIn(): boolean {
+    return pb.authStore.isValid;
 }
 
 export async function signOut(): Promise<void> {
