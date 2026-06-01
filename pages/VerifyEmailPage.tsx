@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { confirmVerification } from '../src/lib/auth';
+import { confirmVerification, refreshAuth, isLoggedIn } from '../src/lib/auth';
 
 type Status = 'verifying' | 'success' | 'error';
 
@@ -22,15 +22,23 @@ const VerifyEmailPage: React.FC = () => {
             return;
         }
 
-        confirmVerification(token).then(({ error }) => {
+        confirmVerification(token).then(async ({ error }) => {
             if (error) {
                 setStatus('error');
                 setMessage(error);
-            } else {
-                setStatus('success');
+                return;
             }
+            // If this is the same browser they signed up in, the session is
+            // already present — refresh it (now verified) and go straight to
+            // the dashboard. Otherwise show success and point them to sign in.
+            if (isLoggedIn()) {
+                await refreshAuth();
+                navigate('/', { replace: true });
+                return;
+            }
+            setStatus('success');
         });
-    }, [token]);
+    }, [token, navigate]);
 
     return (
         <div className="min-h-screen bg-[#192118] font-body flex items-center justify-center p-4 relative overflow-hidden">
