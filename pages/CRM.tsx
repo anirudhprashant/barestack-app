@@ -5,6 +5,7 @@ import { Button, Modal, Icon, Textarea, Table, TableHeader, TableBody, TableRow,
 import { ContactForm } from '../components/ContactForm';
 import { ImportModal } from '../components/ImportModal';
 import { EditableCell } from '../components/EditableCell';
+import { useToast } from '../src/context/ToastContext';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -32,6 +33,7 @@ const stageColors: Record<DealStage, { bg: string, border: string, badge: string
 // Add Note Form Component
 const AddNoteForm: FC<{ contactId: string }> = ({ contactId }) => {
     const { addNote } = useData();
+    const { toast } = useToast();
     const [noteContent, setNoteContent] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -48,6 +50,7 @@ const AddNoteForm: FC<{ contactId: string }> = ({ contactId }) => {
             setNoteContent('');
         } catch (error) {
             console.error('Failed to add note:', error);
+            toast('Failed to add note. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -72,6 +75,7 @@ const AddNoteForm: FC<{ contactId: string }> = ({ contactId }) => {
 
 const CRM: React.FC = () => {
     const { data, deleteContact, updateDeal, addDeal, addRecentActivity, updateContact } = useData();
+    const { toast } = useToast();
     const { contacts, deals } = data;
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -116,7 +120,7 @@ const CRM: React.FC = () => {
                 setContactToDelete(null);
             } catch (error) {
                 console.error("Failed to delete contact:", error);
-                alert("Failed to delete contact. Please try again.");
+                toast("Failed to delete contact. Please try again.", 'error');
             }
         }
     };
@@ -170,9 +174,10 @@ const CRM: React.FC = () => {
             }
             setSelectedIds(new Set());
             setIsBulkDeleteModalOpen(false);
+            toast('Contacts deleted', 'success');
         } catch (error) {
             console.error("Failed to bulk delete contacts:", error);
-            alert("Failed to delete some contacts. Please try again.");
+            toast("Failed to delete some contacts. Please try again.", 'error');
         }
     };
 
@@ -192,9 +197,10 @@ const CRM: React.FC = () => {
                 }
             }
             setSelectedIds(new Set());
+            toast('Stages updated', 'success');
         } catch (error) {
             console.error("Failed to update bulk stage:", error);
-            alert("Failed to update stages. Please try again.");
+            toast("Failed to update stages. Please try again.", 'error');
         }
     };
 

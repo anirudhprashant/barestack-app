@@ -2,6 +2,7 @@ import React, { useState, FC } from 'react';
 import { Button, Input } from './ui';
 import { Contact } from '../types';
 import { useData } from '../dataStore';
+import { useToast } from '../src/context/ToastContext';
 
 interface ContactFormProps {
     contact?: Contact;
@@ -11,6 +12,7 @@ interface ContactFormProps {
 
 export const ContactForm: FC<ContactFormProps> = ({ contact, onClose, onSuccess }) => {
     const { addContact, updateContact, addRecentActivity } = useData();
+    const { toast } = useToast();
     const [formData, setFormData] = useState({
         name: contact?.name || '',
         email: contact?.email || '',
@@ -47,9 +49,11 @@ export const ContactForm: FC<ContactFormProps> = ({ contact, onClose, onSuccess 
                 });
                 if (onSuccess) onSuccess(newContact);
             }
+            toast('Contact saved', 'success');
             onClose();
         } catch (error) {
             console.error("Failed to save contact:", error);
+            toast('Failed to save contact', 'error');
         } finally {
             setLoading(false);
         }

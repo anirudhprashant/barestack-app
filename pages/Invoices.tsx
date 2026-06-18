@@ -3,6 +3,7 @@ import { Button, Icon, Modal, PageHeader, Table, TableHeader, TableBody, TableRo
 import { Invoice, InvoiceStatus } from '../types';
 import { useData } from '../dataStore';
 import { InvoiceForm } from '../components/InvoiceForm';
+import { useToast } from '../src/context/ToastContext';
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
 
@@ -21,6 +22,7 @@ const loadBrandFont = () => {
 
 const Invoices: React.FC = () => {
     const { data, updateInvoice, deleteInvoice, addRecentActivity } = useData();
+    const { toast, confirm } = useToast();
     const { invoices, contacts } = data;
     const [isAddInvoiceModalOpen, setIsAddInvoiceModalOpen] = useState(false);
     const [editingInvoice, setEditingInvoice] = useState<Invoice | undefined>(undefined);
@@ -299,9 +301,14 @@ const Invoices: React.FC = () => {
     };
 
     const handleDownloadPDF = async (invoice: Invoice) => {
-        const doc = await generatePDF(invoice);
-        const clientName = getClientName(invoice.client_id).replace(/\s+/g, '_');
-        doc.save(`Invoice_${invoice.invoice_number}_${clientName}.pdf`);
+        try {
+            const doc = await generatePDF(invoice);
+            const clientName = getClientName(invoice.client_id).replace(/\s+/g, '_');
+            doc.save(`Invoice_${invoice.invoice_number}_${clientName}.pdf`);
+        } catch (error) {
+            console.error("Failed to generate invoice PDF:", error);
+            toast('Could not generate the PDF. Please try again.', 'error');
+        }
     };
 
     // Build (and clean up) a blob URL for the preview modal.
@@ -336,16 +343,21 @@ const Invoices: React.FC = () => {
 
         const selectedInvoices = invoices.filter(inv => selectedIds.has(inv.id!));
 
-        for (const invoice of selectedInvoices) {
-            const doc = await generatePDF(invoice);
-            const clientName = getClientName(invoice.client_id).replace(/\s+/g, '_');
-            const filename = `Invoice_${invoice.invoice_number}_${clientName}.pdf`;
-            doc.save(filename);
-            await new Promise(r => setTimeout(r, 300));
+        try {
+            for (const invoice of selectedInvoices) {
+                const doc = await generatePDF(invoice);
+                const clientName = getClientName(invoice.client_id).replace(/\s+/g, '_');
+                const filename = `Invoice_${invoice.invoice_number}_${clientName}.pdf`;
+                doc.save(filename);
+                await new Promise(r => setTimeout(r, 300));
+            }
+            setSelectedIds(new Set());
+        } catch (error) {
+            console.error("Failed to download selected invoices:", error);
+            toast('Some PDFs could not be downloaded. Please try again.', 'error');
+        } finally {
+            setDownloading(false);
         }
-
-        setDownloading(false);
-        setSelectedIds(new Set());
     };
 
     const handleStatusChange = async (invoice: Invoice, newStatus: InvoiceStatus) => {
@@ -358,17 +370,29 @@ const Invoices: React.FC = () => {
     };
 
     const handleDelete = async (invoice: Invoice) => {
-        if (window.confirm(`Are you sure you want to delete invoice ${invoice.invoice_number}?`)) {
+        const confirmed = await confirm({
+            title: 'Delete invoice',
+            message: `Are you sure you want to delete invoice ${invoice.invoice_number}?`,
+            danger: true,
+            confirmLabel: 'Delete',
+        });
+        if (!confirmed) return;
+        try {
             await deleteInvoice(invoice.id!);
-            try {
-                await addRecentActivity({
-                    timestamp: new Date().toISOString(),
-                    type: 'INVOICE_DELETED',
-                    description: `Deleted invoice ${invoice.invoice_number}`
-                });
-            } catch (error) {
-                console.error("Failed to log activity:", error);
-            }
+            toast('Invoice deleted', 'success');
+        } catch (error) {
+            console.error("Failed to delete invoice:", error);
+            toast('Could not delete invoice. Please try again.', 'error');
+            return;
+        }
+        try {
+            await addRecentActivity({
+                timestamp: new Date().toISOString(),
+                type: 'INVOICE_DELETED',
+                description: `Deleted invoice ${invoice.invoice_number}`
+            });
+        } catch (error) {
+            console.error("Failed to log activity:", error);
         }
     };
 

@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Button, Icon, Modal, Input } from './ui';
 import { Invoice, InvoiceStatus, Contact } from '../types';
 import { useData } from '../dataStore';
+import { useToast } from '../src/context/ToastContext';
 import { ContactForm } from './ContactForm';
 import { addDays } from 'date-fns';
 
 export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice }> = ({ onClose, initialData }) => {
     const { data, addInvoice, updateInvoice, addRecentActivity } = useData();
+    const { toast } = useToast();
     const [clientId, setClientId] = useState(initialData?.client_id || '');
     const [issueDate, setIssueDate] = useState(initialData?.issue_date ? new Date(initialData.issue_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     const [dueDate, setDueDate] = useState(initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : addDays(new Date(), 30).toISOString().split('T')[0]);
@@ -28,7 +30,7 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!clientId) {
-            alert("Please select a client.");
+            toast('Please select a client.', 'error');
             return;
         }
         setLoading(true);
@@ -89,10 +91,11 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
                 }
             }
 
+            toast('Invoice saved', 'success');
             onClose();
         } catch (error) {
             console.error("Failed to save invoice:", error);
-            alert("An error occurred while saving the invoice.");
+            toast('An error occurred while saving the invoice.', 'error');
         } finally {
             setLoading(false);
         }

@@ -4,11 +4,13 @@ import { useData } from '../dataStore';
 import { useAuth } from '../auth';
 import { Button, Icon, Modal, Input } from '../components/ui';
 import { Task, TaskStatus, Creatable } from '../types';
+import { useToast } from '../src/context/ToastContext';
 
 // --- Add Task Form ---
 const AddTaskForm: React.FC<{ projectId: string, onClose: () => void }> = ({ projectId, onClose }) => {
     const { addTask } = useData();
     const { session } = useAuth();
+    const { toast } = useToast();
     const [title, setTitle] = useState('');
     const [estimatedHours, setEstimatedHours] = useState('');
     const [dueDate, setDueDate] = useState('');
@@ -29,10 +31,11 @@ const AddTaskForm: React.FC<{ projectId: string, onClose: () => void }> = ({ pro
                 status: TaskStatus.ToDo,
             };
             await addTask(newTask);
+            toast('Task added', 'success');
             onClose();
         } catch (error) {
             console.error("Failed to add task:", error);
-            alert("Failed to add task. Please try again.");
+            toast('Failed to add task. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -89,6 +92,7 @@ const ProjectDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { data, updateTask, addRecentActivity } = useData();
+    const { toast } = useToast();
     const { projects, tasks } = data;
 
     const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
@@ -117,9 +121,10 @@ const ProjectDetails: React.FC = () => {
                     type: 'TASK_COMPLETED',
                     description: `Task completed: ${task.title}`
                 });
+                toast('Task completed', 'success');
             } catch (error) {
                 console.error("Failed to complete task:", error);
-                alert("Failed to complete task. Please try again.");
+                toast('Failed to complete task. Please try again.', 'error');
             }
         }
     };
@@ -148,7 +153,7 @@ const ProjectDetails: React.FC = () => {
                 await updateTask({ ...draggedTask, status: newStatus });
             } catch (error) {
                 console.error("Failed to update task status:", error);
-                alert("Failed to move task. Please try again.");
+                toast('Failed to move task. Please try again.', 'error');
             }
         }
         setDraggedTask(null);

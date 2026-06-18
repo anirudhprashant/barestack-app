@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { DataProvider } from './dataStore';
 import { AuthProvider, useAuth } from './auth';
 import { ThemeProvider } from './src/context/ThemeContext';
+import { ToastProvider } from './src/context/ToastContext';
 import AppLayout from './components/AppLayout';
 import LoginPage from './pages/LoginPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
@@ -47,7 +48,9 @@ function App() {
     return (
         <AuthProvider>
             <ThemeProvider>
-                <AppContent />
+                <ToastProvider>
+                    <AppContent />
+                </ToastProvider>
             </ThemeProvider>
         </AuthProvider>
     );

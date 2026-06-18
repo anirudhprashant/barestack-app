@@ -3,9 +3,11 @@ import { Button, Input, Select, Textarea, PageHeader, Table, TableHeader, TableB
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { useData } from '../dataStore';
 import { Creatable, TimeEntry } from '../types';
+import { useToast } from '../src/context/ToastContext';
 
 const TimeTracking: React.FC = () => {
     const { data, addTimeEntry } = useData();
+    const { toast } = useToast();
     const { timeEntries, projects } = data;
 
     const [formState, setFormState] = useState({
@@ -24,7 +26,7 @@ const TimeTracking: React.FC = () => {
     const handleManualSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formState.projectId || !formState.hours) {
-            alert("Project and hours are required.");
+            toast('Project and hours are required.', 'error');
             return;
         }
         setIsSubmitting(true);
@@ -39,6 +41,7 @@ const TimeTracking: React.FC = () => {
 
         try {
             await addTimeEntry(newEntry);
+            toast('Time logged', 'success');
             setFormState({
                 projectId: projects[0]?.id || '',
                 date: new Date().toISOString().split('T')[0],
@@ -47,6 +50,7 @@ const TimeTracking: React.FC = () => {
             });
         } catch (error) {
             console.error("Failed to add time entry", error);
+            toast('Failed to log time. Please try again.', 'error');
         } finally {
             setIsSubmitting(false);
         }
