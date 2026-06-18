@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Input, PageHeader } from '../components/ui';
-import { useTheme } from '../src/context/ThemeContext';
 import { useData } from '../dataStore';
 
 import JSZip from 'jszip';

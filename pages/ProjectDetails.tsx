@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../dataStore';
 import { useAuth } from '../auth';
-import { PageHeader, Button, Icon, Modal, Input, Card } from '../components/ui';
+import { Button, Icon, Modal, Input } from '../components/ui';
 import { Task, TaskStatus, Creatable } from '../types';
 
 // --- Add Task Form ---

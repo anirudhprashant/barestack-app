@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { pb } from './src/lib/pocketbase';
 import * as api from './src/lib/api';
 import type { PBAuthModel, PBSession } from './src/types/pb-types';
@@ -45,7 +45,7 @@ interface DataContextType {
     addRecentActivity: (activity: Omit<RecentActivity, 'id' | 'user_id'>) => Promise<void>;
     addNote: (note: Creatable<Note>) => Promise<Note>;
     undoImport: (batchId: string) => Promise<void>;
-    updateUserProfile: (profile: Partial<UserProfile>) => void;
+    updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -137,8 +137,8 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
     // Helper to cast and shape PocketBase record to our types
     const pbRecord = <T extends object>(record: unknown): T => record as T;
 
-    const createApiHandler = useCallback(<T extends { id?: string }>(table: string, stateKey: keyof AppState, createFn: (data: Partial<Record<string, unknown>>) => Promise<unknown>, updateFn: (id: string, data: Partial<Record<string, unknown>>) => Promise<unknown>, deleteFn: (id: string) => Promise<void>) => {
-        const add = async (item: Omit<T, 'id' | 'user_id' | 'created'>): Promise<T> => {
+    const createApiHandler = useCallback(<T extends { id?: string }>(stateKey: keyof AppState, createFn: (data: Partial<Record<string, unknown>>) => Promise<unknown>, updateFn: (id: string, data: Partial<Record<string, unknown>>) => Promise<unknown>, deleteFn: (id: string) => Promise<void>) => {
+        const add = async (item: Creatable<T>): Promise<T> => {
             if (!userId) throw new Error("User not authenticated");
             const itemWithUser = { ...item, user: userId };
             const newData = await createFn(itemWithUser) as Record<string, unknown>;
@@ -149,14 +149,12 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
 
         const update = async (item: T): Promise<void> => {
             if (!userId) throw new Error("User not authenticated");
-            const { id, ...updateData } = item as any;
-            // @ts-ignore
+            const { id, ...updateData } = item as Record<string, unknown>;
+            // Strip server-managed fields PocketBase rejects on update.
             delete updateData.user_id;
-            // @ts-ignore
             delete updateData.created;
-            // @ts-ignore
             delete updateData.updated;
-            await updateFn(id, updateData);
+            await updateFn(id as string, updateData);
             setData(prev => {
                 const items = prev[stateKey] as unknown as T[];
                 const index = items.findIndex(i => (i as any).id === id);
@@ -178,63 +176,66 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         return { add, update, del };
     }, [userId]);
 
-    const contactsApi = createApiHandler<Contact>(
-        'contacts', 'contacts',
+    // Handlers depend only on createApiHandler (stable per userId), so memoizing
+    // here keeps their identities stable across renders and lets the context
+    // value below stay referentially stable.
+    const contactsApi = useMemo(() => createApiHandler<Contact>(
+        'contacts',
         (d) => api.createContact(d),
         (id, d) => api.updateContact(id, d),
         (id) => api.deleteContact(id)
-    );
-    const dealsApi = createApiHandler<Deal>(
-        'deals', 'deals',
+    ), [createApiHandler]);
+    const dealsApi = useMemo(() => createApiHandler<Deal>(
+        'deals',
         (d) => api.createDeal(d),
         (id, d) => api.updateDeal(id, d),
         (id) => api.deleteDeal(id)
-    );
-    const projectsApi = createApiHandler<Project>(
-        'projects', 'projects',
+    ), [createApiHandler]);
+    const projectsApi = useMemo(() => createApiHandler<Project>(
+        'projects',
         (d) => api.createProject(d),
         (id, d) => api.updateProject(id, d),
         (id) => api.deleteProject(id)
-    );
-    const tasksApi = createApiHandler<Task>(
-        'tasks', 'tasks',
+    ), [createApiHandler]);
+    const tasksApi = useMemo(() => createApiHandler<Task>(
+        'tasks',
         (d) => api.createTask(d),
         (id, d) => api.updateTask(id, d),
         (id) => api.deleteTask(id)
-    );
-    const invoicesApi = createApiHandler<Invoice>(
-        'invoices', 'invoices',
+    ), [createApiHandler]);
+    const invoicesApi = useMemo(() => createApiHandler<Invoice>(
+        'invoices',
         (d) => api.createInvoice(d),
         (id, d) => api.updateInvoice(id, d),
         (id) => api.deleteInvoice(id)
-    );
-    const timeEntriesApi = createApiHandler<TimeEntry>(
-        'time_entries', 'timeEntries',
+    ), [createApiHandler]);
+    const timeEntriesApi = useMemo(() => createApiHandler<TimeEntry>(
+        'timeEntries',
         (d) => api.createTimeEntry(d),
-        (id, d) => api.updateTimeEntry(id, d as any),
+        (id, d) => api.updateTimeEntry(id, d),
         (id) => api.deleteTimeEntry(id)
-    );
-    const expensesApi = createApiHandler<Expense>(
-        'expenses', 'expenses',
+    ), [createApiHandler]);
+    const expensesApi = useMemo(() => createApiHandler<Expense>(
+        'expenses',
         (d) => api.createExpense(d),
-        (id, d) => api.updateExpense(id, d as any),
+        (id, d) => api.updateExpense(id, d),
         (id) => api.deleteExpense(id)
-    );
-    const notesApi = createApiHandler<Note>(
-        'notes', 'notes',
+    ), [createApiHandler]);
+    const notesApi = useMemo(() => createApiHandler<Note>(
+        'notes',
         (d) => api.createNote(d),
-        (id, d) => api.updateNote(id, d as any),
+        (id, d) => api.updateNote(id, d),
         (id) => api.deleteNote(id)
-    );
+    ), [createApiHandler]);
 
-    const addRecentActivity = async (activity: Omit<RecentActivity, 'id' | 'user_id'>) => {
+    const addRecentActivity = useCallback(async (activity: Omit<RecentActivity, 'id' | 'user_id'>) => {
         if (!userId) throw new Error("User not authenticated");
         const itemWithUser = { ...activity, user: userId };
         const newData = await api.createRecentActivity(itemWithUser) as Record<string, unknown>;
         setData(prev => ({ ...prev, recentActivity: [newData as unknown as RecentActivity, ...prev.recentActivity] }));
-    };
+    }, [userId]);
 
-    const addMultipleContacts = async (contactsToAdd: Creatable<Contact>[], batchDetails: Creatable<ImportBatch>) => {
+    const addMultipleContacts = useCallback(async (contactsToAdd: Creatable<Contact>[], batchDetails: Creatable<ImportBatch>) => {
         if (!userId) throw new Error("User not authenticated");
 
         // 1. Create the import batch record
@@ -257,69 +258,107 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
             contacts: [...newContacts, ...prev.contacts],
             importBatches: [newBatch, ...prev.importBatches],
         }));
-    };
+    }, [userId]);
 
-    const undoImport = async (batchId: string) => {
+    const undoImport = useCallback(async (batchId: string) => {
         if (!userId) throw new Error("User not authenticated");
 
         // Determine contacts to delete from local state
         const contactsToDelete = data.contacts.filter(c => c.import_batch_id === batchId);
-        const contactIdsToDelete = new Set(contactsToDelete.map(c => c.id!));
+        const contactIdsToDelete = new Set(contactsToDelete.map(c => c.id!).filter(Boolean));
 
-        // 1. Delete contacts associated with the batch
-        for (const c of contactsToDelete) {
-            if (c.id) await api.deleteContact(c.id);
+        // Projects belonging to any of the deleted contacts, and their children.
+        const affectedProjectIds = new Set(
+            data.projects.filter(p => p.client_id && contactIdsToDelete.has(p.client_id)).map(p => p.id!).filter(Boolean)
+        );
+
+        // Delete server records, children first so no orphans survive on the backend.
+        // Each entity type is deleted concurrently; types run in dependency order.
+        try {
+            await Promise.all([
+                ...data.tasks.filter(t => affectedProjectIds.has(t.project_id) && t.id).map(t => api.deleteTask(t.id!)),
+                ...data.timeEntries.filter(te => affectedProjectIds.has(te.project_id) && te.id).map(te => api.deleteTimeEntry(te.id!)),
+                ...data.expenses.filter(ex => ex.project_id && affectedProjectIds.has(ex.project_id) && ex.id).map(ex => api.deleteExpense(ex.id!)),
+            ]);
+            await Promise.all([
+                ...data.projects.filter(p => affectedProjectIds.has(p.id!)).map(p => api.deleteProject(p.id!)),
+                ...data.deals.filter(d => d.contact_id && contactIdsToDelete.has(d.contact_id) && d.id).map(d => api.deleteDeal(d.id!)),
+                ...data.invoices.filter(i => i.client_id && contactIdsToDelete.has(i.client_id) && i.id).map(i => api.deleteInvoice(i.id!)),
+                ...data.notes.filter(n => n.contact_id && contactIdsToDelete.has(n.contact_id) && n.id).map(n => api.deleteNote(n.id!)),
+            ]);
+            await Promise.all(contactsToDelete.filter(c => c.id).map(c => api.deleteContact(c.id!)));
+            await api.deleteImportBatch(batchId);
+        } catch (e) {
+            // Refetch to resync after a partial failure rather than trusting optimistic state.
+            await fetchData();
+            throw e;
         }
 
-        // 2. Delete the batch record itself
-        await api.deleteImportBatch(batchId);
-
-        // 3. Update local state completely
+        // Update local state completely
         setData(prev => ({
             ...prev,
             contacts: prev.contacts.filter(c => c.import_batch_id !== batchId),
             importBatches: prev.importBatches.filter(b => b.id !== batchId),
-            deals: prev.deals.filter(d => d.contact_id && !contactIdsToDelete.has(d.contact_id)),
-            projects: prev.projects.filter(p => p.client_id && !contactIdsToDelete.has(p.client_id)),
-            invoices: prev.invoices.filter(i => i.client_id && !contactIdsToDelete.has(i.client_id)),
-            notes: prev.notes.filter(n => n.contact_id && !contactIdsToDelete.has(n.contact_id)),
+            deals: prev.deals.filter(d => !(d.contact_id && contactIdsToDelete.has(d.contact_id))),
+            projects: prev.projects.filter(p => !(p.client_id && contactIdsToDelete.has(p.client_id))),
+            invoices: prev.invoices.filter(i => !(i.client_id && contactIdsToDelete.has(i.client_id))),
+            notes: prev.notes.filter(n => !(n.contact_id && contactIdsToDelete.has(n.contact_id))),
+            tasks: prev.tasks.filter(t => !affectedProjectIds.has(t.project_id)),
+            timeEntries: prev.timeEntries.filter(te => !affectedProjectIds.has(te.project_id)),
+            expenses: prev.expenses.filter(ex => !(ex.project_id && affectedProjectIds.has(ex.project_id))),
         }));
-    };
+    }, [userId, data, fetchData]);
 
-    const deleteContact = async (id: string) => {
-        await contactsApi.del(id);
-
+    const deleteContact = useCallback(async (id: string) => {
         // Determine affected projects for this contact
-        const affectedProjectIds = data.projects.filter(p => p.client_id === id).map(p => p.id!).filter(Boolean);
+        const affectedProjectIds = new Set(
+            data.projects.filter(p => p.client_id === id).map(p => p.id!).filter(Boolean)
+        );
 
+        // Delete children first (tasks/time/expenses), then projects + other
+        // contact-owned records, then the contact itself. On any failure, resync
+        // from the server so local state never diverges.
         try {
-            // Best-effort cleanup of related records
-            for (const pid of affectedProjectIds) {
-                const tasks = data.tasks.filter(t => t.project_id === pid);
-                const timeEntries = data.timeEntries.filter(te => te.project_id === pid);
-                const expenses = data.expenses.filter(ex => ex.project_id === pid);
-                for (const t of tasks) { if (t.id) await api.deleteTask(t.id); }
-                for (const te of timeEntries) { if (te.id) await api.deleteTimeEntry(te.id as string); }
-                for (const ex of expenses) { if (ex.id) await api.deleteExpense(ex.id); }
-            }
+            await Promise.all([
+                ...data.tasks.filter(t => affectedProjectIds.has(t.project_id) && t.id).map(t => api.deleteTask(t.id!)),
+                ...data.timeEntries.filter(te => affectedProjectIds.has(te.project_id) && te.id).map(te => api.deleteTimeEntry(te.id!)),
+                ...data.expenses.filter(ex => ex.project_id && affectedProjectIds.has(ex.project_id) && ex.id).map(ex => api.deleteExpense(ex.id!)),
+            ]);
+            await Promise.all([
+                ...data.projects.filter(p => affectedProjectIds.has(p.id!)).map(p => api.deleteProject(p.id!)),
+                ...data.deals.filter(d => d.contact_id === id && d.id).map(d => api.deleteDeal(d.id!)),
+                ...data.invoices.filter(i => i.client_id === id && i.id).map(i => api.deleteInvoice(i.id!)),
+                ...data.notes.filter(n => n.contact_id === id && n.id).map(n => api.deleteNote(n.id!)),
+            ]);
+            await api.deleteContact(id);
         } catch (e) {
-            // Best-effort; UI state will still be consistent below
+            await fetchData();
+            throw e;
         }
 
         // Update local state to remove all associated entities
         setData(prev => ({
             ...prev,
+            contacts: prev.contacts.filter(c => c.id !== id),
             deals: prev.deals.filter(d => d.contact_id !== id),
             projects: prev.projects.filter(p => p.client_id !== id),
             invoices: prev.invoices.filter(i => i.client_id !== id),
             notes: prev.notes.filter(n => n.contact_id !== id),
-            tasks: prev.tasks.filter(t => !affectedProjectIds.includes(t.project_id)),
-            timeEntries: prev.timeEntries.filter(te => !affectedProjectIds.includes(te.project_id)),
-            expenses: prev.expenses.filter(ex => ex.project_id && !affectedProjectIds.includes(ex.project_id)),
+            tasks: prev.tasks.filter(t => !affectedProjectIds.has(t.project_id)),
+            timeEntries: prev.timeEntries.filter(te => !affectedProjectIds.has(te.project_id)),
+            expenses: prev.expenses.filter(ex => !(ex.project_id && affectedProjectIds.has(ex.project_id))),
         }));
-    };
+    }, [data, fetchData]);
 
-    const value: DataContextType = {
+    const updateUserProfile = useCallback(async (profile: Partial<UserProfile>) => {
+        setData(prev => ({ ...prev, userProfile: { ...prev.userProfile, ...profile } }));
+        // Also persist to PocketBase user record
+        if (session?.user?.id) {
+            await pb.collection('users').update(session.user.id, { name: profile.name, email: profile.email });
+        }
+    }, [session]);
+
+    const value: DataContextType = useMemo(() => ({
         data,
         loading,
         error,
@@ -345,18 +384,12 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         addRecentActivity,
         addNote: notesApi.add,
         undoImport,
-        updateUserProfile: async (profile: Partial<UserProfile>) => {
-            setData(prev => ({ ...prev, userProfile: { ...prev.userProfile, ...profile } }));
-            // Also persist to PocketBase user record
-            if (session?.user?.id) {
-                try {
-                    await pb.collection('users').update(session.user.id, { name: profile.name, email: profile.email });
-                } catch (err) {
-                    console.error('Failed to update PocketBase user:', err);
-                }
-            }
-        },
-    };
+        updateUserProfile,
+    }), [
+        data, loading, error,
+        contactsApi, dealsApi, projectsApi, tasksApi, invoicesApi, timeEntriesApi, expensesApi, notesApi,
+        addMultipleContacts, deleteContact, addRecentActivity, undoImport, updateUserProfile,
+    ]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };

@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { DataProvider } from './dataStore';
 import { AuthProvider, useAuth } from './auth';

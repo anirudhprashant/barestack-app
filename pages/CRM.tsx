@@ -1,7 +1,7 @@
 import React, { useState, FC, useMemo } from 'react';
 import { useData } from '../dataStore';
-import { Contact, Deal, DealStage, Note, Creatable, ImportBatch } from '../types';
-import { Button, Input, Modal, Icon, Card, Select, Textarea, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui';
+import { Contact, DealStage, Note } from '../types';
+import { Button, Modal, Icon, Textarea, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui';
 import { ContactForm } from '../components/ContactForm';
 import { ImportModal } from '../components/ImportModal';
 import { EditableCell } from '../components/EditableCell';
@@ -31,7 +31,7 @@ const stageColors: Record<DealStage, { bg: string, border: string, badge: string
 
 // Add Note Form Component
 const AddNoteForm: FC<{ contactId: string }> = ({ contactId }) => {
-    const { addNote, addRecentActivity } = useData();
+    const { addNote } = useData();
     const [noteContent, setNoteContent] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -71,7 +71,7 @@ const AddNoteForm: FC<{ contactId: string }> = ({ contactId }) => {
 };
 
 const CRM: React.FC = () => {
-    const { data, deleteContact, updateDeal, addDeal, addNote, addImportBatch, addMultipleContacts, addRecentActivity, updateContact } = useData();
+    const { data, deleteContact, updateDeal, addDeal, addRecentActivity, updateContact } = useData();
     const { contacts, deals } = data;
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -141,7 +141,7 @@ const CRM: React.FC = () => {
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            setSelectedIds(new Set(paginatedContacts.map(c => c.id)));
+            setSelectedIds(new Set(paginatedContacts.map(c => c.id).filter((id): id is string => !!id)));
         } else {
             setSelectedIds(new Set());
         }
@@ -262,8 +262,8 @@ const CRM: React.FC = () => {
                                             id={`select-${contact.id}`}
                                             name={`select-contact-${contact.id}`}
                                             className="rounded-none border-border text-charcoal focus:ring-charcoal"
-                                            checked={selectedIds.has(contact.id)}
-                                            onChange={() => handleSelectOne(contact.id)}
+                                            checked={!!contact.id && selectedIds.has(contact.id)}
+                                            onChange={() => contact.id && handleSelectOne(contact.id)}
                                         />
                                     </TableCell>
                                     <TableCell>
@@ -623,7 +623,7 @@ const CRM: React.FC = () => {
                     <ContactForm
                         contact={editingContact}
                         onClose={() => setEditingContact(null)}
-                        onSuccess={(updated) => {
+                        onSuccess={() => {
                             setEditingContact(null);
                         }}
                     />

@@ -1,6 +1,6 @@
 import React, { useState, FC } from 'react';
 import { Button, Input } from './ui';
-import { Contact, Creatable } from '../types';
+import { Contact } from '../types';
 import { useData } from '../dataStore';
 
 interface ContactFormProps {

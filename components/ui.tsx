@@ -3,10 +3,11 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 
-type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt' | 'chart' | 'settings' | 'plus' | 'search' | 'trash' | 'edit' | 'chevron-down' | 'x' | 'check' | 'bell' | 'mail' | 'phone' | 'zap' | 'eye' | 'trending-up' | 'activity' | 'download' | 'credit-card' | 'more-horizontal' | 'upload' | 'dollar-sign' | 'user' | 'folder';
+type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt' | 'chart' | 'settings' | 'plus' | 'search' | 'trash' | 'edit' | 'chevron-down' | 'x' | 'check' | 'bell' | 'mail' | 'phone' | 'zap' | 'eye' | 'trending-up' | 'activity' | 'download' | 'credit-card' | 'more-horizontal' | 'upload' | 'dollar-sign' | 'user' | 'folder' | 'file' | 'alert-circle';
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
     name: IconName;
+    size?: number;
 }
 
 const iconMap: Record<IconName, React.ComponentType<any>> = {
@@ -39,14 +40,13 @@ const iconMap: Record<IconName, React.ComponentType<any>> = {
     'dollar-sign': LucideIcons.DollarSign,
     user: LucideIcons.User,
     folder: LucideIcons.Folder,
+    file: LucideIcons.File,
+    'alert-circle': LucideIcons.AlertCircle,
 };
 
-export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
-    const IconComponent = iconMap[name];
-    if (!IconComponent) {
-        return <LucideIcons.Circle Icon {...props} />;
-    }
-    return <IconComponent size={props.size || 18} strokeWidth={1.75} {...props} />;
+export const Icon: React.FC<IconProps> = ({ name, size = 18, ...props }) => {
+    const IconComponent = iconMap[name] ?? LucideIcons.Circle;
+    return <IconComponent size={size} strokeWidth={1.75} {...props} />;
 };
 
 
@@ -227,8 +227,8 @@ export const TableHead: React.FC<{ children: React.ReactNode; className?: string
     </th>
 );
 
-export const TableCell: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <td className={`py-3 px-4 text-sm text-charcoal ${className}`}>
+export const TableCell: React.FC<{ children: React.ReactNode; className?: string; onClick?: React.MouseEventHandler<HTMLTableCellElement> }> = ({ children, className = '', onClick }) => (
+    <td className={`py-3 px-4 text-sm text-charcoal ${className}`} onClick={onClick}>
         {children}
     </td>
 );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Icon, Modal, Input, PageHeader, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui';
+import { Button, Icon, Modal, PageHeader, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui';
 import { Invoice, InvoiceStatus } from '../types';
 import { useData } from '../dataStore';
 import { InvoiceForm } from '../components/InvoiceForm';
