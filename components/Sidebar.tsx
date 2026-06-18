@@ -19,56 +19,61 @@ const SidebarContent: React.FC<{
 }> = ({ userName, userInitial, iconMap, onNavigate }) => (
     <>
         {/* Header */}
-        <div className="h-[var(--app-shell-header-height)] flex items-center px-5 border-b border-border/50">
+        <div className="h-[var(--app-shell-header-height)] flex items-center px-5 border-b border-border/50 shrink-0">
             <div className="text-xl font-bold font-display tracking-tight text-canvas">
                 BareStack<span className="italic">OS</span>
             </div>
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 flex flex-col justify-between px-3 py-4 overflow-y-auto">
-            <nav className="flex flex-col space-y-0.5">
-                {navItems.map((item) => (
-                    <NavLink
-                        key={item.href}
-                        to={item.href}
-                        onClick={onNavigate}
-                        className={({ isActive }) =>
-                            `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-150 rounded-none ${isActive
-                                ? 'bg-canvas text-charcoal'
-                                : 'text-canvas/60 hover:text-canvas hover:bg-canvas/10'
-                            }`
-                        }
-                    >
-                        {iconMap[item.icon] || <Icons.Grid className="w-4 h-4" />}
-                        <span>{item.label}</span>
-                    </NavLink>
-                ))}
+        <nav className="flex-1 flex flex-col space-y-0.5 px-3 py-4 overflow-y-auto">
+            {navItems.map((item) => (
+                <NavLink
+                    key={item.href}
+                    to={item.href}
+                    onClick={onNavigate}
+                    className={({ isActive }) =>
+                        `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-150 rounded-none ${isActive
+                            ? 'bg-canvas text-charcoal'
+                            : 'text-canvas/60 hover:text-canvas hover:bg-canvas/10'
+                        }`
+                    }
+                >
+                    {iconMap[item.icon] || <Icons.Grid className="w-4 h-4" />}
+                    <span>{item.label}</span>
+                </NavLink>
+            ))}
+        </nav>
 
-                <div className="pt-3 mt-3">
-                    <NavLink
-                        to="/settings"
-                        onClick={onNavigate}
-                        className={({ isActive }) =>
-                            `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-150 rounded-none ${isActive
-                                ? 'bg-canvas text-charcoal'
-                                : 'text-canvas/60 hover:text-canvas hover:bg-canvas/10'
-                            }`
-                        }
-                    >
-                        <Icons.Settings className="w-4 h-4" />
-                        <span>Settings</span>
-                    </NavLink>
-                </div>
-            </nav>
+        {/* Account footer — separated from nav by top border */}
+        <div className="shrink-0 border-t border-canvas/20 px-3 py-4 space-y-1">
+            {/* Settings — grouped with account, not mixed into nav */}
+            <NavLink
+                to="/settings"
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2 text-sm font-medium transition-all duration-150 rounded-none ${isActive
+                        ? 'bg-canvas text-charcoal'
+                        : 'text-canvas/60 hover:text-canvas hover:bg-canvas/10'
+                    }`
+                }
+            >
+                <Icons.Settings className="w-4 h-4" />
+                <span>Settings</span>
+            </NavLink>
 
-            {/* User */}
-            <div className="pt-3 flex items-center gap-3 px-3">
-                <div className="w-9 h-9 bg-canvas/10 text-canvas font-semibold text-sm flex items-center justify-center rounded-none border border-canvas/20 flex-shrink-0">
+            {/* User profile */}
+            <div className="flex items-center gap-3 px-3 pt-3">
+                <div className="w-10 h-10 bg-canvas text-charcoal font-semibold text-sm flex items-center justify-center rounded-none border border-canvas flex-shrink-0">
                     {userInitial}
                 </div>
-                <div className="text-canvas/60 text-xs font-medium truncate max-w-[120px]" title={userName}>
-                    {userName}
+                <div className="min-w-0">
+                    <div className="text-canvas text-sm font-medium truncate max-w-[140px]" title={userName}>
+                        {userName}
+                    </div>
+                    <div className="text-canvas/40 text-[11px] uppercase tracking-wider font-medium">
+                        Account
+                    </div>
                 </div>
             </div>
         </div>
