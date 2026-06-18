@@ -131,7 +131,7 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input label="Issue Date" id="issueDate" type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} required />
                     <Input label="Due Date" id="dueDate" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} required />
                 </div>
@@ -139,7 +139,7 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
                 <div className="border-t border-border pt-4 mt-2">
                     <h4 className="text-sm font-semibold text-charcoal mb-3">Line Item</h4>
                     <Input label="Description" id="description" value={description} onChange={e => setDescription(e.target.value)} required />
-                    <div className="grid grid-cols-2 gap-4 mt-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
                         <Input label="Quantity" id="quantity" type="number" step="0.1" value={quantity} onChange={e => setQuantity(e.target.value)} required />
                         <Input label="Rate ($)" id="rate" type="number" step="0.01" value={rate} onChange={e => setRate(e.target.value)} required />
                     </div>

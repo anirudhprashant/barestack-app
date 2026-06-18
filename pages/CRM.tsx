@@ -581,7 +581,7 @@ const CRM: React.FC = () => {
 
             {/* Bulk Actions Bar */}
             {selectedIds.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-canvas border border-border px-6 py-3 flex items-center space-x-4 animate-in slide-in-from-bottom-4 z-50">
+                <div className="fixed bottom-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-auto bg-canvas border border-border px-4 sm:px-6 py-3 flex items-center space-x-3 sm:space-x-4 animate-in slide-in-from-bottom-4 z-50">
                     <span className="text-sm font-medium text-charcoal">{selectedIds.size} selected</span>
                     <div className="h-4 w-px bg-border" />
                     <div className="flex items-center space-x-2">

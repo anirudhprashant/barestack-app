@@ -112,7 +112,7 @@ const TimeTracking: React.FC = () => {
                 {/* Entry Form */}
                 <div className="lg:col-span-1">
                     <div className="bg-canvas border border-border">
-                        <div className="px-6 py-4 border-b border-border bg-surface flex items-center">
+                        <div className="px-4 sm:px-6 py-4 border-b border-border bg-surface flex items-center">
                             <Icon name="clock" className="w-5 h-5 mr-2 text-charcoal" />
                             <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider">Log Time</h3>
                         </div>
@@ -135,25 +135,25 @@ const TimeTracking: React.FC = () => {
                 {/* Weekly Overview */}
                 <div className="lg:col-span-2">
                     <div className="bg-canvas border border-border h-full">
-                        <div className="px-6 py-4 border-b border-border bg-surface flex justify-between items-center">
+                        <div className="px-4 sm:px-6 py-4 border-b border-border bg-surface flex justify-between items-center">
                             <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider">This Week</h3>
                             <span className="text-xs text-muted font-medium">{format(week[0], 'MMM d')} - {format(week[6], 'MMM d')}</span>
                         </div>
-                        <div className="p-6">
-                            <div className="grid grid-cols-7 gap-3">
+                        <div className="p-4 sm:p-6">
+                            <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 sm:gap-3">
                                 {week.map(day => {
                                     const isToday = isSameDay(day, new Date());
                                     const hours = getHoursForDay(day);
                                     return (
-                                        <div key={day.toString()} className={`flex flex-col items-center p-4 border ${isToday ? 'border-charcoal bg-surface' : 'border-border'}`}>
-                                            <span className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isToday ? 'text-charcoal' : 'text-muted'}`}>
+                                        <div key={day.toString()} className={`flex flex-col items-center p-2 sm:p-4 border ${isToday ? 'border-charcoal bg-surface' : 'border-border'}`}>
+                                            <span className={`text-xs font-semibold mb-1 sm:mb-2 uppercase tracking-wider ${isToday ? 'text-charcoal' : 'text-muted'}`}>
                                                 {format(day, 'EEE')}
                                             </span>
-                                            <span className={`text-2xl font-bold mb-3 ${isToday ? 'text-charcoal' : 'text-charcoal'}`}>
+                                            <span className={`text-lg sm:text-2xl font-bold mb-1 sm:mb-3 ${isToday ? 'text-charcoal' : 'text-charcoal'}`}>
                                                 {format(day, 'd')}
                                             </span>
-                                            <div className={`w-full py-3 text-center border ${hours > 0 ? 'bg-charcoal text-canvas border-charcoal' : 'bg-surface text-muted border-border'}`}>
-                                                <span className="text-sm font-bold">{hours > 0 ? `${hours}h` : '-'}</span>
+                                            <div className={`w-full py-2 sm:py-3 text-center border ${hours > 0 ? 'bg-charcoal text-canvas border-charcoal' : 'bg-surface text-muted border-border'}`}>
+                                                <span className="text-xs sm:text-sm font-bold">{hours > 0 ? `${hours}h` : '-'}</span>
                                             </div>
                                         </div>
                                     );
@@ -161,7 +161,7 @@ const TimeTracking: React.FC = () => {
                             </div>
                             <div className="mt-6 pt-6 border-t border-border flex justify-between items-center">
                                 <span className="text-sm font-medium text-muted uppercase tracking-wider">Weekly Total</span>
-                                <span className="text-3xl font-bold text-charcoal tracking-tight">{totalHoursThisWeek}h</span>
+                                <span className="text-2xl sm:text-3xl font-bold text-charcoal tracking-tight">{totalHoursThisWeek}h</span>
                             </div>
                         </div>
                     </div>

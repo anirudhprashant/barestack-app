@@ -201,7 +201,7 @@ const ProjectDetails: React.FC = () => {
             </div>
 
             {/* Kanban Board */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-250px)] overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 min-h-[500px] md:h-[calc(100vh-250px)] md:overflow-hidden">
                 {taskStages.map(stage => {
                     return (
                         <div

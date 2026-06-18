@@ -3,7 +3,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 
-type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt' | 'chart' | 'settings' | 'plus' | 'search' | 'trash' | 'edit' | 'chevron-down' | 'x' | 'check' | 'bell' | 'mail' | 'phone' | 'zap' | 'eye' | 'trending-up' | 'activity' | 'download' | 'credit-card' | 'more-horizontal' | 'upload' | 'dollar-sign' | 'user' | 'folder' | 'file' | 'alert-circle';
+type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt' | 'chart' | 'settings' | 'plus' | 'search' | 'trash' | 'edit' | 'chevron-down' | 'x' | 'check' | 'bell' | 'mail' | 'phone' | 'zap' | 'eye' | 'trending-up' | 'activity' | 'download' | 'credit-card' | 'more-horizontal' | 'upload' | 'dollar-sign' | 'user' | 'folder' | 'file' | 'alert-circle' | 'menu' | 'arrow-left';
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
     name: IconName;
@@ -42,6 +42,8 @@ const iconMap: Record<IconName, React.ComponentType<any>> = {
     folder: LucideIcons.Folder,
     file: LucideIcons.File,
     'alert-circle': LucideIcons.AlertCircle,
+    'menu': LucideIcons.Menu,
+    'arrow-left': LucideIcons.ArrowLeft,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, size = 18, ...props }) => {
@@ -59,7 +61,7 @@ interface CardProps {
 
 export const Card: React.FC<CardProps> = ({ children, className = '', onClick }) => {
     return (
-        <div onClick={onClick} className={`bg-canvas p-6 border border-border ${className}`}>
+        <div onClick={onClick} className={`bg-canvas p-4 sm:p-6 border border-border ${className}`}>
             {children}
         </div>
     );
@@ -158,7 +160,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     return createPortal(
         <div className="fixed inset-0 bg-charcoal/80 backdrop-blur-none z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div
-                className={`bg-canvas p-6 w-full ${maxWidthClass} relative border border-border`}
+                className={`bg-canvas p-4 sm:p-6 w-full ${maxWidthClass} relative border border-border max-h-[90vh] overflow-y-auto`}
                 onClick={e => e.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
@@ -232,13 +234,13 @@ export const TableRow: React.FC<{ children: React.ReactNode; className?: string;
 );
 
 export const TableHead: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <th className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider text-muted ${className}`}>
+    <th className={`py-3 px-3 sm:px-4 text-xs font-semibold uppercase tracking-wider text-muted whitespace-nowrap ${className}`}>
         {children}
     </th>
 );
 
 export const TableCell: React.FC<{ children: React.ReactNode; className?: string; onClick?: React.MouseEventHandler<HTMLTableCellElement> }> = ({ children, className = '', onClick }) => (
-    <td className={`py-3 px-4 text-sm text-charcoal ${className}`} onClick={onClick}>
+    <td className={`py-3 px-3 sm:px-4 text-sm text-charcoal ${className}`} onClick={onClick}>
         {children}
     </td>
 );
@@ -250,9 +252,9 @@ interface PageHeaderProps {
 }
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, children }) => {
     return (
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="text-2xl font-bold text-charcoal">{title}</h2>
-            {children && <div className="flex space-x-3">{children}</div>}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h2 className="text-xl sm:text-2xl font-bold text-charcoal">{title}</h2>
+            {children && <div className="flex flex-wrap gap-2 sm:gap-3">{children}</div>}
         </div>
     );
 };
