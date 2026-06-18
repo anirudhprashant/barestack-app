@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Input, PageHeader } from '../components/ui';
-import { useTheme } from '../src/context/ThemeContext';
 import { useData } from '../dataStore';
+import { useToast } from '../src/context/ToastContext';
 
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
 const Settings: React.FC = () => {
     const { data, updateUserProfile } = useData();
+    const { toast } = useToast();
     const [name, setName] = useState(data.userProfile.name);
     const [email, setEmail] = useState(data.userProfile.email);
     const [exporting, setExporting] = useState(false);
@@ -17,10 +18,15 @@ const Settings: React.FC = () => {
         setEmail(data.userProfile.email);
     }, [data.userProfile]);
 
-    const handleSaveProfile = (e: React.FormEvent) => {
+    const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
-        updateUserProfile({ name, email });
-        alert("Profile updated!");
+        try {
+            await updateUserProfile({ name, email });
+            toast('Profile updated', 'success');
+        } catch (error) {
+            console.error("Failed to update profile:", error);
+            toast('Failed to update profile', 'error');
+        }
     };
 
     const convertToCSV = (items: any[]) => {
@@ -64,7 +70,7 @@ const Settings: React.FC = () => {
             saveAs(blob, filename);
         } catch (error) {
             console.error("Export failed:", error);
-            alert("Failed to export data.");
+            toast('Failed to export data', 'error');
         } finally {
             setExporting(false);
         }

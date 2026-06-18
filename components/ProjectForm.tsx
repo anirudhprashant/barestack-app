@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Button, Icon, Modal, Input, Select } from './ui';
 import { Project, ProjectStatus, Creatable, Contact } from '../types';
 import { useData } from '../dataStore';
+import { useToast } from '../src/context/ToastContext';
 import { ContactForm } from './ContactForm';
 
 export const ProjectForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { data, addProject, addRecentActivity } = useData();
+    const { toast } = useToast();
     const [name, setName] = useState('');
     const [clientId, setClientId] = useState('');
     const [budget, setBudget] = useState('');
@@ -23,7 +25,7 @@ export const ProjectForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!clientId) {
-            alert("Please select a client.");
+            toast('Please select a client.', 'error');
             return;
         }
         setLoading(true);
@@ -42,10 +44,11 @@ export const ProjectForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 type: 'PROJECT_CREATED',
                 description: `New project created: ${name}`
             });
+            toast('Project created', 'success');
             onClose();
         } catch (error) {
             console.error("Failed to create project:", error);
-            alert("Failed to create project. Please try again.");
+            toast('Failed to create project. Please try again.', 'error');
         } finally {
             setLoading(false);
         }

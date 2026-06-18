@@ -106,9 +106,9 @@ Open http://localhost:8080
 
 ## Tech Stack
 
-- **Frontend**: React 18, TypeScript, Vite 5, Tailwind CSS 4
+- **Frontend**: React 18, TypeScript (strict), Vite 7, Tailwind CSS 4
 - **Backend**: PocketBase (self-hosted, open-source)
-- **Font**: Gabarito (Google Fonts)
+- **Fonts**: Instrument Serif + Inter + Plus Jakarta Sans (Google Fonts)
 - **PDF**: jsPDF with AutoTable
 
 ---
@@ -133,7 +133,7 @@ Open http://localhost:8080
 │   ├── lib/       # API and validation
 │   └── style.css   # Tailwind styles
 ├── vite.config.ts  # Vite + security headers
-├── index.html      # Entry + Gabarito font
+├── index.html      # Entry + Google Fonts
 ├── types.ts        # TypeScript types
 ├── dataStore.tsx   # State management
 ├── install.sh      # One-line installer

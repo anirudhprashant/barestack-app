@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, StatCard, Icon, Button, PageHeader, Modal } from '../components/ui';
+import { Icon, Button, Modal } from '../components/ui';
 import { RecentActivity, InvoiceStatus, ProjectStatus, TaskStatus } from '../types';
 import { formatDistanceToNow, startOfWeek, endOfWeek, format } from 'date-fns';
 import { useData } from '../dataStore';
@@ -99,7 +99,9 @@ const Dashboard: React.FC = () => {
         'CONTACT_ADDED': <Icon name="users" className="w-5 h-5 text-activity-blue" />,
         'PROJECT_CREATED': <Icon name="clipboard" className="w-5 h-5 text-activity-purple" />,
         'INVOICE_CREATED': <Icon name="document" className="w-5 h-5 text-activity-green" />,
+        'INVOICE_UPDATED': <Icon name="edit" className="w-5 h-5 text-activity-blue" />,
         'INVOICE_SENT': <Icon name="document" className="w-5 h-5 text-activity-emerald" />,
+        'INVOICE_DELETED': <Icon name="trash" className="w-5 h-5 text-activity-red" />,
         'TASK_COMPLETED': <Icon name="check" className="w-5 h-5 text-activity-indigo" />,
         'DEAL_ADDED': <Icon name="users" className="w-5 h-5 text-activity-orange" />,
         'EXPENSE_ADDED': <Icon name="receipt" className="w-5 h-5 text-activity-red" />,
@@ -109,7 +111,9 @@ const Dashboard: React.FC = () => {
         'CONTACT_ADDED': 'bg-activity-blue/10 border-activity-blue/20',
         'PROJECT_CREATED': 'bg-activity-purple/10 border-activity-purple/20',
         'INVOICE_CREATED': 'bg-activity-green/10 border-activity-green/20',
+        'INVOICE_UPDATED': 'bg-activity-blue/10 border-activity-blue/20',
         'INVOICE_SENT': 'bg-activity-emerald/10 border-activity-emerald/20',
+        'INVOICE_DELETED': 'bg-activity-red/10 border-activity-red/20',
         'TASK_COMPLETED': 'bg-activity-indigo/10 border-activity-indigo/20',
         'DEAL_ADDED': 'bg-activity-orange/10 border-activity-orange/20',
         'EXPENSE_ADDED': 'bg-activity-red/10 border-activity-red/20',
@@ -280,9 +284,6 @@ const Dashboard: React.FC = () => {
                             <div className="flex justify-between items-center">
                                 <span className="text-sm text-muted">Total Contacts</span>
                                 <span className="text-sm font-bold text-charcoal">{stats.totalContacts}</span>
-                            </div>
-                            <div className="w-full bg-surface h-1.5 overflow-hidden">
-                                <div className="bg-charcoal h-full" style={{ width: '70%' }}></div>
                             </div>
 
                             <div className="flex justify-between items-center pt-2">

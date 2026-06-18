@@ -1,8 +1,9 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { DataProvider } from './dataStore';
 import { AuthProvider, useAuth } from './auth';
 import { ThemeProvider } from './src/context/ThemeContext';
+import { ToastProvider } from './src/context/ToastContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import AppLayout from './components/AppLayout';
 import LoginPage from './pages/LoginPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
@@ -46,11 +47,15 @@ function AppContent() {
 
 function App() {
     return (
-        <AuthProvider>
-            <ThemeProvider>
-                <AppContent />
-            </ThemeProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+            <AuthProvider>
+                <ThemeProvider>
+                    <ToastProvider>
+                        <AppContent />
+                    </ToastProvider>
+                </ThemeProvider>
+            </AuthProvider>
+        </ErrorBoundary>
     );
 }
 

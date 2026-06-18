@@ -2,10 +2,12 @@ import React, { useState, FC, useMemo } from 'react';
 import { Button, Icon, Modal, Input, Select } from '../components/ui';
 import { Deal, DealStage } from '../types';
 import { useData } from '../dataStore';
+import { useToast } from '../src/context/ToastContext';
 import CrmHeader from '../components/CrmHeader';
 
 const AddDealForm: FC<{ onClose: () => void; initialContactId?: string; initialStage?: DealStage }> = ({ onClose, initialContactId, initialStage }) => {
     const { data, addDeal, addRecentActivity } = useData();
+    const { toast } = useToast();
     const [contactId, setContactId] = useState(initialContactId || data.contacts[0]?.id || '');
     const [value, setValue] = useState('');
     const [stage, setStage] = useState(initialStage || DealStage.Qualified);
@@ -29,9 +31,11 @@ const AddDealForm: FC<{ onClose: () => void; initialContactId?: string; initialS
                 type: 'DEAL_ADDED',
                 description: `New deal worth $${newDeal.value} added for ${contactName}`
             });
+            toast('Deal added', 'success');
             onClose();
         } catch (error) {
             console.error("Failed to add deal:", error);
+            toast('Failed to add deal', 'error');
         } finally {
             setLoading(false);
         }

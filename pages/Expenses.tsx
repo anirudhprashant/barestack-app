@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Button, Icon, Modal, Input, Select, PageHeader, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui';
 import { Expense, ExpenseCategory } from '../types';
 import { useData } from '../dataStore';
+import { useToast } from '../src/context/ToastContext';
 
 const AddExpenseForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { data, addExpense, addRecentActivity } = useData();
+    const { toast } = useToast();
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState<ExpenseCategory>(ExpenseCategory.Other);
@@ -15,20 +17,27 @@ const AddExpenseForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        await addExpense({
-            date: new Date(date).toISOString(),
-            category,
-            amount: parseFloat(amount) || 0,
-            description,
-            project_id: projectId,
-        });
-        await addRecentActivity({
-            timestamp: new Date().toISOString(),
-            type: 'EXPENSE_ADDED',
-            description: `Added expense: ${description} for $${amount}`
-        });
-        setLoading(false);
-        onClose();
+        try {
+            await addExpense({
+                date: new Date(date).toISOString(),
+                category,
+                amount: parseFloat(amount) || 0,
+                description,
+                project_id: projectId,
+            });
+            await addRecentActivity({
+                timestamp: new Date().toISOString(),
+                type: 'EXPENSE_ADDED',
+                description: `Added expense: ${description} for $${amount}`
+            });
+            toast('Expense added', 'success');
+            onClose();
+        } catch (error) {
+            console.error("Failed to add expense:", error);
+            toast('Could not add expense. Please try again.', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -55,6 +64,7 @@ const AddExpenseForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
 const Expenses: React.FC = () => {
     const { data, deleteExpense } = useData();
+    const { toast, confirm } = useToast();
     const { expenses, projects } = data;
     const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false);
 
@@ -64,8 +74,19 @@ const Expenses: React.FC = () => {
     };
 
     const handleDelete = async (expense: Expense) => {
-        if (window.confirm(`Delete expense "${expense.description}"?`)) {
+        const confirmed = await confirm({
+            title: 'Delete expense',
+            message: `Delete expense "${expense.description}"?`,
+            danger: true,
+            confirmLabel: 'Delete',
+        });
+        if (!confirmed) return;
+        try {
             await deleteExpense(expense.id!);
+            toast('Expense deleted', 'success');
+        } catch (error) {
+            console.error("Failed to delete expense:", error);
+            toast('Could not delete expense. Please try again.', 'error');
         }
     };
 

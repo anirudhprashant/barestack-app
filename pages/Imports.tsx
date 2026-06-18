@@ -4,6 +4,7 @@ import { useData } from '../dataStore';
 import { ImportBatch } from '../types';
 import { format } from 'date-fns';
 import CrmHeader from '../components/CrmHeader';
+import { useToast } from '../src/context/ToastContext';
 
 // PocketBase exposes the timestamp as the system `created` field. Guard against
 // a missing/invalid value — date-fns `format` throws on an invalid date, which
@@ -18,6 +19,7 @@ const formatBatchDate = (batch: ImportBatch): string => {
 
 const Imports: React.FC = () => {
     const { data, undoImport } = useData();
+    const { toast } = useToast();
     const { importBatches } = data;
     const [undoingBatch, setUndoingBatch] = useState<ImportBatch | null>(null);
     const [loading, setLoading] = useState(false);
@@ -27,8 +29,10 @@ const Imports: React.FC = () => {
         setLoading(true);
         try {
             await undoImport(undoingBatch.id);
+            toast('Import undone', 'success');
         } catch (error) {
             console.error("Failed to undo import:", error);
+            toast('Failed to undo import. Please try again.', 'error');
         } finally {
             setLoading(false);
             setUndoingBatch(null);
