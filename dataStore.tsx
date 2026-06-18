@@ -177,8 +177,9 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
     }, [userId]);
 
     // Handlers depend only on createApiHandler (stable per userId), so memoizing
-    // here keeps their identities stable across renders and lets the context
-    // value below stay referentially stable.
+    // here keeps their identities stable across renders. The context value still
+    // recomputes when `data` changes (consumers need fresh data) — but no longer
+    // on every render, which is the win.
     const contactsApi = useMemo(() => createApiHandler<Contact>(
         'contacts',
         (d) => api.createContact(d),
@@ -249,8 +250,16 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
             import_batch_id: newBatch.id,
         }));
 
-        // 3. Bulk insert contacts
-        const newContacts = await api.createContactsBulk(contactsToInsert) as unknown as Contact[];
+        // 3. Bulk insert contacts. On partial failure, resync from the server so
+        // local state never diverges from what actually landed (some inserts may
+        // have succeeded before the rejection).
+        let newContacts: Contact[];
+        try {
+            newContacts = await api.createContactsBulk(contactsToInsert) as unknown as Contact[];
+        } catch (e) {
+            await fetchData();
+            throw e;
+        }
 
         // 4. Update local state
         setData(prev => ({
@@ -258,7 +267,7 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
             contacts: [...newContacts, ...prev.contacts],
             importBatches: [newBatch, ...prev.importBatches],
         }));
-    }, [userId]);
+    }, [userId, fetchData]);
 
     const undoImport = useCallback(async (batchId: string) => {
         if (!userId) throw new Error("User not authenticated");
