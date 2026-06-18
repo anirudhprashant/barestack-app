@@ -151,11 +151,11 @@ const Dashboard: React.FC = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-500">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold font-display text-charcoal mb-2 tracking-tight">
+                    <h1 className="text-2xl sm:text-4xl font-bold font-display text-charcoal mb-2 tracking-tight">
                         {getGreeting()}, {userProfile.name}
                     </h1>
                     <p className="text-sm text-muted font-medium tracking-wide">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
@@ -168,36 +168,36 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Hero Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="group relative bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                <div className="group relative bg-canvas text-charcoal p-5 sm:p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-5">
                             <Icon name="trending-up" className="w-8 h-8 text-charcoal" />
                             <span className="text-xs font-bold px-2.5 py-1 bg-[#192118] text-canvas rounded-none">Revenue</span>
                         </div>
-                        <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">${stats.outstandingRevenue.toLocaleString()}</div>
+                        <div className="text-3xl sm:text-4xl font-bold text-charcoal mb-2 tracking-tight">${stats.outstandingRevenue.toLocaleString()}</div>
                         <div className="text-sm text-muted font-medium">Outstanding from {stats.unpaidInvoices} invoices</div>
                     </div>
                 </div>
 
-                <div className="group relative bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
+                <div className="group relative bg-canvas text-charcoal p-5 sm:p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-5">
                             <Icon name="clipboard" className="w-8 h-8 text-charcoal" />
                             <span className="text-xs font-bold px-2.5 py-1 bg-[#e8b86d] text-charcoal rounded-none">Projects</span>
                         </div>
-                        <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{stats.activeProjects}</div>
+                        <div className="text-3xl sm:text-4xl font-bold text-charcoal mb-2 tracking-tight">{stats.activeProjects}</div>
                         <div className="text-sm text-muted font-medium">Active projects with {stats.activeTasks} tasks</div>
                     </div>
                 </div>
 
-                <div className="group relative bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
+                <div className="group relative bg-canvas text-charcoal p-5 sm:p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-5">
                             <Icon name="clock" className="w-8 h-8 text-charcoal" />
                             <span className="text-xs font-bold px-2.5 py-1 bg-[#c37624] text-canvas rounded-none">Time</span>
                         </div>
-                        <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{stats.hoursLoggedThisWeek}</div>
+                        <div className="text-3xl sm:text-4xl font-bold text-charcoal mb-2 tracking-tight">{stats.hoursLoggedThisWeek}</div>
                         <div className="text-sm text-muted font-medium">Hours logged this week</div>
                     </div>
                 </div>
@@ -206,31 +206,32 @@ const Dashboard: React.FC = () => {
             {/* Quick Actions */}
             <div>
                 <h3 className="text-sm font-bold text-muted uppercase tracking-wider mb-4">Quick Actions</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <button
                         onClick={() => setIsAddContactModalOpen(true)}
-                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
+                        className="group flex items-center justify-center gap-2 px-2 sm:px-3 py-3 sm:py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
                     >
                         <Icon name="users" className="w-4 h-4" />
-                        <span className="font-semibold text-xs uppercase tracking-wider">Add Contact</span>
+                        <span className="font-semibold text-xs uppercase tracking-wider hidden sm:inline">Add Contact</span>
+                        <span className="font-semibold text-xs uppercase tracking-wider sm:hidden">Contact</span>
                     </button>
                     <button
                         onClick={() => setIsAddProjectModalOpen(true)}
-                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
+                        className="group flex items-center justify-center gap-2 px-2 sm:px-3 py-3 sm:py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
                     >
                         <Icon name="plus" className="w-4 h-4" />
-                        <span className="font-semibold text-xs uppercase tracking-wider">New Project</span>
+                        <span className="font-semibold text-xs uppercase tracking-wider">Project</span>
                     </button>
                     <button
                         onClick={() => setIsAddInvoiceModalOpen(true)}
-                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
+                        className="group flex items-center justify-center gap-2 px-2 sm:px-3 py-3 sm:py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
                     >
                         <Icon name="document" className="w-4 h-4" />
-                        <span className="font-semibold text-xs uppercase tracking-wider">Create Invoice</span>
+                        <span className="font-semibold text-xs uppercase tracking-wider">Invoice</span>
                     </button>
                     <button
                         onClick={() => navigate('/time-tracking')}
-                        className="group flex items-center justify-center gap-2 px-3 py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
+                        className="group flex items-center justify-center gap-2 px-2 sm:px-3 py-3 sm:py-4 bg-canvas text-charcoal border border-border hover:border-charcoal transition-all duration-200"
                     >
                         <Icon name="clock" className="w-4 h-4" />
                         <span className="font-semibold text-xs uppercase tracking-wider">Log Time</span>

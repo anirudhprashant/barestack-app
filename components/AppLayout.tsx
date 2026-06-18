@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -17,21 +17,33 @@ import Settings from '../pages/Settings';
 
 const AppLayout: React.FC = () => {
     const { loading, error } = useData();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
     return (
         <div className="font-body text-charcoal bg-canvas min-h-screen">
-            <Sidebar />
-            <div className="ml-[220px]">
-                <Header />
+            <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+
+            {/* Mobile overlay */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-20 md:hidden"
+                    onClick={closeSidebar}
+                    aria-hidden="true"
+                />
+            )}
+
+            <div className="md:ml-[220px] transition-[margin] duration-200">
+                <Header onMenuToggle={() => setSidebarOpen(prev => !prev)} />
                 <main className="pt-[var(--app-shell-header-height)]">
-                    <div className="p-8">
+                    <div className="p-4 sm:p-6 lg:p-8">
                         {loading ? (
                             <div className="flex justify-center items-center h-64">
-                                <p className="text-4xl font-display text-content animate-pulse">Loading your dashboard...</p>
+                                <p className="text-2xl sm:text-4xl font-display text-content animate-pulse">Loading your dashboard...</p>
                             </div>
                         ) : error ? (
                             <div className="flex justify-center items-center h-64">
-                                <p className="text-4xl font-display text-content">Error: {error}</p>
+                                <p className="text-2xl sm:text-4xl font-display text-content">Error: {error}</p>
                             </div>
                         ) : (
                             <Routes>
