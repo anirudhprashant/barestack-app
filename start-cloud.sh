@@ -30,5 +30,15 @@ else
 fi
 pm2 save
 
-echo "✅ Deployed. Health:"
-curl -s -o /dev/null -w "  serve.cjs (:8084) -> %{http_code}\n" "http://127.0.0.1:${PORT:-8084}/" || true
+# Give PM2 a moment to bind the port, then verify the server actually serves
+# a 200. A deploy that reports success while the server is down is worse than
+# a loud failure, so this gates the exit code.
+sleep 2
+code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT:-8084}/" || echo 000)"
+if [ "$code" = "200" ]; then
+    echo "✅ Deployed. Health: serve.cjs (:${PORT:-8084}) -> ${code}"
+else
+    echo "❌ Deploy health check FAILED: serve.cjs (:${PORT:-8084}) -> ${code}" >&2
+    echo "   Check: pm2 logs ${PM2_APP}" >&2
+    exit 1
+fi

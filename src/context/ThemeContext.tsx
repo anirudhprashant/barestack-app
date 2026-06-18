@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Force light mode for now as per user request
-  const [theme, setThemeState] = useState<Theme>('light');
+  const theme: Theme = 'light';
 
   useEffect(() => {
     const root = window.document.documentElement;

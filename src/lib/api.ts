@@ -22,20 +22,13 @@ async function remove(collection: string, id: string): Promise<void> {
     await pb.collection(collection).delete(id);
 }
 
-async function getOne<T extends RecordModel>(
-    collection: string,
-    id: string
-): Promise<T> {
-    return pb.collection(collection).getOne<T>(id) as Promise<T>;
-}
-
 async function getList<T extends RecordModel>(
     collection: string,
     options?: {
         filter?: string;
         sort?: string;
         expand?: string;
-        skip?: number;
+        page?: number;
         limit?: number;
     }
 ): Promise<{ items: T[]; totalItems: number }> {
@@ -47,7 +40,7 @@ async function getList<T extends RecordModel>(
         fetchOptions.expand = options.expand;
     }
     const { items, totalItems } = await pb.collection(collection).getList<T>(
-        options?.skip || 1,
+        options?.page || 1,
         options?.limit || 500,
         fetchOptions
     );
@@ -265,9 +258,12 @@ export async function deleteImportBatch(id: string): Promise<void> {
     return remove('import_batches', id);
 }
 
-// Bulk contact insert for imports
+// Bulk contact insert for imports.
+// PocketBase's create() accepts a single record, so we insert concurrently.
+// ponytail: Promise.all is fine for typical import sizes; switch to pb.createBatch()
+// if multi-thousand-row imports become common (requires batch API enabled server-side).
 export async function createContactsBulk(
     contacts: Partial<RecordModel>[]
 ): Promise<RecordModel[]> {
-    return pb.collection('contacts').create(contacts) as Promise<RecordModel[]>;
+    return Promise.all(contacts.map((c) => create('contacts', c)));
 }

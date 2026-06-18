@@ -7,17 +7,15 @@ import { RecentActivity } from '../types';
 
 const Activities: React.FC = () => {
     const { data } = useData();
-    const { recentActivity, notes, contacts } = data;
-
-    const getContactName = (contactId: string) => {
-        return contacts.find(c => c.id === contactId)?.name || 'Unknown Contact';
-    };
+    const { recentActivity } = data;
 
     const activityIconMap: Record<RecentActivity['type'], { icon: string, color: string }> = {
         'CONTACT_ADDED': { icon: 'users', color: 'bg-activity-blue/10 border-activity-blue/20 text-activity-blue' },
         'PROJECT_CREATED': { icon: 'clipboard', color: 'bg-activity-purple/10 border-activity-purple/20 text-activity-purple' },
         'INVOICE_CREATED': { icon: 'document', color: 'bg-activity-green/10 border-activity-green/20 text-activity-green' },
+        'INVOICE_UPDATED': { icon: 'edit', color: 'bg-activity-blue/10 border-activity-blue/20 text-activity-blue' },
         'INVOICE_SENT': { icon: 'mail', color: 'bg-activity-emerald/10 border-activity-emerald/20 text-activity-emerald' },
+        'INVOICE_DELETED': { icon: 'trash', color: 'bg-activity-red/10 border-activity-red/20 text-activity-red' },
         'TASK_COMPLETED': { icon: 'check', color: 'bg-activity-indigo/10 border-activity-indigo/20 text-activity-indigo' },
         'DEAL_ADDED': { icon: 'trending-up', color: 'bg-activity-orange/10 border-activity-orange/20 text-activity-orange' },
         'EXPENSE_ADDED': { icon: 'receipt', color: 'bg-activity-red/10 border-activity-red/20 text-activity-red' },

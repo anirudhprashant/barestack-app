@@ -1,5 +1,6 @@
 import React, { useState, FC } from 'react';
 import { useData } from '../dataStore';
+import { useToast } from '../src/context/ToastContext';
 import { Contact, Creatable, ImportBatch } from '../types';
 import { Button, Icon } from './ui';
 import * as XLSX from 'xlsx';
@@ -13,6 +14,7 @@ interface DuplicateHandlerProps {
 }
 
 const DuplicateHandler: FC<DuplicateHandlerProps> = ({ duplicates, onConfirm, onCancel }) => {
+    const { toast } = useToast();
     const [resolutions, setResolutions] = useState<Record<string, Resolution>>({});
 
     const handleResolutionChange = (email: string, resolution: Resolution) => {
@@ -23,7 +25,7 @@ const DuplicateHandler: FC<DuplicateHandlerProps> = ({ duplicates, onConfirm, on
         // Ensure all duplicates have a resolution
         const allResolved = duplicates.every(d => resolutions[d.email!]);
         if (!allResolved) {
-            alert("Please resolve all duplicates before proceeding.");
+            toast('Please resolve all duplicates before proceeding.', 'error');
             return;
         }
         onConfirm(resolutions);
@@ -96,6 +98,7 @@ const DuplicateHandler: FC<DuplicateHandlerProps> = ({ duplicates, onConfirm, on
 
 export const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
     const { data, addMultipleContacts, updateContact } = useData();
+    const { toast } = useToast();
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -253,6 +256,7 @@ export const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
                 await addMultipleContacts(toCreate, batchDetails);
             }
 
+            toast('Contacts imported', 'success');
             handleClose();
         } catch (err: any) {
             setError(err.message);
