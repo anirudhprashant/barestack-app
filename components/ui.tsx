@@ -146,6 +146,13 @@ interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidthClass = 'max-w-lg' }) => {
+    React.useEffect(() => {
+        if (!isOpen) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     return createPortal(
@@ -153,10 +160,13 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             <div
                 className={`bg-canvas p-6 w-full ${maxWidthClass} relative border border-border`}
                 onClick={e => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-label={title}
             >
                 <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
                     <h2 className="text-2xl font-bold text-charcoal">{title}</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-surface text-muted transition-colors rounded-none">
+                    <button onClick={onClose} aria-label="Close dialog" className="p-2 hover:bg-surface text-muted transition-colors rounded-none">
                         <Icon name="x" className="w-5 h-5" />
                     </button>
                 </div>
