@@ -39,7 +39,7 @@ riskier migration and is left to the maintainer).
 
 | # | Severity | Finding | Status |
 |---|----------|---------|--------|
-| 1 | High | `recent_activity` & `import_batches` fully client-writable → forged/backdated activity logs | DOC-ONLY (needs `pb_hooks`) |
+| 1 | High | `recent_activity` & `import_batches` fully client-writable → forged/backdated activity logs | PARTIAL (pb_hooks integrity guards added; full transactional tie still doc-only) |
 | 2 | Medium | Zod validation schemas are dead code on the write path | FIXED |
 | 3 | Medium | No `Strict-Transport-Security` (HSTS) | FIXED (serve.cjs) |
 | 4 | Medium | `user` field is client-writable text; update rules don't freeze it → ownership re-parenting | DOC-ONLY (needs relation migration) |
@@ -115,7 +115,7 @@ These were checked against source and held up — credit where due.
 
 ## Findings
 
-### F1 — `recent_activity` & `import_batches` fully client-writable (High, DOC-ONLY)
+### F1 — `recent_activity` & `import_batches` fully client-writable (High, PARTIAL)
 
 `recent_activity` has create/update/delete rules identical to user data
 (`user = @request.auth.id`, `1780500000` effective rule). Its fields are:
@@ -129,14 +129,35 @@ fabricate an `INVOICE_SENT` that never happened). `import_batches.file_name`/
 `contact_count` can likewise be forged to make a CSV import appear to have
 occurred. There is no `pb_hooks/` directory, so no server-only write path.
 
-**Why DOC-ONLY:** the sound fix is a PocketBase JS hook that rejects
-direct create/update/delete on these collections from clients and only writes
-them from trusted internal call sites — a larger, runtime-behavior change. This
-pass adds the defense-in-depth input bounds (F2) which caps what a forged
-payload can contain (length/enum/type), but does not remove the write ability.
-**Recommended:** add a `pb_hooks/` enforcement (or move activity logging to a
-server-triggered path) before any future audit/compliance use of the activity
-feed.
+**Fix (this pass — PARTIAL):** added `pb_hooks/integrity.pb.js`, a server-side
+integrity guard on `onRecordCreateRequest`/`onRecordUpdateRequest` for both
+collections. It enforces, server-side and un-bypassable from a console:
+- `recent_activity.type` must be a known enum value
+- `recent_activity.timestamp` must be a valid date and not in the future; if
+  omitted/invalid, the server stamps `now()` — so a client cannot backdate or
+  forward-date an entry
+- `recent_activity.description` capped to 2000 chars
+- `import_batches.contact_count` must be a non-negative integer
+- `import_batches.file_name` capped to 500 chars
+
+This was **verified end-to-end** against the pinned PocketBase 0.36.2 binary in
+an isolated sandbox: a verified user's legitimate writes succeed unchanged,
+while bad-enum, future-dated, and out-of-bounds writes are rejected (HTTP 400)
+or coerced. During that testing two real JSVM bugs were caught and fixed before
+shipping: (a) the older `onRecordBefore*Request` hook names silently never fire
+on 0.22+ (confirmed against the binary's embedded type defs — use
+`onRecordCreateRequest`), and (b) hook callbacks run in an isolated scope that
+cannot see top-level helper declarations, so all guard logic is inlined; and a
+`date` field read via `record.get()` returns a truthy DateTime object, so the
+hook uses `record.getString()`.
+
+**Still DOC-ONLY (the complete fix):** the hook constrains *what* an entry can
+say but does not transactionally tie an activity row to a real mutation (e.g.
+require an `INVOICE_DELETED` entry to correspond to an invoice actually deleted
+in the same request). That requires re-architecting the app's "do action, then
+log it as a separate request" pattern across ~15 call sites and is left as a
+deliberate future change. The remaining forge surface is now "a plausible,
+well-formed, present-dated entry" rather than "anything at all."
 
 ### F2 — Zod validation schemas are dead code on the write path (Medium, FIXED)
 
