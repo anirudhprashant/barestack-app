@@ -7,6 +7,11 @@ set -euo pipefail
 #   ./install.sh --cloud    # build against the hosted BareStack cloud (api.barestack.org)
 #
 # curl -sSL https://raw.githubusercontent.com/anirudhprashant/barestack-app/main/install.sh | bash
+#
+# Tip: piping to bash runs unverified code from the network. Prefer downloading
+# the script, reviewing it, and running locally. You can pin the PocketBase
+# checksum by exporting BARESTACK_PB_SHA256=<sha256 of the release zip>; when
+# set, the installer aborts if the download's hash does not match.
 
 echo "🚀 Installing BareStack CRM..."
 
@@ -44,7 +49,29 @@ if [ ! -f "./pocketbase" ]; then
     esac
     PB_ZIP="pocketbase_${PB_VERSION}_${OS}_${ARCH}.zip"
     PB_URL="https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/${PB_ZIP}"
+    echo "📥 Downloading PocketBase ${PB_VERSION}..."
+    echo "   $PB_URL"
     curl -fL "$PB_URL" -o pocketbase.zip
+
+    # Verify the download's integrity. We do not embed the full arch/arch/os
+    # SHA256 matrix here (it would bit-rot across releases); instead, print the
+    # archive's SHA256 so you can confirm it against the checksums published on
+    # the PocketBase release page before trusting the binary. Fail the install
+    # now if you cannot match it.
+    echo "🔐 SHA256 of the downloaded binary:"
+    ACTUAL_SHA="$(sha256sum pocketbase.zip | awk '{print $1}')"
+    echo "   $ACTUAL_SHA"
+    echo "   ➡️  Confirm this matches the checksum for ${PB_ZIP} at:"
+    echo "      https://github.com/pocketbase/pocketbase/releases/tag/v${PB_VERSION}"
+    if [ -n "${BARESTACK_PB_SHA256:-}" ]; then
+        EXPECTED_SHA="$(echo "$BARESTACK_PB_SHA256" | awk '{print tolower($1)}')"
+        if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+            echo "❌ SHA256 mismatch (expected $EXPECTED_SHA). Aborting — do not run an unverified binary."
+            rm -f pocketbase.zip
+            exit 1
+        fi
+        echo "✅ SHA256 matches BARESTACK_PB_SHA256."
+    fi
     unzip -o pocketbase.zip pocketbase
     rm -f pocketbase.zip
     chmod +x pocketbase
@@ -86,6 +113,14 @@ cat > start.sh << STARTSCRIPT
 #!/bin/bash
 set -e
 echo "🚀 Starting BareStack CRM..."
+# Production note: binding PocketBase to 0.0.0.0 over plain HTTP exposes the
+# admin UI and the API to your network. For anything beyond local testing, put
+# PocketBase behind a TLS-terminating reverse proxy and either:
+#   - bind to 127.0.0.1 (e.g. --http="127.0.0.1:${PB_PORT}") and proxy to it, OR
+#   - serve TLS directly with --https=... and a certificate, AND
+#   - restrict origins with --origins=https://your-app-domain.example
+#   - set --publicUrl=https://api.your-domain.example
+# so the API and admin console aren't reachable over plaintext.
 ./pocketbase serve --dir ./pb_data --migrationsDir ./pb_migrations --http="0.0.0.0:${PB_PORT}" &
 PB_PID=\$!
 sleep 2
