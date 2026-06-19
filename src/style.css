@@ -191,3 +191,12 @@ h1, h2, h3, h4, h5, h6 {
 @media (prefers-reduced-motion: reduce) {
   .animate-drift-a, .animate-drift-b { animation: none; }
 }
+
+/* Hide scrollbar for horizontal scroll areas (tab bars, etc.) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

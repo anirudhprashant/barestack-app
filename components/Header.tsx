@@ -4,7 +4,11 @@ import { useAuth } from '../auth';
 import { navItems } from '../constants';
 import { Icon } from './ui';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+    onMenuToggle?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
     const location = useLocation();
     const { logout } = useAuth();
 
@@ -17,18 +21,31 @@ const Header: React.FC = () => {
     const currentPage = getPageTitle(location.pathname);
 
     return (
-        <header className="fixed top-0 left-[220px] right-0 h-[var(--app-shell-header-height)] bg-canvas border-b border-border flex items-center justify-between px-6 z-10">
-            <h1 className="text-lg font-display text-charcoal">{currentPage}</h1>
-            <div className="flex items-center space-x-3">
+        <header className="fixed top-0 left-0 md:left-[220px] right-0 h-[var(--app-shell-header-height)] bg-canvas border-b border-border flex items-center justify-between px-4 sm:px-6 z-10">
+            <div className="flex items-center gap-3">
+                {/* Hamburger — visible on mobile only */}
+                {onMenuToggle && (
+                    <button
+                        onClick={onMenuToggle}
+                        className="md:hidden p-2 -ml-2 text-charcoal hover:bg-surface transition-colors"
+                        aria-label="Open navigation menu"
+                    >
+                        <Icon name="menu" size={22} />
+                    </button>
+                )}
+                <h1 className="text-lg font-display text-charcoal">{currentPage}</h1>
+            </div>
+            <div className="flex items-center space-x-2 sm:space-x-3">
                 <button className="p-2 text-muted hover:text-charcoal transition-colors border border-transparent hover:border-border">
                     <Icon name="bell" className="w-5 h-5" />
                 </button>
-                <div className="h-5 w-px bg-border"></div>
+                <div className="h-5 w-px bg-border hidden sm:block"></div>
                 <button
                     onClick={logout}
-                    className="text-sm font-semibold text-muted hover:text-canvas hover:bg-charcoal transition-colors px-3 py-1.5 border border-border hover:border-charcoal"
+                    className="text-sm font-semibold text-muted hover:text-canvas hover:bg-charcoal transition-colors px-2 sm:px-3 py-1.5 border border-border hover:border-charcoal"
                 >
-                    Log Out
+                    <span className="hidden sm:inline">Log Out</span>
+                    <Icon name="x" size={16} className="sm:hidden" />
                 </button>
             </div>
         </header>

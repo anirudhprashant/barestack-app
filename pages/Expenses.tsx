@@ -43,7 +43,7 @@ const AddExpenseForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <Input label="Description" id="description" value={description} onChange={e => setDescription(e.target.value)} required />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Amount ($)" id="amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} required />
                 <Input label="Date" id="date" type="date" value={date} onChange={e => setDate(e.target.value)} required />
             </div>
