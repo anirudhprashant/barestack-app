@@ -1,13 +1,26 @@
 import { pb } from './pocketbase';
 import type { RecordModel } from 'pocketbase';
-import { sanitizeId } from './validation';
+import {
+    sanitizeId,
+    sanitizeCreatePayload,
+    ALLOWED_CREATE_COLLECTIONS,
+} from './validation';
 
 // --- Generic CRUD helpers ---
+// Single defense-in-depth chokepoint for all creates: enforce input bounds that
+// match the real PocketBase field caps (see validation.ts) before the request
+// leaves the client. Fail-soft — never throws on valid app data; only truncates
+// oversized / drops out-of-enum / strips a client-supplied `id`. PocketBase is
+// the final arbiter. Unknown collections are rejected to keep the allow-list honest.
 async function create<T extends RecordModel>(
     collection: string,
     data: Partial<T>
 ): Promise<T> {
-    return pb.collection(collection).create<T>(data) as Promise<T>;
+    if (!ALLOWED_CREATE_COLLECTIONS.includes(collection)) {
+        throw new Error(`Refusing create on unallowlisted collection: ${collection}`);
+    }
+    const sanitized = sanitizeCreatePayload(collection, data as Record<string, unknown>);
+    return pb.collection(collection).create<T>(sanitized as Partial<T>) as Promise<T>;
 }
 
 async function update<T extends RecordModel>(
