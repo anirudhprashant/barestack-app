@@ -45,6 +45,11 @@ const securityHeaders = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   'Content-Security-Policy': contentSecurityPolicy,
+  // HSTS — instructs browsers to use HTTPS for this origin for a year, including
+  // subdomains. Harmless over plain HTTP (browsers ignore it without TLS), so
+  // local dev is unaffected; meaningful once TLS terminates upstream. Keep it set
+  // at the reverse proxy too if TLS terminates there.
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
 };
 
 const server = http.createServer((req, res) => {
