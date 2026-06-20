@@ -100,7 +100,7 @@ const Expenses: React.FC = () => {
 
     return (
         <div className="max-w-7xl mx-auto">
-            <PageHeader title="Expenses">
+            <PageHeader>
                 <Button variant="primary" onClick={() => setIsAddExpenseModalOpen(true)}>
                     <Icon name="plus" className="w-4 h-4 mr-2" /> Add Expense
                 </Button>
