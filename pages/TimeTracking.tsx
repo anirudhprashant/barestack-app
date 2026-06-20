@@ -108,60 +108,83 @@ const TimeTracking: React.FC = () => {
             </div>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 items-start">
                 {/* Entry Form */}
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-2">
                     <div className="bg-canvas border border-border">
-                        <div className="px-4 sm:px-6 py-4 border-b border-border bg-surface flex items-center">
-                            <Icon name="clock" className="w-5 h-5 mr-2 text-charcoal" />
-                            <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider">Log Time</h3>
+                        <div className="px-5 sm:px-6 py-4 border-b border-border bg-[#192118] paper-grain flex items-center">
+                            <Icon name="clock" className="w-5 h-5 mr-2.5 text-canvas" />
+                            <h3 className="text-sm font-bold text-canvas uppercase tracking-wider">Log Time</h3>
                         </div>
-                        <div className="p-6">
-                            <form className="space-y-4" onSubmit={handleManualSubmit}>
+                        <div className="p-5 sm:p-6">
+                            <form className="space-y-5" onSubmit={handleManualSubmit}>
                                 <Select label="Project" id="projectId" value={formState.projectId} onChange={handleFormChange}>
+                                    {projects.length === 0 && <option value="">No projects yet</option>}
                                     {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </Select>
-                                <Input label="Date" id="date" type="date" value={formState.date} onChange={handleFormChange} />
-                                <Input label="Hours" id="hours" type="number" step="0.1" placeholder="e.g., 2.5" value={formState.hours} onChange={handleFormChange} required />
-                                <Textarea label="Description (Optional)" id="description" value={formState.description} onChange={handleFormChange} rows={3} />
-                                <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full justify-center">
-                                    {isSubmitting ? 'Adding...' : 'Add Entry'}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input label="Date" id="date" type="date" value={formState.date} onChange={handleFormChange} />
+                                    <Input label="Hours" id="hours" type="number" step="0.1" placeholder="e.g., 2.5" value={formState.hours} onChange={handleFormChange} required />
+                                </div>
+                                <Textarea label="Description (Optional)" id="description" value={formState.description} onChange={handleFormChange} rows={3} placeholder="What did you work on?" />
+                                <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full justify-center py-3">
+                                    {isSubmitting ? 'Adding…' : 'Add Entry'}
                                 </Button>
                             </form>
                         </div>
                     </div>
                 </div>
 
-                {/* Weekly Overview */}
-                <div className="lg:col-span-2">
+                {/* Weekly Overview — bar chart */}
+                <div className="lg:col-span-3">
                     <div className="bg-canvas border border-border">
-                        <div className="px-4 sm:px-6 py-4 border-b border-border bg-surface flex justify-between items-center">
-                            <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider">This Week</h3>
-                            <span className="text-xs text-muted font-medium">{format(week[0], 'MMM d')} - {format(week[6], 'MMM d')}</span>
+                        <div className="px-5 sm:px-6 py-4 border-b border-border flex justify-between items-baseline">
+                            <div>
+                                <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider">This Week</h3>
+                                <span className="text-xs text-muted font-medium">{format(week[0], 'MMM d')} – {format(week[6], 'MMM d')}</span>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-3xl sm:text-4xl font-bold text-charcoal tracking-tight leading-none">{totalHoursThisWeek}<span className="text-xl text-muted font-semibold">h</span></div>
+                                <span className="text-xs text-muted font-medium uppercase tracking-wider">logged</span>
+                            </div>
                         </div>
-                        <div className="p-4 sm:p-6">
-                            <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 sm:gap-3">
+                        <div className="p-5 sm:p-6">
+                            {/* Bar chart */}
+                            <div className="flex items-end justify-between gap-2 sm:gap-3 h-44">
                                 {week.map(day => {
                                     const isToday = isSameDay(day, new Date());
                                     const hours = getHoursForDay(day);
+                                    const peak = Math.max(...week.map(getHoursForDay), 1);
+                                    const pct = hours > 0 ? Math.max((hours / peak) * 100, 8) : 0;
                                     return (
-                                        <div key={day.toString()} className={`flex flex-col items-center p-2 sm:p-4 border ${isToday ? 'border-charcoal bg-surface' : 'border-border'}`}>
-                                            <span className={`text-xs font-semibold mb-1 sm:mb-2 uppercase tracking-wider ${isToday ? 'text-charcoal' : 'text-muted'}`}>
-                                                {format(day, 'EEE')}
-                                            </span>
-                                            <span className={`text-lg sm:text-2xl font-bold mb-1 sm:mb-3 ${isToday ? 'text-charcoal' : 'text-charcoal'}`}>
-                                                {format(day, 'd')}
-                                            </span>
-                                            <div className={`w-full py-2 sm:py-3 text-center border ${hours > 0 ? 'bg-charcoal text-canvas border-charcoal' : 'bg-surface text-muted border-border'}`}>
-                                                <span className="text-xs sm:text-sm font-bold">{hours > 0 ? `${hours}h` : '-'}</span>
+                                        <div key={day.toString()} className="flex-1 flex flex-col items-center justify-end h-full group">
+                                            <span className={`text-xs font-bold mb-2 tabular-nums ${hours > 0 ? 'text-charcoal' : 'text-transparent'}`}>{hours}h</span>
+                                            <div className="w-full flex-1 flex items-end">
+                                                <div
+                                                    className={`w-full transition-all duration-300 ${isToday ? 'bg-[#c37624]' : hours > 0 ? 'bg-charcoal group-hover:bg-[#192118]' : 'bg-surface border-x border-t border-border'}`}
+                                                    style={{ height: hours > 0 ? `${pct}%` : '4px' }}
+                                                    title={`${format(day, 'EEEE')}: ${hours}h`}
+                                                />
                                             </div>
+                                            <span className={`text-xs font-semibold mt-2 uppercase tracking-wider ${isToday ? 'text-[#c37624]' : 'text-muted'}`}>{format(day, 'EEE')}</span>
+                                            <span className={`text-xs ${isToday ? 'text-charcoal font-bold' : 'text-muted'}`}>{format(day, 'd')}</span>
                                         </div>
                                     );
                                 })}
                             </div>
-                            <div className="mt-6 pt-6 border-t border-border flex justify-between items-center">
-                                <span className="text-sm font-medium text-muted uppercase tracking-wider">Weekly Total</span>
-                                <span className="text-2xl sm:text-3xl font-bold text-charcoal tracking-tight">{totalHoursThisWeek}h</span>
+                            <div className="mt-5 pt-5 border-t border-border grid grid-cols-3 gap-4">
+                                <div>
+                                    <div className="text-lg font-bold text-charcoal tracking-tight">{(totalHoursThisWeek / 7).toFixed(1)}h</div>
+                                    <div className="text-xs text-muted font-medium uppercase tracking-wider">Daily avg</div>
+                                </div>
+                                <div>
+                                    <div className="text-lg font-bold text-charcoal tracking-tight">{week.filter(d => getHoursForDay(d) > 0).length}<span className="text-muted">/7</span></div>
+                                    <div className="text-xs text-muted font-medium uppercase tracking-wider">Days active</div>
+                                </div>
+                                <div>
+                                    <div className="text-lg font-bold text-charcoal tracking-tight">{getHoursForDay(new Date())}h</div>
+                                    <div className="text-xs text-muted font-medium uppercase tracking-wider">Today</div>
+                                </div>
                             </div>
                         </div>
                     </div>
