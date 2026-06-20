@@ -247,13 +247,15 @@ export const TableCell: React.FC<{ children: React.ReactNode; className?: string
 
 // --- PAGE HEADER ---
 interface PageHeaderProps {
-    title: string;
+    // Optional: the page title is already shown in the top Header bar, so pages
+    // can omit it here to avoid a duplicate heading and just render action buttons.
+    title?: string;
     children?: React.ReactNode;
 }
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, children }) => {
     return (
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="text-xl sm:text-2xl font-bold text-charcoal">{title}</h2>
+        <div className={`flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sm:mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 ${title ? 'sm:justify-between' : 'sm:justify-end'}`}>
+            {title && <h2 className="text-xl sm:text-2xl font-bold text-charcoal">{title}</h2>}
             {children && <div className="flex flex-wrap gap-2 sm:gap-3">{children}</div>}
         </div>
     );

@@ -80,7 +80,7 @@ const TimeTracking: React.FC = () => {
                 <div className="bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="flex justify-between items-start mb-5">
                         <Icon name="clock" className="w-8 h-8 text-charcoal" />
-                        <span className="text-xs font-bold px-2.5 py-1 bg-charcoal text-canvas rounded-none">THIS WEEK</span>
+                        <span className="text-xs font-bold px-2.5 py-1 bg-[#c37624] text-canvas rounded-none">This Week</span>
                     </div>
                     <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{totalHoursThisWeek}h</div>
                     <div className="text-sm text-muted font-medium">Logged this week</div>
@@ -89,7 +89,7 @@ const TimeTracking: React.FC = () => {
                 <div className="bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="flex justify-between items-start mb-5">
                         <Icon name="document" className="w-8 h-8 text-charcoal" />
-                        <span className="text-xs font-bold px-2.5 py-1 bg-charcoal text-canvas rounded-none">BILLABLE</span>
+                        <span className="text-xs font-bold px-2.5 py-1 bg-[#192118] text-canvas rounded-none">Billable</span>
                     </div>
                     <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">
                         {timeEntries.filter(e => e.is_billable).reduce((sum, e) => sum + e.hours, 0)}h
@@ -100,7 +100,7 @@ const TimeTracking: React.FC = () => {
                 <div className="bg-canvas text-charcoal p-7 border border-border hover:border-charcoal transition-all duration-300">
                     <div className="flex justify-between items-start mb-5">
                         <Icon name="clipboard" className="w-8 h-8 text-charcoal" />
-                        <span className="text-xs font-bold px-2.5 py-1 bg-charcoal text-canvas rounded-none">PROJECTS</span>
+                        <span className="text-xs font-bold px-2.5 py-1 bg-[#e8b86d] text-charcoal rounded-none">Projects</span>
                     </div>
                     <div className="text-4xl font-bold text-charcoal mb-2 tracking-tight">{projects.length}</div>
                     <div className="text-sm text-muted font-medium">Active projects tracked</div>
@@ -134,7 +134,7 @@ const TimeTracking: React.FC = () => {
 
                 {/* Weekly Overview */}
                 <div className="lg:col-span-2">
-                    <div className="bg-canvas border border-border h-full">
+                    <div className="bg-canvas border border-border">
                         <div className="px-4 sm:px-6 py-4 border-b border-border bg-surface flex justify-between items-center">
                             <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider">This Week</h3>
                             <span className="text-xs text-muted font-medium">{format(week[0], 'MMM d')} - {format(week[6], 'MMM d')}</span>

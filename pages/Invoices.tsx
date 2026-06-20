@@ -422,7 +422,7 @@ const Invoices: React.FC = () => {
 
     return (
         <div className="max-w-7xl mx-auto">
-            <PageHeader title="Invoices">
+            <PageHeader>
                 {selectedIds.size > 0 && (
                     <Button variant="primary" onClick={handleDownloadSelected} disabled={downloading}>
                         <Icon name="download" className="w-4 h-4 mr-2" /> Download {selectedIds.size} PDF{selectedIds.size > 1 ? 's' : ''}
