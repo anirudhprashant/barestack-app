@@ -112,7 +112,7 @@ const TimeTracking: React.FC = () => {
                 {/* Entry Form */}
                 <div className="lg:col-span-2">
                     <div className="bg-canvas border border-border">
-                        <div className="px-5 sm:px-6 py-4 border-b border-border bg-[#192118] paper-grain flex items-center">
+                        <div className="px-5 sm:px-6 py-4 border-b border-border bg-[#192118] flex items-center">
                             <Icon name="clock" className="w-5 h-5 mr-2.5 text-canvas" />
                             <h3 className="text-sm font-bold text-canvas uppercase tracking-wider">Log Time</h3>
                         </div>
