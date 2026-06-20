@@ -53,26 +53,26 @@ const SidebarContent: React.FC<{
                 to="/settings"
                 onClick={onNavigate}
                 className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 text-sm font-medium transition-all duration-150 rounded-none ${isActive
+                    `flex items-center gap-3 px-2 py-2 text-sm font-medium transition-all duration-150 rounded-none ${isActive
                         ? 'bg-canvas text-charcoal'
                         : 'text-canvas/60 hover:text-canvas hover:bg-canvas/10'
                     }`
                 }
             >
-                <Icons.Settings className="w-4 h-4" />
+                <Icons.Settings className="w-5 h-5 flex-shrink-0" />
                 <span>Settings</span>
             </NavLink>
 
             {/* User profile */}
-            <div className="flex items-center gap-3 px-3 pt-3 mt-2 border-t border-canvas/10">
-                <div className="w-9 h-9 mt-3 bg-canvas/10 text-canvas font-semibold text-sm flex items-center justify-center rounded-full border border-canvas/20 flex-shrink-0">
+            <div className="flex items-center gap-3 px-2 pt-3">
+                <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center text-canvas/80 font-bold text-xs">
                     {userInitial}
                 </div>
-                <div className="min-w-0 mt-3">
-                    <div className="text-canvas text-sm font-medium truncate max-w-[140px] leading-tight" title={userName}>
+                <div className="min-w-0">
+                    <div className="text-canvas text-sm font-medium truncate max-w-[150px] leading-tight" title={userName}>
                         {userName}
                     </div>
-                    <div className="text-canvas/40 text-xs truncate max-w-[140px]" title={userEmail}>
+                    <div className="text-canvas/40 text-xs truncate max-w-[150px]" title={userEmail}>
                         {userEmail}
                     </div>
                 </div>

@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { navItems } from '../constants';
 import { Icon } from './ui';
+import { Power } from 'lucide-react';
 
 interface HeaderProps {
     onMenuToggle?: () => void;
@@ -40,12 +41,20 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
                     <Icon name="bell" className="w-5 h-5" />
                 </button>
                 <div className="h-5 w-px bg-border hidden sm:block"></div>
+                {/* Desktop: boxed text button. Mobile: bare red power icon. */}
                 <button
                     onClick={logout}
-                    className="text-sm font-semibold text-muted hover:text-canvas hover:bg-charcoal transition-colors px-2 sm:px-3 py-1.5 border border-border hover:border-charcoal"
+                    aria-label="Log out"
+                    className="hidden sm:inline-flex text-sm font-semibold text-muted hover:text-canvas hover:bg-charcoal transition-colors px-3 py-1.5 border border-border hover:border-charcoal"
                 >
-                    <span className="hidden sm:inline">Log Out</span>
-                    <Icon name="x" size={16} className="sm:hidden" />
+                    Log Out
+                </button>
+                <button
+                    onClick={logout}
+                    aria-label="Log out"
+                    className="sm:hidden p-1.5 text-red-600 hover:text-red-700 transition-colors"
+                >
+                    <Power size={20} strokeWidth={2.5} />
                 </button>
             </div>
         </header>
