@@ -13,10 +13,11 @@ interface SidebarProps {
 /** Shared sidebar content between desktop and mobile variants */
 const SidebarContent: React.FC<{
     userName: string;
+    userEmail: string;
     userInitial: string;
     iconMap: Record<string, React.ReactNode>;
     onNavigate?: () => void;
-}> = ({ userName, userInitial, iconMap, onNavigate }) => (
+}> = ({ userName, userEmail, userInitial, iconMap, onNavigate }) => (
     <>
         {/* Header */}
         <div className="h-[var(--app-shell-header-height)] flex items-center px-5 border-b border-border/50 shrink-0">
@@ -63,16 +64,16 @@ const SidebarContent: React.FC<{
             </NavLink>
 
             {/* User profile */}
-            <div className="flex items-center gap-3 px-3 pt-3">
-                <div className="w-10 h-10 bg-canvas text-charcoal font-semibold text-sm flex items-center justify-center rounded-none border border-canvas flex-shrink-0">
+            <div className="flex items-center gap-3 px-3 pt-3 mt-2 border-t border-canvas/10">
+                <div className="w-9 h-9 mt-3 bg-canvas/10 text-canvas font-semibold text-sm flex items-center justify-center rounded-full border border-canvas/20 flex-shrink-0">
                     {userInitial}
                 </div>
-                <div className="min-w-0">
-                    <div className="text-canvas text-sm font-medium truncate max-w-[140px]" title={userName}>
+                <div className="min-w-0 mt-3">
+                    <div className="text-canvas text-sm font-medium truncate max-w-[140px] leading-tight" title={userName}>
                         {userName}
                     </div>
-                    <div className="text-canvas/40 text-[11px] uppercase tracking-wider font-medium">
-                        Account
+                    <div className="text-canvas/40 text-xs truncate max-w-[140px]" title={userEmail}>
+                        {userEmail}
                     </div>
                 </div>
             </div>
@@ -84,6 +85,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const { data } = useData();
 
     const userName = data.userProfile.name || data.userProfile.email || 'User';
+    const userEmail = data.userProfile.email || '';
     const userInitial = userName[0].toUpperCase();
 
     const iconMap: Record<string, React.ReactNode> = {
@@ -101,7 +103,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <>
             {/* Desktop sidebar — always visible on md+ */}
             <div className="hidden md:flex fixed top-0 left-0 h-full w-[220px] bg-[#192118] paper-grain flex-col z-20">
-                <SidebarContent userName={userName} userInitial={userInitial} iconMap={iconMap} />
+                <SidebarContent userName={userName} userEmail={userEmail} userInitial={userInitial} iconMap={iconMap} />
             </div>
 
             {/* Mobile sidebar — slide-in drawer */}
@@ -116,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 >
                     <Icon name="x" size={20} />
                 </button>
-                <SidebarContent userName={userName} userInitial={userInitial} iconMap={iconMap} onNavigate={onClose} />
+                <SidebarContent userName={userName} userEmail={userEmail} userInitial={userInitial} iconMap={iconMap} onNavigate={onClose} />
             </div>
         </>
     );
