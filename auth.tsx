@@ -26,6 +26,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     useEffect(() => {
         const init = async () => {
+            // Demo mode: sign in automatically with a throwaway seeded account so
+            // the public demo opens straight into the app instead of a login
+            // wall. Both vars must be set at build time, so this is inert for
+            // every normal self-hosted install. Never point these at a real
+            // account: anyone loading the page gets that session.
+            const demoEmail = import.meta.env.VITE_DEMO_EMAIL;
+            const demoPassword = import.meta.env.VITE_DEMO_PASSWORD;
+            if (!pb.authStore.isValid && demoEmail && demoPassword) {
+                try {
+                    await pb.collection('users').authWithPassword(demoEmail, demoPassword);
+                } catch {
+                    // Fall through to the normal sign-in screen if the demo
+                    // account is mid-reset or missing.
+                }
+            }
+
             if (pb.authStore.isValid && pb.authStore.model) {
                 const model = pb.authStore.model as unknown as PBAuthModel;
                 setSession({
