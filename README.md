@@ -144,4 +144,7 @@ Open http://localhost:8080
 
 ## License
 
-GPL-3.0
+AGPL-3.0. Run it, modify it, self-host it, no charge and no seat limits.
+If you distribute a modified version, or run one as a network service for
+others, you have to publish your source under the same licence. See LICENSE
+for the full text.
