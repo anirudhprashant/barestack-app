@@ -2,6 +2,21 @@
 
 A modern, professional CRM for agencies and freelancers. Built with React, TypeScript, PocketBase, and Tailwind CSS.
 
+**[Try the live demo](https://demo.barestack.org).** No sign-up. It resets every hour.
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/screenshots/crm.png" alt="CRM contacts table with pipeline stages"></td>
+    <td width="33%"><img src="docs/screenshots/projects.png" alt="Projects board with status, value and hours"></td>
+    <td width="33%"><img src="docs/screenshots/invoicing.png" alt="Invoicing list with paid, sent, overdue and draft statuses"></td>
+  </tr>
+  <tr>
+    <td align="center">Contacts and pipeline</td>
+    <td align="center">Projects</td>
+    <td align="center">Invoicing</td>
+  </tr>
+</table>
+
 ## Quick Start (One Command)
 
 ```bash
