@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { pb } from './src/lib/pocketbase';
 import * as api from './src/lib/api';
 import type { PBAuthModel, PBSession } from './src/types/pb-types';
+import { DEFAULT_CURRENCY } from './src/lib/format';
 import {
     AppState,
     Contact,
@@ -16,39 +17,75 @@ import {
     ImportBatch,
     Creatable,
     UserProfile,
+    BusinessProfile,
+    InvoiceShare,
 } from './types';
+import { buildShareSnapshot, newShareToken } from './src/lib/share';
+import { restoreBackup } from './src/lib/backup';
+import { buildSampleBackup, SAMPLE_TAG } from './src/lib/sampleData';
 
-// --- DATA CONTEXT & PROVIDER ---
+type WithId<T> = Partial<T> & { id: string };
+
 interface DataContextType {
     data: AppState;
     loading: boolean;
     error: string | null;
+    refresh: () => Promise<void>;
     addContact: (contact: Creatable<Contact>) => Promise<Contact>;
     addMultipleContacts: (contacts: Creatable<Contact>[], batchDetails: Creatable<ImportBatch>) => Promise<void>;
-    updateContact: (contact: Contact) => Promise<void>;
+    updateContact: (contact: WithId<Contact>) => Promise<Contact>;
     deleteContact: (id: string) => Promise<void>;
     addDeal: (deal: Creatable<Deal>) => Promise<Deal>;
-    updateDeal: (deal: Deal) => Promise<void>;
+    updateDeal: (deal: WithId<Deal>) => Promise<Deal>;
     deleteDeal: (id: string) => Promise<void>;
     addProject: (project: Creatable<Project>) => Promise<Project>;
-    updateProject: (project: Project) => Promise<void>;
+    updateProject: (project: WithId<Project>) => Promise<Project>;
     deleteProject: (id: string) => Promise<void>;
     addTask: (task: Creatable<Task>) => Promise<Task>;
-    updateTask: (task: Task) => Promise<void>;
+    updateTask: (task: WithId<Task>) => Promise<Task>;
     deleteTask: (id: string) => Promise<void>;
     addInvoice: (invoice: Creatable<Invoice>) => Promise<Invoice>;
-    updateInvoice: (invoice: Invoice) => Promise<void>;
+    updateInvoice: (invoice: WithId<Invoice>) => Promise<Invoice>;
     deleteInvoice: (id: string) => Promise<void>;
     addTimeEntry: (timeEntry: Creatable<TimeEntry>) => Promise<TimeEntry>;
+    updateTimeEntry: (timeEntry: WithId<TimeEntry>) => Promise<TimeEntry>;
+    deleteTimeEntry: (id: string) => Promise<void>;
     addExpense: (expense: Creatable<Expense>) => Promise<Expense>;
+    updateExpense: (expense: WithId<Expense>) => Promise<Expense>;
     deleteExpense: (id: string) => Promise<void>;
-    addRecentActivity: (activity: Omit<RecentActivity, 'id' | 'user_id'>) => Promise<void>;
     addNote: (note: Creatable<Note>) => Promise<Note>;
+    updateNote: (note: WithId<Note>) => Promise<Note>;
+    deleteNote: (id: string) => Promise<void>;
+    // Best-effort: logs and swallows failures so a missing activity entry can
+    // never turn a successful save into an error toast.
+    addRecentActivity: (activity: Omit<RecentActivity, 'id' | 'user' | 'timestamp'> & { timestamp?: string }) => Promise<void>;
     undoImport: (batchId: string) => Promise<void>;
+    saveBusinessProfile: (profile: Partial<BusinessProfile>) => Promise<BusinessProfile>;
+    // Create (or refresh) the public link for an invoice.
+    shareInvoice: (invoiceId: string) => Promise<InvoiceShare>;
+    revokeShare: (invoiceId: string) => Promise<void>;
+    // Demo content for exploring the app; everything is tagged "sample".
+    loadSampleData: () => Promise<void>;
+    removeSampleData: () => Promise<void>;
     updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
+
+export const defaultBusinessProfile: BusinessProfile = {
+    business_name: '',
+    address: '',
+    email: '',
+    phone: '',
+    website: '',
+    tax_id: '',
+    currency: DEFAULT_CURRENCY,
+    default_tax_rate: 0,
+    payment_terms_days: 30,
+    payment_instructions: '',
+    invoice_prefix: '',
+    invoice_footer: '',
+};
 
 const initialState: AppState = {
     contacts: [],
@@ -61,40 +98,74 @@ const initialState: AppState = {
     recentActivity: [],
     notes: [],
     importBatches: [],
-    userProfile: { name: 'User', email: 'user@example.com' },
+    invoiceShares: [],
+    businessProfile: defaultBusinessProfile,
+    userProfile: { name: 'User', email: '' },
 };
+
+type ListKey = Exclude<keyof AppState, 'businessProfile' | 'userProfile'>;
+
+// PocketBase collection -> AppState key, for realtime events.
+const REALTIME: [string, ListKey][] = [
+    ['contacts', 'contacts'],
+    ['deals', 'deals'],
+    ['projects', 'projects'],
+    ['tasks', 'tasks'],
+    ['invoices', 'invoices'],
+    ['time_entries', 'timeEntries'],
+    ['expenses', 'expenses'],
+    ['notes', 'notes'],
+    ['recent_activity', 'recentActivity'],
+    ['import_batches', 'importBatches'],
+    ['invoice_shares', 'invoiceShares'],
+];
+
+interface Binding {
+    create: (data: Record<string, unknown>) => Promise<unknown>;
+    update: (id: string, data: Record<string, unknown>) => Promise<unknown>;
+    remove: (id: string) => Promise<void>;
+}
 
 export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | null }> = ({ children, session }) => {
     const [data, setData] = useState<AppState>(initialState);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Cascading deletes read the latest state through this ref, so a loop of
+    // deletes (bulk delete) never works from a stale snapshot.
+    const dataRef = useRef(data);
+    dataRef.current = data;
+
     const userId = (session?.user as PBAuthModel | null)?.id || '';
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (opts?: { silent?: boolean }) => {
         if (!userId) {
             setLoading(false);
             return;
         }
 
-        setLoading(true);
+        if (!opts?.silent) setLoading(true);
         setError(null);
 
         try {
             const [
                 contacts, deals, projects, tasks, invoices,
-                timeEntries, expenses, recentActivity, notes, importBatches
+                timeEntries, expenses, recentActivity, notes, importBatches, profiles, shares,
             ] = await Promise.all([
-                api.fetchContacts(userId),
-                api.fetchDeals(userId),
-                api.fetchProjects(userId),
-                api.fetchTasks(userId),
-                api.fetchInvoices(userId),
-                api.fetchTimeEntries(userId),
-                api.fetchExpenses(userId),
-                api.fetchRecentActivity(userId, 20),
-                api.fetchNotes(userId),
-                api.fetchImportBatches(userId),
+                api.contacts.fetch(userId),
+                api.deals.fetch(userId),
+                api.projects.fetch(userId),
+                api.tasks.fetch(userId),
+                api.invoices.fetch(userId),
+                api.timeEntries.fetch(userId),
+                api.expenses.fetch(userId),
+                api.recentActivity.fetch(userId),
+                api.notes.fetch(userId),
+                api.importBatches.fetch(userId),
+                // A server that hasn't run the v1.1 migrations yet has no
+                // business_profiles collection; carry on with defaults.
+                api.businessProfiles.fetch(userId).catch(() => []),
+                api.invoiceShares.fetch(userId).catch(() => []),
             ]);
 
             setData(prev => ({
@@ -109,9 +180,13 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
                 recentActivity: recentActivity as unknown as RecentActivity[],
                 notes: notes as unknown as Note[],
                 importBatches: importBatches as unknown as ImportBatch[],
+                invoiceShares: shares as unknown as InvoiceShare[],
+                businessProfile: profiles[0]
+                    ? { ...defaultBusinessProfile, ...(profiles[0] as unknown as BusinessProfile) }
+                    : defaultBusinessProfile,
             }));
         } catch (err: unknown) {
-            setError((err as Error).message);
+            setError((err as Error).message || 'Could not load your data.');
         } finally {
             setLoading(false);
         }
@@ -121,283 +196,393 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         fetchData();
     }, [fetchData]);
 
+    // Pick up changes made in another tab or device when the window regains
+    // focus, at most once a minute.
+    useEffect(() => {
+        let last = Date.now();
+        const onFocus = () => {
+            if (document.visibilityState !== 'visible') return;
+            if (Date.now() - last < 60_000) return;
+            last = Date.now();
+            fetchData({ silent: true });
+        };
+        document.addEventListener('visibilitychange', onFocus);
+        window.addEventListener('focus', onFocus);
+        return () => {
+            document.removeEventListener('visibilitychange', onFocus);
+            window.removeEventListener('focus', onFocus);
+        };
+    }, [fetchData]);
+
+    // Live updates: changes made in another tab, device or by the server
+    // (recurring invoices) appear without a reload. Our own writes echo back
+    // too; upserting by id makes that a no-op. The subscription obeys the same
+    // owner-only rules as every read.
+    useEffect(() => {
+        if (!userId) return;
+        let cancelled = false;
+        const unsubs: (() => Promise<void>)[] = [];
+        // Events are queued and applied together, so a bulk import (hundreds of
+        // creates) re-renders a handful of times instead of once per record.
+        let queue: { key: ListKey; action: string; rec: { id: string } }[] = [];
+        let timer: number | undefined;
+        const flush = () => {
+            timer = undefined;
+            const batch = queue;
+            queue = [];
+            setData(prev => {
+                const next = { ...prev };
+                for (const { key, action, rec } of batch) {
+                    const list = next[key] as unknown as { id?: string }[];
+                    if (action === 'delete') {
+                        (next as Record<string, unknown>)[key] = list.filter(i => i.id !== rec.id);
+                        continue;
+                    }
+                    const idx = list.findIndex(i => i.id === rec.id);
+                    if (idx === -1) {
+                        (next as Record<string, unknown>)[key] = [rec, ...list];
+                    } else {
+                        const copy = [...list];
+                        copy[idx] = { ...copy[idx], ...rec };
+                        (next as Record<string, unknown>)[key] = copy;
+                    }
+                }
+                return next;
+            });
+        };
+        const apply = (key: ListKey, action: string, raw: Record<string, unknown>) => {
+            const collection = key === 'contacts' ? 'contacts' : key === 'invoices' ? 'invoices' : '';
+            const rec = api.fromServer(collection, raw as never) as unknown as { id: string };
+            queue.push({ key, action, rec });
+            if (timer === undefined) timer = window.setTimeout(flush, 120);
+        };
+        (async () => {
+            for (const [collection, key] of REALTIME) {
+                try {
+                    const unsub = await pb.collection(collection).subscribe('*', (e) => apply(key, e.action, e.record as unknown as Record<string, unknown>));
+                    if (cancelled) unsub(); else unsubs.push(unsub);
+                } catch {
+                    // Realtime is a nicety; the app works without it.
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+            if (timer !== undefined) window.clearTimeout(timer);
+            unsubs.forEach(u => u().catch(() => undefined));
+        };
+    }, [userId]);
+
     // Sync userProfile with session user data on login/signup
     useEffect(() => {
         if (session?.user) {
             setData(prev => ({
                 ...prev,
                 userProfile: {
-                    name: session.user.name || 'User',
+                    name: session.user.name || '',
                     email: session.user.email || '',
                 }
             }));
         }
     }, [session]);
 
-    // Helper to cast and shape PocketBase record to our types
-    const pbRecord = <T extends object>(record: unknown): T => record as T;
+    const resync = useCallback(async (e: unknown): Promise<never> => {
+        // After a partial failure, trust the server rather than local state.
+        await fetchData({ silent: true });
+        throw e;
+    }, [fetchData]);
 
-    const createApiHandler = useCallback(<T extends { id?: string }>(stateKey: keyof AppState, createFn: (data: Partial<Record<string, unknown>>) => Promise<unknown>, updateFn: (id: string, data: Partial<Record<string, unknown>>) => Promise<unknown>, deleteFn: (id: string) => Promise<void>) => {
+    const makeHandlers = useCallback(<T extends { id?: string }>(key: ListKey, binding: Binding) => {
         const add = async (item: Creatable<T>): Promise<T> => {
-            if (!userId) throw new Error("User not authenticated");
-            const itemWithUser = { ...item, user: userId };
-            const newData = await createFn(itemWithUser) as Record<string, unknown>;
-            const newRecord = pbRecord<T>(newData);
-            setData(prev => ({ ...prev, [stateKey]: [newRecord, ...(prev[stateKey] as unknown as any[])] }));
-            return newRecord;
+            if (!userId) throw new Error('User not authenticated');
+            const rec = await binding.create({ ...(item as Record<string, unknown>), user: userId }) as T;
+            // Upsert: the realtime echo of this create may already have landed.
+            setData(prev => ({ ...prev, [key]: [rec, ...(prev[key] as unknown as T[]).filter(i => i.id !== rec.id)] }));
+            return rec;
         };
 
-        const update = async (item: T): Promise<void> => {
-            if (!userId) throw new Error("User not authenticated");
-            const { id, ...updateData } = item as Record<string, unknown>;
-            // Strip server-managed fields PocketBase rejects on update.
-            delete updateData.user_id;
-            delete updateData.created;
-            delete updateData.updated;
-            await updateFn(id as string, updateData);
-            setData(prev => {
-                const items = prev[stateKey] as unknown as T[];
-                const index = items.findIndex(i => (i as any).id === id);
-                if (index > -1) {
-                    const newItems = [...items];
-                    newItems[index] = item;
-                    return { ...prev, [stateKey]: newItems };
-                }
-                return prev;
-            });
+        const update = async (item: WithId<T>): Promise<T> => {
+            if (!userId) throw new Error('User not authenticated');
+            const { id, ...changes } = item as Record<string, unknown> & { id: string };
+            const rec = await binding.update(id, changes) as T;
+            setData(prev => ({
+                ...prev,
+                [key]: (prev[key] as unknown as T[]).map(i => (i.id === id ? { ...i, ...rec } : i)),
+            }));
+            return rec;
         };
 
         const del = async (id: string): Promise<void> => {
-            if (!userId) throw new Error("User not authenticated");
-            await deleteFn(id);
-            setData(prev => ({ ...prev, [stateKey]: (prev[stateKey] as unknown as T[]).filter(item => (item as any).id !== id) }));
+            if (!userId) throw new Error('User not authenticated');
+            await binding.remove(id);
+            setData(prev => ({ ...prev, [key]: (prev[key] as unknown as T[]).filter(i => i.id !== id) }));
         };
 
         return { add, update, del };
     }, [userId]);
 
-    // Handlers depend only on createApiHandler (stable per userId), so memoizing
-    // here keeps their identities stable across renders. The context value still
-    // recomputes when `data` changes (consumers need fresh data) — but no longer
-    // on every render, which is the win.
-    const contactsApi = useMemo(() => createApiHandler<Contact>(
-        'contacts',
-        (d) => api.createContact(d),
-        (id, d) => api.updateContact(id, d),
-        (id) => api.deleteContact(id)
-    ), [createApiHandler]);
-    const dealsApi = useMemo(() => createApiHandler<Deal>(
-        'deals',
-        (d) => api.createDeal(d),
-        (id, d) => api.updateDeal(id, d),
-        (id) => api.deleteDeal(id)
-    ), [createApiHandler]);
-    const projectsApi = useMemo(() => createApiHandler<Project>(
-        'projects',
-        (d) => api.createProject(d),
-        (id, d) => api.updateProject(id, d),
-        (id) => api.deleteProject(id)
-    ), [createApiHandler]);
-    const tasksApi = useMemo(() => createApiHandler<Task>(
-        'tasks',
-        (d) => api.createTask(d),
-        (id, d) => api.updateTask(id, d),
-        (id) => api.deleteTask(id)
-    ), [createApiHandler]);
-    const invoicesApi = useMemo(() => createApiHandler<Invoice>(
-        'invoices',
-        (d) => api.createInvoice(d),
-        (id, d) => api.updateInvoice(id, d),
-        (id) => api.deleteInvoice(id)
-    ), [createApiHandler]);
-    const timeEntriesApi = useMemo(() => createApiHandler<TimeEntry>(
-        'timeEntries',
-        (d) => api.createTimeEntry(d),
-        (id, d) => api.updateTimeEntry(id, d),
-        (id) => api.deleteTimeEntry(id)
-    ), [createApiHandler]);
-    const expensesApi = useMemo(() => createApiHandler<Expense>(
-        'expenses',
-        (d) => api.createExpense(d),
-        (id, d) => api.updateExpense(id, d),
-        (id) => api.deleteExpense(id)
-    ), [createApiHandler]);
-    const notesApi = useMemo(() => createApiHandler<Note>(
-        'notes',
-        (d) => api.createNote(d),
-        (id, d) => api.updateNote(id, d),
-        (id) => api.deleteNote(id)
-    ), [createApiHandler]);
+    const contactsApi = useMemo(() => makeHandlers<Contact>('contacts', api.contacts), [makeHandlers]);
+    const dealsApi = useMemo(() => makeHandlers<Deal>('deals', api.deals), [makeHandlers]);
+    const projectsApi = useMemo(() => makeHandlers<Project>('projects', api.projects), [makeHandlers]);
+    const tasksApi = useMemo(() => makeHandlers<Task>('tasks', api.tasks), [makeHandlers]);
+    const invoicesApi = useMemo(() => makeHandlers<Invoice>('invoices', api.invoices), [makeHandlers]);
+    const timeEntriesApi = useMemo(() => makeHandlers<TimeEntry>('timeEntries', api.timeEntries), [makeHandlers]);
+    const expensesApi = useMemo(() => makeHandlers<Expense>('expenses', api.expenses), [makeHandlers]);
+    const notesApi = useMemo(() => makeHandlers<Note>('notes', api.notes), [makeHandlers]);
 
-    const addRecentActivity = useCallback(async (activity: Omit<RecentActivity, 'id' | 'user_id'>) => {
-        if (!userId) throw new Error("User not authenticated");
-        const itemWithUser = { ...activity, user: userId };
-        const newData = await api.createRecentActivity(itemWithUser) as Record<string, unknown>;
-        setData(prev => ({ ...prev, recentActivity: [newData as unknown as RecentActivity, ...prev.recentActivity] }));
+    const addRecentActivity = useCallback<DataContextType['addRecentActivity']>(async (activity) => {
+        if (!userId) return;
+        try {
+            const rec = await api.recentActivity.create({
+                ...activity,
+                timestamp: activity.timestamp || new Date().toISOString(),
+                user: userId,
+            }) as unknown as RecentActivity;
+            setData(prev => ({ ...prev, recentActivity: [rec, ...prev.recentActivity.filter(a => a.id !== rec.id)] }));
+        } catch (e) {
+            console.error('Failed to log activity:', e);
+        }
     }, [userId]);
 
     const addMultipleContacts = useCallback(async (contactsToAdd: Creatable<Contact>[], batchDetails: Creatable<ImportBatch>) => {
-        if (!userId) throw new Error("User not authenticated");
+        if (!userId) throw new Error('User not authenticated');
 
-        // 1. Create the import batch record
-        const batchWithUser = { ...batchDetails, user: userId };
-        const newBatch = await api.createImportBatch(batchWithUser) as unknown as ImportBatch;
+        const newBatch = await api.importBatches.create({ ...batchDetails, user: userId }) as unknown as ImportBatch;
 
-        // 2. Add batch ID and user ID to each contact
-        const contactsToInsert = contactsToAdd.map(c => ({
+        const rows = contactsToAdd.map(c => ({
             ...c,
             user: userId,
             import_batch_id: newBatch.id,
         }));
 
-        // 3. Bulk insert contacts. On partial failure, resync from the server so
-        // local state never diverges from what actually landed (some inserts may
-        // have succeeded before the rejection).
         let newContacts: Contact[];
         try {
-            newContacts = await api.createContactsBulk(contactsToInsert) as unknown as Contact[];
+            newContacts = await api.createContactsBulk(rows) as unknown as Contact[];
         } catch (e) {
-            await fetchData();
-            throw e;
+            return resync(e);
         }
 
-        // 4. Update local state
         setData(prev => ({
             ...prev,
-            contacts: [...newContacts, ...prev.contacts],
-            importBatches: [newBatch, ...prev.importBatches],
+            contacts: [...newContacts, ...prev.contacts.filter(c => !newContacts.some(n => n.id === c.id))],
+            importBatches: [newBatch, ...prev.importBatches.filter(b => b.id !== newBatch.id)],
         }));
-    }, [userId, fetchData]);
+    }, [userId, resync]);
+
+    // Delete a set of projects and everything hanging off them. Expenses are
+    // financial records, so they are unlinked from the project rather than
+    // deleted.
+    const cascadeProjects = useCallback(async (projectIds: Set<string>) => {
+        const d = dataRef.current;
+        await Promise.all([
+            ...d.tasks.filter(t => t.id && projectIds.has(t.project_id)).map(t => api.tasks.remove(t.id!)),
+            ...d.timeEntries.filter(te => te.id && projectIds.has(te.project_id)).map(te => api.timeEntries.remove(te.id!)),
+            ...d.expenses.filter(ex => ex.id && ex.project_id && projectIds.has(ex.project_id)).map(ex =>
+                api.expenses.update(ex.id!, { project_id: '' }).catch(e => { if (!api.isNotFound(e)) throw e; })),
+        ]);
+        await Promise.all([...projectIds].map(id => api.projects.remove(id)));
+    }, []);
+
+    const applyProjectCascade = (prev: AppState, projectIds: Set<string>): AppState => ({
+        ...prev,
+        projects: prev.projects.filter(p => !projectIds.has(p.id!)),
+        tasks: prev.tasks.filter(t => !projectIds.has(t.project_id)),
+        timeEntries: prev.timeEntries.filter(te => !projectIds.has(te.project_id)),
+        expenses: prev.expenses.map(ex => (ex.project_id && projectIds.has(ex.project_id) ? { ...ex, project_id: '' } : ex)),
+    });
+
+    const deleteProject = useCallback(async (id: string) => {
+        const ids = new Set([id]);
+        try {
+            await cascadeProjects(ids);
+        } catch (e) {
+            return resync(e);
+        }
+        setData(prev => applyProjectCascade(prev, ids));
+    }, [cascadeProjects, resync]);
+
+    const deleteContacts = useCallback(async (contactIds: Set<string>) => {
+        const d = dataRef.current;
+        const projectIds = new Set(d.projects.filter(p => p.id && contactIds.has(p.client_id)).map(p => p.id!));
+        try {
+            await cascadeProjects(projectIds);
+            await Promise.all([
+                ...d.deals.filter(x => x.id && contactIds.has(x.contact_id)).map(x => api.deals.remove(x.id!)),
+                ...d.invoices.filter(x => x.id && contactIds.has(x.client_id)).map(x => api.invoices.remove(x.id!)),
+                ...d.invoiceShares.filter(sh => d.invoices.some(i => i.id === sh.invoice_id && contactIds.has(i.client_id))).map(sh => api.invoiceShares.remove(sh.id)),
+                ...d.notes.filter(x => x.id && contactIds.has(x.contact_id)).map(x => api.notes.remove(x.id!)),
+            ]);
+            await Promise.all([...contactIds].map(id => api.contacts.remove(id)));
+        } catch (e) {
+            return resync(e);
+        }
+        setData(prev => {
+            const next = applyProjectCascade(prev, projectIds);
+            return {
+                ...next,
+                contacts: next.contacts.filter(c => !contactIds.has(c.id!)),
+                deals: next.deals.filter(x => !contactIds.has(x.contact_id)),
+                invoices: next.invoices.filter(x => !contactIds.has(x.client_id)),
+                invoiceShares: next.invoiceShares.filter(sh => next.invoices.some(i => i.id === sh.invoice_id && !contactIds.has(i.client_id))),
+                notes: next.notes.filter(x => !contactIds.has(x.contact_id)),
+            };
+        });
+    }, [cascadeProjects, resync]);
+
+    const deleteContact = useCallback((id: string) => deleteContacts(new Set([id])), [deleteContacts]);
 
     const undoImport = useCallback(async (batchId: string) => {
-        if (!userId) throw new Error("User not authenticated");
-
-        // Determine contacts to delete from local state
-        const contactsToDelete = data.contacts.filter(c => c.import_batch_id === batchId);
-        const contactIdsToDelete = new Set(contactsToDelete.map(c => c.id!).filter(Boolean));
-
-        // Projects belonging to any of the deleted contacts, and their children.
-        const affectedProjectIds = new Set(
-            data.projects.filter(p => p.client_id && contactIdsToDelete.has(p.client_id)).map(p => p.id!).filter(Boolean)
-        );
-
-        // Delete server records, children first so no orphans survive on the backend.
-        // Each entity type is deleted concurrently; types run in dependency order.
+        if (!userId) throw new Error('User not authenticated');
+        const ids = new Set(dataRef.current.contacts.filter(c => c.import_batch_id === batchId && c.id).map(c => c.id!));
+        await deleteContacts(ids);
         try {
-            await Promise.all([
-                ...data.tasks.filter(t => affectedProjectIds.has(t.project_id) && t.id).map(t => api.deleteTask(t.id!)),
-                ...data.timeEntries.filter(te => affectedProjectIds.has(te.project_id) && te.id).map(te => api.deleteTimeEntry(te.id!)),
-                ...data.expenses.filter(ex => ex.project_id && affectedProjectIds.has(ex.project_id) && ex.id).map(ex => api.deleteExpense(ex.id!)),
-            ]);
-            await Promise.all([
-                ...data.projects.filter(p => affectedProjectIds.has(p.id!)).map(p => api.deleteProject(p.id!)),
-                ...data.deals.filter(d => d.contact_id && contactIdsToDelete.has(d.contact_id) && d.id).map(d => api.deleteDeal(d.id!)),
-                ...data.invoices.filter(i => i.client_id && contactIdsToDelete.has(i.client_id) && i.id).map(i => api.deleteInvoice(i.id!)),
-                ...data.notes.filter(n => n.contact_id && contactIdsToDelete.has(n.contact_id) && n.id).map(n => api.deleteNote(n.id!)),
-            ]);
-            await Promise.all(contactsToDelete.filter(c => c.id).map(c => api.deleteContact(c.id!)));
-            await api.deleteImportBatch(batchId);
+            await api.importBatches.remove(batchId);
         } catch (e) {
-            // Refetch to resync after a partial failure rather than trusting optimistic state.
-            await fetchData();
-            throw e;
+            return resync(e);
         }
+        setData(prev => ({ ...prev, importBatches: prev.importBatches.filter(b => b.id !== batchId) }));
+    }, [userId, deleteContacts, resync]);
 
-        // Update local state completely
+    const deleteInvoice = useCallback(async (id: string) => {
+        // Free up any time that was billed on this invoice so it can be billed again.
+        const billed = dataRef.current.timeEntries.filter(te => te.invoice_id === id && te.id);
+        try {
+            await Promise.all(billed.map(te => api.timeEntries.update(te.id!, { invoice_id: '' })));
+            const share = dataRef.current.invoiceShares.find(sh => sh.invoice_id === id);
+            if (share) await api.invoiceShares.remove(share.id);
+            await api.invoices.remove(id);
+        } catch (e) {
+            return resync(e);
+        }
         setData(prev => ({
             ...prev,
-            contacts: prev.contacts.filter(c => c.import_batch_id !== batchId),
-            importBatches: prev.importBatches.filter(b => b.id !== batchId),
-            deals: prev.deals.filter(d => !(d.contact_id && contactIdsToDelete.has(d.contact_id))),
-            projects: prev.projects.filter(p => !(p.client_id && contactIdsToDelete.has(p.client_id))),
-            invoices: prev.invoices.filter(i => !(i.client_id && contactIdsToDelete.has(i.client_id))),
-            notes: prev.notes.filter(n => !(n.contact_id && contactIdsToDelete.has(n.contact_id))),
-            tasks: prev.tasks.filter(t => !affectedProjectIds.has(t.project_id)),
-            timeEntries: prev.timeEntries.filter(te => !affectedProjectIds.has(te.project_id)),
-            expenses: prev.expenses.filter(ex => !(ex.project_id && affectedProjectIds.has(ex.project_id))),
+            invoices: prev.invoices.filter(i => i.id !== id),
+            invoiceShares: prev.invoiceShares.filter(sh => sh.invoice_id !== id),
+            timeEntries: prev.timeEntries.map(te => (te.invoice_id === id ? { ...te, invoice_id: '' } : te)),
         }));
-    }, [userId, data, fetchData]);
+    }, [resync]);
 
-    const deleteContact = useCallback(async (id: string) => {
-        // Determine affected projects for this contact
-        const affectedProjectIds = new Set(
-            data.projects.filter(p => p.client_id === id).map(p => p.id!).filter(Boolean)
-        );
+    const saveBusinessProfile = useCallback(async (profile: Partial<BusinessProfile>) => {
+        if (!userId) throw new Error('User not authenticated');
+        const existing = dataRef.current.businessProfile;
+        const { id: _id, user: _u, created: _c, updated: _up, ...changes } = profile;
+        const rec = existing.id
+            ? await api.businessProfiles.update(existing.id, changes)
+            : await api.businessProfiles.create({ ...defaultBusinessProfile, ...changes, user: userId });
+        const merged = { ...defaultBusinessProfile, ...(rec as unknown as BusinessProfile) };
+        setData(prev => ({ ...prev, businessProfile: merged }));
+        return merged;
+    }, [userId]);
 
-        // Delete children first (tasks/time/expenses), then projects + other
-        // contact-owned records, then the contact itself. On any failure, resync
-        // from the server so local state never diverges.
-        try {
-            await Promise.all([
-                ...data.tasks.filter(t => affectedProjectIds.has(t.project_id) && t.id).map(t => api.deleteTask(t.id!)),
-                ...data.timeEntries.filter(te => affectedProjectIds.has(te.project_id) && te.id).map(te => api.deleteTimeEntry(te.id!)),
-                ...data.expenses.filter(ex => ex.project_id && affectedProjectIds.has(ex.project_id) && ex.id).map(ex => api.deleteExpense(ex.id!)),
-            ]);
-            await Promise.all([
-                ...data.projects.filter(p => affectedProjectIds.has(p.id!)).map(p => api.deleteProject(p.id!)),
-                ...data.deals.filter(d => d.contact_id === id && d.id).map(d => api.deleteDeal(d.id!)),
-                ...data.invoices.filter(i => i.client_id === id && i.id).map(i => api.deleteInvoice(i.id!)),
-                ...data.notes.filter(n => n.contact_id === id && n.id).map(n => api.deleteNote(n.id!)),
-            ]);
-            await api.deleteContact(id);
-        } catch (e) {
-            await fetchData();
-            throw e;
+    const shareInvoice = useCallback(async (invoiceId: string) => {
+        if (!userId) throw new Error('User not authenticated');
+        const d = dataRef.current;
+        const invoice = d.invoices.find(i => i.id === invoiceId);
+        if (!invoice) throw new Error('Invoice not found');
+        const snapshot = buildShareSnapshot(invoice, d.contacts.find(c => c.id === invoice.client_id), d.businessProfile, d.userProfile);
+        const existing = d.invoiceShares.find(s => s.invoice_id === invoiceId);
+        const rec = (existing
+            ? await api.invoiceShares.update(existing.id, { snapshot })
+            : await api.invoiceShares.create({ invoice_id: invoiceId, token: newShareToken(), snapshot, user: userId })) as unknown as InvoiceShare;
+        setData(prev => ({ ...prev, invoiceShares: [rec, ...prev.invoiceShares.filter(s => s.id !== rec.id)] }));
+        return rec;
+    }, [userId]);
+
+    const revokeShare = useCallback(async (invoiceId: string) => {
+        const existing = dataRef.current.invoiceShares.find(s => s.invoice_id === invoiceId);
+        if (!existing) return;
+        await api.invoiceShares.remove(existing.id);
+        setData(prev => ({ ...prev, invoiceShares: prev.invoiceShares.filter(s => s.id !== existing.id) }));
+    }, []);
+
+    // Keep a shared link showing the current invoice after every edit.
+    const updateInvoice = useCallback(async (item: WithId<Invoice>) => {
+        const rec = await invoicesApi.update(item);
+        if (dataRef.current.invoiceShares.some(s => s.invoice_id === item.id)) {
+            // dataRef updates on the next render; merge the change in by hand.
+            const merged = { ...dataRef.current.invoices.find(i => i.id === item.id)!, ...rec };
+            dataRef.current = { ...dataRef.current, invoices: dataRef.current.invoices.map(i => (i.id === item.id ? merged : i)) };
+            shareInvoice(item.id).catch(e => console.error('Could not refresh shared invoice:', e));
         }
+        return rec;
+    }, [invoicesApi, shareInvoice]);
 
-        // Update local state to remove all associated entities
-        setData(prev => ({
-            ...prev,
-            contacts: prev.contacts.filter(c => c.id !== id),
-            deals: prev.deals.filter(d => d.contact_id !== id),
-            projects: prev.projects.filter(p => p.client_id !== id),
-            invoices: prev.invoices.filter(i => i.client_id !== id),
-            notes: prev.notes.filter(n => n.contact_id !== id),
-            tasks: prev.tasks.filter(t => !affectedProjectIds.has(t.project_id)),
-            timeEntries: prev.timeEntries.filter(te => !affectedProjectIds.has(te.project_id)),
-            expenses: prev.expenses.filter(ex => !(ex.project_id && affectedProjectIds.has(ex.project_id))),
-        }));
-    }, [data, fetchData]);
+    const loadSampleData = useCallback(async () => {
+        if (!userId) throw new Error('User not authenticated');
+        await restoreBackup(buildSampleBackup(), userId, { hasBusinessProfile: true });
+        await fetchData({ silent: true });
+    }, [userId, fetchData]);
+
+    const removeSampleData = useCallback(async () => {
+        const d = dataRef.current;
+        const ids = new Set(d.contacts.filter(c => c.tags?.includes(SAMPLE_TAG) && c.id).map(c => c.id!));
+        const projectIds = new Set(d.projects.filter(p => p.id && ids.has(p.client_id)).map(p => p.id!));
+        // Sample expenses are either on sample projects or marked in the description.
+        const expenses = d.expenses.filter(ex => ex.id && ((ex.project_id && projectIds.has(ex.project_id)) || ex.description.endsWith('(sample)')));
+        try {
+            await Promise.all(expenses.map(ex => api.expenses.remove(ex.id!)));
+            // Drop them locally now, so the contact cascade below doesn't try
+            // to unlink expenses that no longer exist.
+            const gone = new Set(expenses.map(ex => ex.id));
+            dataRef.current = { ...dataRef.current, expenses: dataRef.current.expenses.filter(ex => !gone.has(ex.id)) };
+            setData(prev => ({ ...prev, expenses: prev.expenses.filter(ex => !gone.has(ex.id)) }));
+            await deleteContacts(ids);
+        } finally {
+            await fetchData({ silent: true });
+        }
+    }, [deleteContacts, fetchData]);
 
     const updateUserProfile = useCallback(async (profile: Partial<UserProfile>) => {
-        setData(prev => ({ ...prev, userProfile: { ...prev.userProfile, ...profile } }));
-        // Also persist to PocketBase user record
-        if (session?.user?.id) {
-            await pb.collection('users').update(session.user.id, { name: profile.name, email: profile.email });
-        }
+        if (!session?.user?.id) return;
+        await pb.collection('users').update(session.user.id, { name: profile.name });
+        setData(prev => ({ ...prev, userProfile: { ...prev.userProfile, name: profile.name ?? prev.userProfile.name } }));
     }, [session]);
+
+    const refresh = useCallback(() => fetchData({ silent: true }), [fetchData]);
 
     const value: DataContextType = useMemo(() => ({
         data,
         loading,
         error,
+        refresh,
         addContact: contactsApi.add,
         addMultipleContacts,
         updateContact: contactsApi.update,
-        deleteContact: deleteContact,
+        deleteContact,
         addDeal: dealsApi.add,
         updateDeal: dealsApi.update,
         deleteDeal: dealsApi.del,
         addProject: projectsApi.add,
         updateProject: projectsApi.update,
-        deleteProject: projectsApi.del,
+        deleteProject,
         addTask: tasksApi.add,
         updateTask: tasksApi.update,
         deleteTask: tasksApi.del,
         addInvoice: invoicesApi.add,
-        updateInvoice: invoicesApi.update,
-        deleteInvoice: invoicesApi.del,
+        updateInvoice,
+        deleteInvoice,
         addTimeEntry: timeEntriesApi.add,
+        updateTimeEntry: timeEntriesApi.update,
+        deleteTimeEntry: timeEntriesApi.del,
         addExpense: expensesApi.add,
+        updateExpense: expensesApi.update,
         deleteExpense: expensesApi.del,
-        addRecentActivity,
         addNote: notesApi.add,
+        updateNote: notesApi.update,
+        deleteNote: notesApi.del,
+        addRecentActivity,
         undoImport,
+        saveBusinessProfile,
+        shareInvoice,
+        revokeShare,
+        loadSampleData,
+        removeSampleData,
         updateUserProfile,
     }), [
-        data, loading, error,
+        data, loading, error, refresh,
         contactsApi, dealsApi, projectsApi, tasksApi, invoicesApi, timeEntriesApi, expensesApi, notesApi,
-        addMultipleContacts, deleteContact, addRecentActivity, undoImport, updateUserProfile,
+        addMultipleContacts, deleteContact, deleteProject, deleteInvoice, addRecentActivity, undoImport,
+        saveBusinessProfile, updateUserProfile, shareInvoice, revokeShare, updateInvoice, loadSampleData, removeSampleData,
     ]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
@@ -410,3 +595,6 @@ export const useData = () => {
     }
     return context;
 };
+
+// Convenience: the user's currency, used by every money display.
+export const useCurrency = () => useData().data.businessProfile.currency || DEFAULT_CURRENCY;

@@ -42,14 +42,14 @@ riskier migration and is left to the maintainer).
 | 1 | High | `recent_activity` & `import_batches` fully client-writable → forged/backdated activity logs | PARTIAL (pb_hooks integrity guards added; full transactional tie still doc-only) |
 | 2 | Medium | Zod validation schemas are dead code on the write path | FIXED |
 | 3 | Medium | No `Strict-Transport-Security` (HSTS) | FIXED (serve.cjs) |
-| 4 | Medium | `user` field is client-writable text; update rules don't freeze it → ownership re-parenting | DOC-ONLY (needs relation migration) |
+| 4 | Medium | `user` field is client-writable text; update rules don't freeze it → ownership re-parenting | FIXED (v1.1.0 update-rule freeze) |
 | 5 | Medium | `install.sh`: binary downloaded with no checksum, PB on plaintext `0.0.0.0` HTTP, no `--origins`/`--publicUrl`, `curl\|bash` promoted | PARTIAL (checksum + guidance added) |
 | 6 | Medium | Silent-skip in `require_verified` migration → partial fallback to non-verified rules | FIXED (idempotent re-pin migration) |
 | 7 | Low | Bulk-create carries a server `id` on "create new" duplicate rows | FIXED |
 | 8 | Low | CSP `connect-src` default includes a bare `https:` wildcard | DOC-ONLY (needs prod backend list) |
 | 9 | Low | CSP `style-src 'unsafe-inline'` + third-party `fonts.googleapis.com` | DOC-ONLY (UX concession for jsPDF/React) |
 | 10 | Low | Runtime dependencies use `^` caret ranges (not exact-pinned); client PocketBase SDK `^0.21.5` vs server `0.36.2` | DOC-ONLY |
-| 11 | Low | CI workflow has no `permissions:` block | DOC-ONLY |
+| 11 | Low | CI workflow has no `permissions:` block | FIXED (v1.2.0) |
 | 12 | Low | Raw backend `.message` strings rendered to users in banners; ErrorBoundary logs stack to console | DOC-ONLY |
 | 13 | Low | No password-strength validation on sign-up | DOC-ONLY |
 | 14 | Low | Import size cap is on the compressed file, not the decompressed payload | DOC-ONLY |
@@ -223,7 +223,7 @@ to the `securityHeaders` object in `serve.cjs`, with a comment noting it only
 matters over TLS (it is a no-op over HTTP, so local dev is unaffected). If TLS
 terminates at an upstream proxy, set it there too.
 
-### F4 — `user` ownership is client-writable re-parentable (Medium, DOC-ONLY)
+### F4 — `user` ownership is client-writable re-parentable (Medium, FIXED in v1.1.0)
 
 The ownership discriminator `user` is a client-writable `text` field
 (`1779676001983_created_contacts.js:87-93`, max 100), not a relation, and the
@@ -239,6 +239,15 @@ adding a PocketBase rule binding `@request.body.user` on create and freezing
 `user` on update — a schema migration that risks existing data rows and is not
 safe to land blind within a hardening pass. **Recommended:** plan a `user`-as-
 relation migration with a data backfill as a separate, tested change.
+
+**Update (v1.1.0): FIXED.** `pb_migrations/1780800000_v1_1_schema.js` sets every
+data collection's update rule to the verified-owner rule plus
+`@request.body.user:changed = false`, so a PATCH that tries to move a record
+into another account is rejected (404, same as any record you don't own), while
+normal edits, including ones that resend the unchanged `user`, keep working.
+Verified against PocketBase 0.36.2. The client also strips `user` from every
+update payload (`src/lib/api.ts`). The field stays `text` rather than a
+relation, which avoids a risky backfill and changes nothing for existing rows.
 
 ### F5 — `install.sh` self-host posture (Medium, PARTIAL)
 
@@ -302,7 +311,7 @@ but not verified. CI uses `npm ci` (lockfile-respecting), mitigating drift, but
 a future `npm install` can pull bumps. **Recommended:** exact-pin runtime deps
 and confirm 0.21.x SDK ↔ 0.36.2 server compatibility.
 
-### F11 — CI has no `permissions:` block (Low, DOC-ONLY)
+### F11 — CI has no `permissions:` block (Low, FIXED in v1.2.0)
 
 `.github/workflows/ci.yml:9-10` has no explicit `permissions:`; the `GITHUB_TOKEN`
 inherits repo defaults. **Recommended:** add `permissions: { contents: read }`.
@@ -350,3 +359,26 @@ placed in `api.ts create()` rather than scattered across `dataStore.tsx`'s 13
 handlers: one insertion point covers every create, cannot miss a handler, and
 cannot perturb the cascade-delete or optimistic-state logic that lives in
 `dataStore.tsx` (the riskiest file to touch).
+
+---
+
+## Addendum (v1.2.0): client share links
+
+`invoice_shares` (`pb_migrations/1780900000_recurring_and_sharing.js`) is the
+only collection with a public read path. Design:
+
+- **What is exposed**: a snapshot of one invoice (lines, totals, dates, notes),
+  the client's name/company/email/phone and the owner's business profile. The
+  live `invoices` / `contacts` records stay owner-only.
+- **Access**: `viewRule` requires `@request.query.token = token`. Tokens are
+  32 random bytes (base64url, 43 chars) from `crypto.getRandomValues`; the
+  field pattern rejects anything under 32 chars. `listRule` is owner-only, so
+  shares can't be enumerated, and create/update/delete are owner-only with the
+  `user` freeze. Verified: no token / wrong token → 404, anonymous list → empty,
+  anonymous update → 404.
+- **Token handling**: links carry the token in the URL fragment
+  (`/share/<id>#<token>`), which browsers never send to servers, so it doesn't
+  end up in access logs, proxies or `Referer` headers. The app sends it to
+  PocketBase as a query parameter on the API call only.
+- **Revocation**: turning a link off deletes the share record; deleting an
+  invoice or its client deletes its share too.

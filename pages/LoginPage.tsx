@@ -62,7 +62,7 @@ const LoginPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#192118] font-body flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-panel font-body flex items-center justify-center p-4 relative overflow-hidden">
             {/* Ambient radial glows, slowly drifting in the background */}
             <div
                 aria-hidden
@@ -82,7 +82,7 @@ const LoginPage: React.FC = () => {
             <div className="w-full max-w-md relative z-10">
                 {/* Branding */}
                 <div className="mb-8">
-                    <h1 className="text-5xl font-bold font-display text-canvas tracking-tight">
+                    <h1 className="text-5xl font-bold font-display text-cream tracking-tight">
                         BareStack<span className="italic">OS</span>
                     </h1>
                     <p className="text-sm font-semibold text-muted uppercase tracking-widest mt-2">
@@ -157,8 +157,10 @@ const LoginPage: React.FC = () => {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {isSignUp && (
                             <div>
-                                <label className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Name</label>
+                                <label htmlFor="auth-name" className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Name</label>
                                 <input
+                                    id="auth-name"
+                                    autoComplete="name"
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
@@ -169,8 +171,10 @@ const LoginPage: React.FC = () => {
                             </div>
                         )}
                         <div>
-                            <label className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Email</label>
+                            <label htmlFor="auth-email" className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Email</label>
                             <input
+                                id="auth-email"
+                                autoComplete="email"
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -180,8 +184,14 @@ const LoginPage: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Password</label>
+                            <label htmlFor="auth-password" className="flex justify-between text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">
+                                <span>Password</span>
+                                {isSignUp && <span className="normal-case tracking-normal font-normal text-muted text-xs">at least 8 characters</span>}
+                            </label>
                             <input
+                                id="auth-password"
+                                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                                minLength={isSignUp ? 8 : undefined}
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}

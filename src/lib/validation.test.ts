@@ -151,9 +151,9 @@ describe('sanitizeCreatePayload', () => {
         expect(sanitizeCreatePayload('not_a_real_collection', data)).toBe(data);
     });
 
-    it('exposes the allow-list covering exactly the 10 data collections', () => {
-        expect(ALLOWED_CREATE_COLLECTIONS.sort()).toEqual(
-            ['contacts', 'deals', 'expenses', 'import_batches', 'invoices', 'notes', 'projects', 'recent_activity', 'tasks', 'time_entries'].sort()
+    it('exposes the allow-list covering exactly the 12 data collections', () => {
+        expect([...ALLOWED_CREATE_COLLECTIONS].sort()).toEqual(
+            ['business_profiles', 'contacts', 'deals', 'expenses', 'import_batches', 'invoice_shares', 'invoices', 'notes', 'projects', 'recent_activity', 'tasks', 'time_entries'].sort()
         );
     });
 });

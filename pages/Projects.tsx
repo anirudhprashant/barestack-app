@@ -1,85 +1,136 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, Button, Icon, Modal, Input } from '../components/ui';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Button, Icon, Modal, EmptyState, SearchInput, Segmented } from '../components/ui';
 import { ProjectStatus } from '../types';
-import { useData } from '../dataStore';
+import { useData, useCurrency } from '../dataStore';
 import { ProjectForm } from '../components/ProjectForm';
+import { formatMoney, formatHours } from '../src/lib/format';
+import { formatDateOnly, parseDateOnly } from '../src/lib/dates';
+import { projectMetrics, pct } from '../src/lib/projects';
+import { projectStatusClass } from '../components/badges';
+
+type Filter = 'all' | ProjectStatus;
+
+const Bar: React.FC<{ value: number; warn?: boolean }> = ({ value, warn }) => (
+    <div className="w-full bg-surface h-1.5 overflow-hidden">
+        <div className={`h-full ${warn ? 'bg-activity-red' : 'bg-charcoal'}`} style={{ width: `${value}%` }} />
+    </div>
+);
 
 const Projects: React.FC = () => {
     const { data } = useData();
+    const currency = useCurrency();
     const { projects, contacts } = data;
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [isAddProjectModalOpen, setIsAddProjectModalOpen] = useState(false);
+    useEffect(() => {
+        if (searchParams.get('new')) {
+            setIsAddProjectModalOpen(true);
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filter, setFilter] = useState<Filter>(ProjectStatus.Active);
 
-    const getClientName = (clientId: string) => {
-        return contacts.find(c => c.id === clientId)?.name || 'Unknown Client';
-    };
+    const getClientName = (clientId: string) => contacts.find(c => c.id === clientId)?.name || 'Unknown Client';
 
-    const filteredProjects = projects.filter(project =>
-        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getClientName(project.client_id).toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const counts = useMemo(() => ({
+        all: projects.length,
+        [ProjectStatus.Active]: projects.filter(p => p.status === ProjectStatus.Active).length,
+        [ProjectStatus.Completed]: projects.filter(p => p.status === ProjectStatus.Completed).length,
+        [ProjectStatus.Archived]: projects.filter(p => p.status === ProjectStatus.Archived).length,
+    }), [projects]);
+
+    const filteredProjects = projects.filter(project => {
+        const q = searchTerm.trim().toLowerCase();
+        return (filter === 'all' || project.status === filter) &&
+            (!q || project.name.toLowerCase().includes(q) || getClientName(project.client_id).toLowerCase().includes(q));
+    });
+
+    const closeModal = () => setIsAddProjectModalOpen(false);
 
     return (
         <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="w-full sm:w-72">
-                    <Input
-                        label=""
-                        placeholder="Search projects..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full"
-                    />
-                </div>
-                <Button variant="primary" onClick={() => setIsAddProjectModalOpen(true)}>
+            <div className="flex flex-col md:flex-row md:items-center gap-3 mb-6">
+                <Segmented<Filter>
+                    value={filter}
+                    onChange={setFilter}
+                    options={[
+                        { value: ProjectStatus.Active, label: `Active ${counts[ProjectStatus.Active]}` },
+                        { value: ProjectStatus.Completed, label: `Completed ${counts[ProjectStatus.Completed]}` },
+                        { value: ProjectStatus.Archived, label: `Archived ${counts[ProjectStatus.Archived]}` },
+                        { value: 'all', label: `All ${counts.all}` },
+                    ]}
+                />
+                <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder="Search projects or clients..." className="md:w-72" />
+                <Button variant="primary" className="md:ml-auto" onClick={() => setIsAddProjectModalOpen(true)}>
                     <Icon name="plus" className="w-4 h-4 mr-2" /> New Project
                 </Button>
             </div>
 
             {filteredProjects.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredProjects.map(project => (
-                        <Card
-                            key={project.id}
-                            className="cursor-pointer hover:border-charcoal transition-all duration-200"
-                            onClick={() => navigate(`/projects/${project.id}`)}
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-lg font-bold text-charcoal truncate pr-2">{project.name}</h3>
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${project.status === ProjectStatus.Active ? 'bg-activity-green/10 text-activity-green' :
-                                        project.status === ProjectStatus.Completed ? 'bg-activity-blue/10 text-activity-blue' :
-                                            'bg-surface text-muted'
-                                    }`}>
-                                    {project.status}
-                                </span>
-                            </div>
-                            <p className="text-muted text-sm flex items-center">
-                                <Icon name="users" className="w-4 h-4 mr-2 text-muted" />
-                                {getClientName(project.client_id)}
-                            </p>
-                            <div className="flex justify-between text-sm font-medium pt-4 border-t border-border/50 text-muted">
-                                <span>${project.budget.toLocaleString()}</span>
-                                <span>{project.estimated_hours} hrs</span>
-                            </div>
-                        </Card>
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {filteredProjects.map(project => {
+                        const m = projectMetrics(project, data);
+                        const due = parseDateOnly(project.due_date);
+                        const overdue = due && project.status === ProjectStatus.Active && due < new Date(new Date().toDateString());
+                        return (
+                            <button
+                                key={project.id}
+                                className="text-left bg-canvas p-5 border border-border hover:border-charcoal transition-colors flex flex-col"
+                                onClick={() => navigate(`/projects/${project.id}`)}
+                            >
+                                <div className="flex justify-between items-start gap-2 mb-1 w-full">
+                                    <h3 className="text-lg font-bold text-charcoal truncate">{project.name}</h3>
+                                    <span className={`px-2 py-0.5 text-xs font-semibold shrink-0 ${projectStatusClass[project.status]}`}>{project.status}</span>
+                                </div>
+                                <p className="text-muted text-sm flex items-center mb-4">
+                                    <Icon name="user" className="w-3.5 h-3.5 mr-1.5" />
+                                    <span className="truncate">{getClientName(project.client_id)}</span>
+                                    {due && (
+                                        <span className={`ml-auto flex items-center gap-1 text-xs shrink-0 ${overdue ? 'text-activity-red font-semibold' : ''}`}>
+                                            <Icon name="calendar" className="w-3 h-3" />{formatDateOnly(project.due_date, 'MMM d')}
+                                        </span>
+                                    )}
+                                </p>
+
+                                <div className="space-y-3 mt-auto w-full">
+                                    <div>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-muted">Hours</span>
+                                            <span className="font-semibold tabular-nums">{formatHours(m.hoursLogged)}{project.estimated_hours ? ` / ${formatHours(project.estimated_hours)}` : ''}</span>
+                                        </div>
+                                        <Bar value={pct(m.hoursLogged, project.estimated_hours)} warn={!!project.estimated_hours && m.hoursLogged > project.estimated_hours} />
+                                    </div>
+                                    {project.budget > 0 && (
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="text-muted">Budget</span>
+                                                <span className="font-semibold tabular-nums">{formatMoney(m.budgetUsed, currency, { compact: true })} / {formatMoney(project.budget, currency, { compact: true })}</span>
+                                            </div>
+                                            <Bar value={pct(m.budgetUsed, project.budget)} warn={m.budgetUsed > project.budget} />
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-xs pt-3 border-t border-border/60 text-muted">
+                                        <span>{m.tasksTotal ? `${m.tasksDone}/${m.tasksTotal} tasks done` : 'No tasks'}{m.tasksOverdue ? <span className="text-activity-red font-semibold"> · {m.tasksOverdue} overdue</span> : null}</span>
+                                        {m.unbilledHours > 0 && <span className="text-accent font-semibold">{formatHours(m.unbilledHours)} unbilled</span>}
+                                    </div>
+                                </div>
+                            </button>
+                        );
+                    })}
                 </div>
+            ) : projects.length === 0 ? (
+                <EmptyState icon="clipboard" title="No projects yet" description="Create a project for a client to track tasks, time, budget and billing in one place.">
+                    <Button onClick={() => setIsAddProjectModalOpen(true)}><Icon name="plus" className="w-4 h-4 mr-2" />New Project</Button>
+                </EmptyState>
             ) : (
-                <div className="text-center py-12 bg-canvas border border-dashed border-border">
-                    <div className="w-16 h-16 bg-surface flex items-center justify-center mx-auto mb-4">
-                        <Icon name="clipboard" className="w-8 h-8 text-muted" />
-                    </div>
-                    <h3 className="text-lg font-medium text-charcoal mb-1">No projects found</h3>
-                    <p className="text-muted mb-6">
-                        {searchTerm ? "Try adjusting your search terms." : "Create your first project to get started."}
-                    </p>
-                </div>
+                <EmptyState icon="search" title="No projects found" description={searchTerm ? 'Try adjusting your search terms.' : 'Nothing with this status yet.'} />
             )}
 
-            <Modal isOpen={isAddProjectModalOpen} onClose={() => setIsAddProjectModalOpen(false)} title="Add New Project">
-                <ProjectForm onClose={() => setIsAddProjectModalOpen(false)} />
+            <Modal isOpen={isAddProjectModalOpen} onClose={closeModal} title="Add New Project">
+                <ProjectForm onClose={closeModal} onSaved={(p) => navigate(`/projects/${p.id}`)} />
             </Modal>
         </div>
     );

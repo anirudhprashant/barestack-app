@@ -3,7 +3,6 @@ import { useData } from '../dataStore';
 import { useToast } from '../src/context/ToastContext';
 import { Contact, Creatable, ImportBatch } from '../types';
 import { Button, Icon } from './ui';
-import * as XLSX from 'xlsx';
 
 type Resolution = 'create' | 'update' | 'skip';
 
@@ -33,21 +32,34 @@ const DuplicateHandler: FC<DuplicateHandlerProps> = ({ duplicates, onConfirm, on
 
     return (
         <div className="space-y-4">
-            <p className="text-sm text-gray-600">We found {duplicates.length} contacts that already exist in your CRM. How would you like to handle them?</p>
-            <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+            <p className="text-sm text-muted">We found {duplicates.length} contact{duplicates.length === 1 ? '' : 's'} that already exist in your CRM. How would you like to handle them?</p>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-semibold text-muted uppercase tracking-wider">Apply to all:</span>
+                {(['skip', 'update', 'create'] as Resolution[]).map(r => (
+                    <button
+                        key={r}
+                        type="button"
+                        onClick={() => setResolutions(Object.fromEntries(duplicates.map(d => [d.email, r])))}
+                        className="px-2.5 py-1 border border-border hover:border-charcoal text-charcoal font-semibold"
+                    >
+                        {r === 'skip' ? 'Skip' : r === 'update' ? 'Update' : 'Create new'}
+                    </button>
+                ))}
+            </div>
+            <div className="max-h-60 overflow-y-auto border border-border">
                 <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 sticky top-0">
+                    <thead className="bg-surface sticky top-0">
                         <tr>
-                            <th className="p-2 font-semibold text-gray-700">Contact</th>
-                            <th className="p-2 font-semibold text-gray-700">Action</th>
+                            <th className="p-2 font-semibold text-charcoal">Contact</th>
+                            <th className="p-2 font-semibold text-charcoal">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-border/50">
                         {duplicates.map(dup => (
                             <tr key={dup.email}>
                                 <td className="p-2">
                                     <div className="font-medium">{dup.name}</div>
-                                    <div className="text-xs text-gray-500">{dup.email}</div>
+                                    <div className="text-xs text-muted">{dup.email}</div>
                                 </td>
                                 <td className="p-2">
                                     <div className="flex space-x-2">
@@ -57,7 +69,7 @@ const DuplicateHandler: FC<DuplicateHandlerProps> = ({ duplicates, onConfirm, on
                                                 name={`res-${dup.email}`}
                                                 checked={resolutions[dup.email!] === 'skip'}
                                                 onChange={() => handleResolutionChange(dup.email!, 'skip')}
-                                                className="text-brand-dark focus:ring-brand-dark"
+                                                className="accent-charcoal"
                                             />
                                             <span>Skip</span>
                                         </label>
@@ -67,7 +79,7 @@ const DuplicateHandler: FC<DuplicateHandlerProps> = ({ duplicates, onConfirm, on
                                                 name={`res-${dup.email}`}
                                                 checked={resolutions[dup.email!] === 'update'}
                                                 onChange={() => handleResolutionChange(dup.email!, 'update')}
-                                                className="text-brand-dark focus:ring-brand-dark"
+                                                className="accent-charcoal"
                                             />
                                             <span>Update</span>
                                         </label>
@@ -77,7 +89,7 @@ const DuplicateHandler: FC<DuplicateHandlerProps> = ({ duplicates, onConfirm, on
                                                 name={`res-${dup.email}`}
                                                 checked={resolutions[dup.email!] === 'create'}
                                                 onChange={() => handleResolutionChange(dup.email!, 'create')}
-                                                className="text-brand-dark focus:ring-brand-dark"
+                                                className="accent-charcoal"
                                             />
                                             <span>Create New</span>
                                         </label>
@@ -88,7 +100,7 @@ const DuplicateHandler: FC<DuplicateHandlerProps> = ({ duplicates, onConfirm, on
                     </tbody>
                 </table>
             </div>
-            <div className="flex justify-end space-x-2 pt-4 border-t border-gray-100">
+            <div className="flex justify-end space-x-2 pt-4 border-t border-border">
                 <Button variant="secondary" onClick={onCancel}>Cancel Import</Button>
                 <Button variant="primary" onClick={handleConfirm}>Confirm & Import</Button>
             </div>
@@ -105,6 +117,8 @@ export const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
     const [step, setStep] = useState<'upload' | 'duplicates' | 'importing'>('upload');
     const [detectedDuplicates, setDetectedDuplicates] = useState<Contact[]>([]);
     const [newUniqueContacts, setNewUniqueContacts] = useState<Creatable<Contact>[]>([]);
+    const [dragging, setDragging] = useState(false);
+    const [skippedInFile, setSkippedInFile] = useState(0);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -135,8 +149,11 @@ export const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
     const parseFile = async (file: File): Promise<any[]> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
                 try {
+                    // Loaded on demand: the spreadsheet parser is large and only
+                    // needed when someone actually imports a file.
+                    const XLSX = await import('xlsx');
                     const data = e.target?.result;
                     const workbook = XLSX.read(data, { type: 'array' });
                     const sheetName = workbook.SheetNames[0];
@@ -183,14 +200,26 @@ export const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
             };
 
             // Map fields with flexible header matching
-            const mappedContacts: Creatable<Contact>[] = rawData.map((row: any) => ({
-                name: getValue(row, ['name', 'full name', 'contact name', 'contact']) || 'Unknown',
-                email: getValue(row, ['email', 'e-mail', 'email address', 'mail']),
-                phone: getValue(row, ['phone', 'phone number', 'mobile', 'cell']),
-                company: getValue(row, ['company', 'organization', 'business', 'company name']),
-                tags: getValue(row, ['tags', 'keywords', 'labels']) ? getValue(row, ['tags', 'keywords', 'labels']).toString().split(',').map((t: string) => t.trim()) : [],
-                // last_interaction removed as it's not in the contacts table
+            const str = (v: unknown) => (v === null || v === undefined ? '' : String(v).trim());
+            const firstLast = (row: any) => [str(getValue(row, ['first name', 'firstname', 'given name'])), str(getValue(row, ['last name', 'lastname', 'surname', 'family name']))].filter(Boolean).join(' ');
+            const allMapped: Creatable<Contact>[] = rawData.map((row: any) => ({
+                name: str(getValue(row, ['name', 'full name', 'contact name', 'contact'])) || firstLast(row) || 'Unknown',
+                email: str(getValue(row, ['email', 'e-mail', 'email address', 'mail'])),
+                phone: str(getValue(row, ['phone', 'phone number', 'mobile', 'cell', 'telephone'])),
+                company: str(getValue(row, ['company', 'organization', 'organisation', 'business', 'company name'])),
+                tags: str(getValue(row, ['tags', 'keywords', 'labels'])).split(/[,;]/).map(t => t.trim()).filter(Boolean),
             })).filter(c => c.email); // Require email
+
+            // Keep the first row for each email; later repeats in the same file
+            // would otherwise create duplicate contacts.
+            const seen = new Set<string>();
+            const mappedContacts = allMapped.filter(c => {
+                const key = c.email.toLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            setSkippedInFile(allMapped.length - mappedContacts.length);
 
             if (mappedContacts.length === 0) {
                 throw new Error("No valid contacts found. Please ensure your file has an 'Email' column.");
@@ -203,8 +232,8 @@ export const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
             mappedContacts.forEach(newContact => {
                 const existing = data.contacts.find(c => c.email && c.email.toLowerCase() === newContact.email.toLowerCase());
                 if (existing) {
-                    // Add the *new* data as a potential update, but keep the ID of the existing one for reference if needed
-                    duplicates.push({ ...newContact, id: existing.id } as Contact);
+                    // Keep the *file* data; the existing contact is looked up again by email on import.
+                    duplicates.push(newContact as Contact);
                 } else {
                     unique.push(newContact);
                 }
@@ -239,8 +268,14 @@ export const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
                 const existingContact = data.contacts.find(c => c.email && fileContact.email && c.email.toLowerCase() === fileContact.email.toLowerCase());
                 if (existingContact) {
                     // Merge data: file data overwrites existing data, but keep the ID.
-                    const updatedContactData = { ...existingContact, ...fileContact, id: existingContact.id };
-                    return updateContact(updatedContactData);
+                    // File data overwrites existing fields, but blank cells never wipe existing values.
+                    return updateContact({
+                        id: existingContact.id!,
+                        name: fileContact.name && fileContact.name !== 'Unknown' ? fileContact.name : existingContact.name,
+                        phone: fileContact.phone || existingContact.phone,
+                        company: fileContact.company || existingContact.company,
+                        tags: Array.from(new Set([...(existingContact.tags || []), ...(fileContact.tags || [])])),
+                    });
                 }
                 return Promise.resolve(); // Do nothing if no matching contact is found
             });
@@ -256,7 +291,10 @@ export const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
                 await addMultipleContacts(toCreate, batchDetails);
             }
 
-            toast('Contacts imported', 'success');
+            const parts = [`${toCreate.length} added`];
+            if (toUpdate.length) parts.push(`${toUpdate.length} updated`);
+            if (skippedInFile) parts.push(`${skippedInFile} duplicate row${skippedInFile === 1 ? '' : 's'} skipped`);
+            toast(`Import complete: ${parts.join(', ')}`, 'success');
             handleClose();
         } catch (err: any) {
             setError(err.message);
@@ -284,7 +322,7 @@ export const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const renderContent = () => {
         if (step === 'importing' || loading) {
-            return <div className="text-center p-8"><p className="text-xl font-bold text-gray-700">Importing contacts, please wait...</p></div>;
+            return <div className="text-center p-8"><p className="text-xl font-display text-charcoal animate-pulse">Importing contacts, please wait...</p></div>;
         }
 
         switch (step) {
@@ -301,28 +339,38 @@ export const ImportModal: FC<{ onClose: () => void }> = ({ onClose }) => {
             default:
                 return (
                     <div className="space-y-4">
-                        <p className="text-sm text-gray-600">Upload a CSV, XLS, or XLSX file to import contacts. We'll look for headers like 'Name', 'Email', 'Phone', and 'Company'.</p>
-                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 transition-colors">
-                            <Icon name="upload" className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <label className="block text-sm font-medium text-gray-700 mb-2 cursor-pointer">
-                                <span className="text-brand-dark hover:underline">Click to upload</span> or drag and drop
+                        <p className="text-sm text-muted">Upload a CSV, XLS, or XLSX file to import contacts. We'll look for headers like 'Name', 'Email', 'Phone', and 'Company'.</p>
+                        <div
+                            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                            onDragLeave={() => setDragging(false)}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                setDragging(false);
+                                const dropped = e.dataTransfer.files?.[0];
+                                if (dropped) { setFile(dropped); setError(null); }
+                            }}
+                            className={`border-2 border-dashed p-6 text-center transition-colors ${dragging ? 'border-charcoal bg-surface' : 'border-border hover:bg-surface'}`}
+                        >
+                            <Icon name="upload" className="w-8 h-8 text-muted mx-auto mb-2" />
+                            <label className="block text-sm font-medium text-charcoal mb-2 cursor-pointer">
+                                <span className="underline underline-offset-2">Click to upload</span> or drag and drop
                                 <input
                                     type="file"
-                                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                                    accept=".csv,.xls,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                                     onChange={handleFileChange}
                                     className="hidden"
                                 />
                             </label>
-                            <p className="text-xs text-gray-500">CSV, XLS, XLSX up to 10MB</p>
+                            <p className="text-xs text-muted">CSV, XLS, XLSX up to 10MB</p>
                         </div>
                         {file && (
-                            <div className="flex items-center p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
+                            <div className="flex items-center p-3 bg-surface border border-border text-charcoal text-sm">
                                 <Icon name="file" className="w-4 h-4 mr-2" />
                                 <span className="font-medium truncate">{file.name}</span>
                             </div>
                         )}
                         {error && (
-                            <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm flex items-center">
+                            <div className="p-3 bg-activity-red/10 border border-activity-red/30 text-activity-red text-sm flex items-center">
                                 <Icon name="alert-circle" className="w-4 h-4 mr-2" />
                                 {error}
                             </div>

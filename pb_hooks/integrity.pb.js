@@ -12,6 +12,8 @@
 // What these hooks DO enforce (defense-in-depth, server-checked, cannot be
 // bypassed by a console attacker):
 //   - recent_activity.type        must be one of the verified enum values
+//                                (keep in sync with pb_migrations/1780800000_v1_1_schema.js
+//                                and src/lib/validation.ts; a unit test checks this)
 //   - recent_activity.timestamp   must be a valid date and not in the future;
 //                                if missing, the server stamps now() so a
 //                                client cannot backdate into arbitrary times,
@@ -48,7 +50,7 @@ onRecordCreateRequest(function (e) {
     // --- recent_activity guard (inlined) ---
     var rec = e.record;
     var t = rec.getString("type");
-    var TYPES = ["CONTACT_ADDED", "PROJECT_CREATED", "INVOICE_CREATED", "INVOICE_SENT", "TASK_COMPLETED", "DEAL_ADDED", "EXPENSE_ADDED"];
+    var TYPES = ["CONTACT_ADDED", "PROJECT_CREATED", "INVOICE_CREATED", "INVOICE_UPDATED", "INVOICE_SENT", "INVOICE_PAID", "INVOICE_DELETED", "TASK_COMPLETED", "DEAL_ADDED", "DEAL_WON", "EXPENSE_ADDED", "TIME_LOGGED"];
     if (TYPES.indexOf(t) === -1) {
         throw new Error("Invalid activity type");
     }
@@ -76,7 +78,7 @@ onRecordCreateRequest(function (e) {
 onRecordUpdateRequest(function (e) {
     var rec = e.record;
     var t = rec.getString("type");
-    var TYPES = ["CONTACT_ADDED", "PROJECT_CREATED", "INVOICE_CREATED", "INVOICE_SENT", "TASK_COMPLETED", "DEAL_ADDED", "EXPENSE_ADDED"];
+    var TYPES = ["CONTACT_ADDED", "PROJECT_CREATED", "INVOICE_CREATED", "INVOICE_UPDATED", "INVOICE_SENT", "INVOICE_PAID", "INVOICE_DELETED", "TASK_COMPLETED", "DEAL_ADDED", "DEAL_WON", "EXPENSE_ADDED", "TIME_LOGGED"];
     if (TYPES.indexOf(t) === -1) {
         throw new Error("Invalid activity type");
     }

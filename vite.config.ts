@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -15,7 +16,7 @@ export default defineConfig(({ mode }) => {
             manualChunks: {
               'vendor-react': ['react', 'react-dom', 'react-router-dom'],
               'vendor-pocketbase': ['pocketbase'],
-              'vendor-utils': ['date-fns', 'xlsx', 'jszip', 'file-saver', 'zod'],
+              'vendor-utils': ['date-fns', 'zod'],
             },
           },
         },
@@ -41,7 +42,8 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         host: true,
         strictPort: true,
-        allowedHosts: ['test.barestack.org', 'app.barestack.org'],
+        // Extra hosts can be allowed with PREVIEW_ALLOWED_HOSTS=host1,host2
+        allowedHosts: ['test.barestack.org', 'app.barestack.org', ...(env.PREVIEW_ALLOWED_HOSTS || '').split(',').map(h => h.trim()).filter(Boolean)],
         headers: {
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'DENY',
@@ -50,6 +52,8 @@ export default defineConfig(({ mode }) => {
           'Content-Security-Policy': `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${pbUrl} wss://${pbHost}; img-src 'self' data: blob:; media-src 'self' data: blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';`,
         },
       },
+      // Unit tests only; Playwright owns tests/e2e.
+      test: { include: ['src/**/*.test.ts'] },
       plugins: [react(), tailwindcss()],
       resolve: {
         alias: {
