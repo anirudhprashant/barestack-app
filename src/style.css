@@ -200,3 +200,30 @@ h1, h2, h3, h4, h5, h6 {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Entrance animation used by modals, toasts and page sections. The class
+   names match tailwindcss-animate's so markup reads naturally, but only the
+   subtle fade/rise is implemented (no extra dependency). */
+@keyframes bs-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-in { animation: bs-enter 0.18s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in { animation: none; }
+}
+
+/* Keyboard focus is always visible, even on elements that drop the default ring. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Native date/select controls pick up the light scheme on every browser. */
+input, select, textarea { color-scheme: light; }
+
+@media print {
+  aside, header, nav, .no-print { display: none !important; }
+  main { padding-top: 0 !important; }
+}

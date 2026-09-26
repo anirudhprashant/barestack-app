@@ -157,8 +157,10 @@ const LoginPage: React.FC = () => {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {isSignUp && (
                             <div>
-                                <label className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Name</label>
+                                <label htmlFor="auth-name" className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Name</label>
                                 <input
+                                    id="auth-name"
+                                    autoComplete="name"
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
@@ -169,8 +171,10 @@ const LoginPage: React.FC = () => {
                             </div>
                         )}
                         <div>
-                            <label className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Email</label>
+                            <label htmlFor="auth-email" className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Email</label>
                             <input
+                                id="auth-email"
+                                autoComplete="email"
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -180,8 +184,14 @@ const LoginPage: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Password</label>
+                            <label htmlFor="auth-password" className="flex justify-between text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">
+                                <span>Password</span>
+                                {isSignUp && <span className="normal-case tracking-normal font-normal text-muted text-xs">at least 8 characters</span>}
+                            </label>
                             <input
+                                id="auth-password"
+                                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                                minLength={isSignUp ? 8 : undefined}
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}

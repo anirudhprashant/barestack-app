@@ -1,21 +1,11 @@
 import React, { useState } from 'react';
-import { Card, Button, Modal } from '../components/ui';
+import { Button, Icon, Modal, EmptyState, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui';
 import { useData } from '../dataStore';
 import { ImportBatch } from '../types';
-import { format } from 'date-fns';
 import CrmHeader from '../components/CrmHeader';
+import { ImportModal } from '../components/ImportModal';
 import { useToast } from '../src/context/ToastContext';
-
-// PocketBase exposes the timestamp as the system `created` field. Guard against
-// a missing/invalid value — date-fns `format` throws on an invalid date, which
-// would crash this page.
-const formatBatchDate = (batch: ImportBatch): string => {
-    const raw = (batch as any).created || batch.created_at;
-    if (!raw) return '—';
-    const d = new Date(raw);
-    if (isNaN(d.getTime())) return '—';
-    return format(d, 'PPp');
-};
+import { formatDateTime } from '../src/lib/dates';
 
 const Imports: React.FC = () => {
     const { data, undoImport } = useData();
@@ -23,6 +13,10 @@ const Imports: React.FC = () => {
     const { importBatches } = data;
     const [undoingBatch, setUndoingBatch] = useState<ImportBatch | null>(null);
     const [loading, setLoading] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
+
+    // How many contacts from each batch still exist (some may have been deleted by hand).
+    const remaining = (batchId: string) => data.contacts.filter(c => c.import_batch_id === batchId).length;
 
     const handleUndoConfirm = async () => {
         if (!undoingBatch) return;
@@ -31,7 +25,7 @@ const Imports: React.FC = () => {
             await undoImport(undoingBatch.id);
             toast('Import undone', 'success');
         } catch (error) {
-            console.error("Failed to undo import:", error);
+            console.error('Failed to undo import:', error);
             toast('Failed to undo import. Please try again.', 'error');
         } finally {
             setLoading(false);
@@ -40,63 +34,69 @@ const Imports: React.FC = () => {
     };
 
     return (
-        <div>
-            <CrmHeader />
-            <Card>
-                <h3 className="text-2xl font-bold text-charcoal mb-4">Import History</h3>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="border-b-2 border-border">
-                                <th className="p-4 font-bold text-charcoal">File Name</th>
-                                <th className="p-4 font-bold text-charcoal">Date</th>
-                                <th className="p-4 font-bold text-charcoal">Contacts Imported</th>
-                                <th className="p-4 font-bold text-charcoal">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {importBatches.length > 0 ? (
-                                importBatches.map(batch => (
-                                    <tr key={batch.id} className="border-b border-border/50 last:border-b-0">
-                                        <td className="p-4 font-bold text-charcoal">{batch.file_name}</td>
-                                        <td className="p-4 text-muted">{formatBatchDate(batch)}</td>
-                                        <td className="p-4 text-charcoal">{batch.contact_count}</td>
-                                        <td className="p-4">
-                                            <Button
-                                                variant="secondary"
-                                                onClick={() => setUndoingBatch(batch)}
-                                            >
-                                                Undo Import
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={4} className="text-center p-8 text-muted font-semibold">
-                                        You haven't imported any contacts yet.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </Card>
+        <div className="max-w-7xl mx-auto">
+            <CrmHeader>
+                <Button onClick={() => setImportOpen(true)}>
+                    <Icon name="upload" className="w-4 h-4 mr-2" /> Import Contacts
+                </Button>
+            </CrmHeader>
 
-            <Modal isOpen={!!undoingBatch} onClose={() => setUndoingBatch(null)} title="Confirm Undo Import">
+            {importBatches.length > 0 ? (
+                <div className="bg-canvas border border-border overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>File</TableHead>
+                                <TableHead>Imported</TableHead>
+                                <TableHead className="text-right">Contacts</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {importBatches.map(batch => {
+                                const left = remaining(batch.id);
+                                return (
+                                    <TableRow key={batch.id}>
+                                        <TableCell>
+                                            <span className="flex items-center gap-2 font-medium">
+                                                <Icon name="file" className="w-4 h-4 text-muted shrink-0" />
+                                                <span className="truncate max-w-[260px]">{batch.file_name}</span>
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="text-muted whitespace-nowrap">{formatDateTime(batch.created)}</TableCell>
+                                        <TableCell className="text-right tabular-nums">
+                                            {left}{left !== batch.contact_count && <span className="text-muted"> / {batch.contact_count}</span>}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="secondary" className="text-sm py-1 px-3 ml-auto" onClick={() => setUndoingBatch(batch)}>
+                                                Undo import
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+            ) : (
+                <EmptyState icon="upload" title="No imports yet" description="Import contacts from a CSV or Excel file. Every import can be undone from here.">
+                    <Button onClick={() => setImportOpen(true)}><Icon name="upload" className="w-4 h-4 mr-2" />Import Contacts</Button>
+                </EmptyState>
+            )}
+
+            <Modal isOpen={importOpen} onClose={() => setImportOpen(false)} title="Import Contacts">
+                <ImportModal onClose={() => setImportOpen(false)} />
+            </Modal>
+
+            <Modal isOpen={!!undoingBatch} onClose={() => setUndoingBatch(null)} title="Undo Import">
                 <p className="mb-6 text-charcoal">
-                    Are you sure you want to undo the import of <strong>{undoingBatch?.contact_count} contacts</strong> from the file "{undoingBatch?.file_name}"? This action will permanently delete these contacts and cannot be undone.
+                    Undo the import of <strong>{undoingBatch ? remaining(undoingBatch.id) : 0} contacts</strong> from “{undoingBatch?.file_name}”?
+                    This permanently deletes those contacts along with their deals, projects, invoices and notes.
                 </p>
                 <div className="flex justify-end space-x-2">
-                    <Button variant="secondary" onClick={() => setUndoingBatch(null)} disabled={loading}>
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="primary"
-                        onClick={handleUndoConfirm}
-                        disabled={loading}
-                    >
-                        {loading ? 'Deleting...' : 'Yes, Undo Import'}
+                    <Button variant="secondary" onClick={() => setUndoingBatch(null)} disabled={loading}>Cancel</Button>
+                    <Button variant="danger" onClick={handleUndoConfirm} disabled={loading}>
+                        {loading ? 'Deleting...' : 'Yes, undo import'}
                     </Button>
                 </div>
             </Modal>

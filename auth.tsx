@@ -42,6 +42,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             }
 
+            // Refresh a stored session: extends the token and picks up changes
+            // made elsewhere (name, verified flag). A rejected token (deleted
+            // user, changed password) signs out; a network blip keeps the
+            // cached session so the app still opens offline-ish.
+            if (pb.authStore.isValid) {
+                try {
+                    await pb.collection('users').authRefresh({ requestKey: null });
+                } catch (err: unknown) {
+                    const status = (err as { status?: number })?.status;
+                    if (status === 401 || status === 403 || status === 404) pb.authStore.clear();
+                }
+            }
+
             if (pb.authStore.isValid && pb.authStore.model) {
                 const model = pb.authStore.model as unknown as PBAuthModel;
                 setSession({
@@ -88,7 +101,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }), [session]);
 
     if (loading) {
-        return <div className="min-h-screen bg-brand-light flex items-center justify-center font-bold text-2xl">Authenticating...</div>;
+        return <div className="min-h-screen bg-canvas flex items-center justify-center font-display text-3xl text-charcoal animate-pulse">BareStack<span className="italic">OS</span></div>;
     }
 
     return (

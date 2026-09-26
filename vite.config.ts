@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
             manualChunks: {
               'vendor-react': ['react', 'react-dom', 'react-router-dom'],
               'vendor-pocketbase': ['pocketbase'],
-              'vendor-utils': ['date-fns', 'xlsx', 'jszip', 'file-saver', 'zod'],
+              'vendor-utils': ['date-fns', 'zod'],
             },
           },
         },
@@ -41,7 +41,8 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         host: true,
         strictPort: true,
-        allowedHosts: ['test.barestack.org', 'app.barestack.org'],
+        // Extra hosts can be allowed with PREVIEW_ALLOWED_HOSTS=host1,host2
+        allowedHosts: ['test.barestack.org', 'app.barestack.org', ...(env.PREVIEW_ALLOWED_HOSTS || '').split(',').map(h => h.trim()).filter(Boolean)],
         headers: {
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'DENY',

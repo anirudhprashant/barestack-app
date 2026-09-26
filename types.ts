@@ -1,14 +1,20 @@
-export type Creatable<T> = Omit<T, 'id' | 'user_id' | 'created_at'>;
-
-export interface Contact {
+// Fields PocketBase manages itself. `created` / `updated` are autodate fields
+// (empty on rows that predate migration 1780800000).
+interface ServerFields {
   id?: string;
-  user_id?: string;
+  user?: string;
+  created?: string;
+  updated?: string;
+}
+
+export type Creatable<T> = Omit<T, 'id' | 'user' | 'created' | 'updated'>;
+
+export interface Contact extends ServerFields {
   name: string;
   email: string;
   phone: string;
   company: string;
   tags: string[];
-  created_at?: string;
   import_batch_id?: string;
 }
 
@@ -20,14 +26,13 @@ export enum DealStage {
   Lost = 'Lost',
 }
 
-export interface Deal {
-  id?: string;
-  user_id?: string;
+export interface Deal extends ServerFields {
   contact_id: string;
+  title?: string;
   value: number;
   stage: DealStage;
   last_interaction: string; // ISO date string
-  created_at?: string;
+  expected_close?: string; // date-only
 }
 
 export enum ProjectStatus {
@@ -36,15 +41,15 @@ export enum ProjectStatus {
   Completed = 'Completed'
 }
 
-export interface Project {
-  id?: string;
-  user_id?: string;
+export interface Project extends ServerFields {
   name: string;
   client_id: string;
   status: ProjectStatus;
   budget: number;
   estimated_hours: number;
-  created_at?: string;
+  hourly_rate?: number;
+  description?: string;
+  due_date?: string; // date-only
 }
 
 export enum TaskStatus {
@@ -53,16 +58,21 @@ export enum TaskStatus {
   Done = 'Done'
 }
 
-export interface Task {
-  id?: string;
-  user_id?: string;
+export enum TaskPriority {
+  Low = 'Low',
+  Medium = 'Medium',
+  High = 'High',
+}
+
+export interface Task extends ServerFields {
   project_id: string;
   title: string;
+  description?: string;
   assigned_to: string; // userId
-  due_date: string; // ISO date string
+  due_date: string; // date-only
   estimated_hours: number;
   status: TaskStatus;
-  created_at?: string;
+  priority?: TaskPriority | '';
 }
 
 export enum InvoiceStatus {
@@ -79,31 +89,27 @@ export interface LineItem {
   rate: number;
 }
 
-export interface Invoice {
-  id?: string;
-  user_id?: string;
+export interface Invoice extends ServerFields {
   invoice_number: string;
   client_id: string;
-  issue_date: string; // ISO date string
-  due_date: string; // ISO date string
+  issue_date: string; // date-only
+  due_date: string; // date-only
   line_items: LineItem[];
   tax_rate: number; // percentage
   status: InvoiceStatus;
   paid_date?: string;
   payment_method?: string;
-  created_at?: string;
+  notes?: string;
 }
 
-export interface TimeEntry {
-  id?: string;
-  user_id?: string;
+export interface TimeEntry extends ServerFields {
   project_id: string;
   task_id: string;
-  date: string; // ISO date string
+  date: string; // date-only
   hours: number;
   description: string;
   is_billable: boolean;
-  created_at?: string;
+  invoice_id?: string; // set once billed
 }
 
 export enum ExpenseCategory {
@@ -114,40 +120,65 @@ export enum ExpenseCategory {
   Other = 'Other'
 }
 
-export interface Expense {
-  id?: string;
-  user_id?: string;
-  date: string; // ISO date string
+export interface Expense extends ServerFields {
+  date: string; // date-only
   category: ExpenseCategory;
   amount: number;
   description: string;
   project_id?: string;
   receipt_url?: string;
-  created_at?: string;
 }
 
-export interface RecentActivity {
-  id?: string;
-  user_id?: string;
+// Keep in sync with pb_migrations/1780800000_v1_1_schema.js,
+// pb_hooks/integrity.pb.js and src/lib/validation.ts (checked by a unit test).
+export const ACTIVITY_TYPES = [
+  'CONTACT_ADDED',
+  'PROJECT_CREATED',
+  'INVOICE_CREATED',
+  'INVOICE_UPDATED',
+  'INVOICE_SENT',
+  'INVOICE_PAID',
+  'INVOICE_DELETED',
+  'TASK_COMPLETED',
+  'DEAL_ADDED',
+  'DEAL_WON',
+  'EXPENSE_ADDED',
+  'TIME_LOGGED',
+] as const;
+
+export type ActivityType = typeof ACTIVITY_TYPES[number];
+
+export interface RecentActivity extends ServerFields {
   timestamp: string; // ISO date string
-  type: 'CONTACT_ADDED' | 'PROJECT_CREATED' | 'INVOICE_CREATED' | 'INVOICE_UPDATED' | 'INVOICE_SENT' | 'INVOICE_DELETED' | 'TASK_COMPLETED' | 'DEAL_ADDED' | 'EXPENSE_ADDED';
+  type: ActivityType;
   description: string;
 }
 
-export interface Note {
+export interface Note extends ServerFields {
   id: string;
-  user_id: string;
   contact_id: string;
   content: string;
-  created_at: string;
 }
 
-export interface ImportBatch {
+export interface ImportBatch extends ServerFields {
   id: string;
-  user_id: string;
-  created_at: string;
   contact_count: number;
   file_name: string;
+}
+
+export interface BusinessProfile extends ServerFields {
+  business_name: string;
+  address: string;
+  email: string;
+  phone: string;
+  website: string;
+  tax_id: string;
+  currency: string; // ISO 4217, e.g. USD
+  default_tax_rate: number;
+  payment_terms_days: number;
+  payment_instructions: string;
+  invoice_prefix: string;
+  invoice_footer: string;
 }
 
 export interface AppState {
@@ -161,6 +192,7 @@ export interface AppState {
   recentActivity: RecentActivity[];
   notes: Note[];
   importBatches: ImportBatch[];
+  businessProfile: BusinessProfile;
   userProfile: UserProfile;
 }
 

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ACTIVITY_TYPES } from '../../types';
 
 // Sanitize and validate IDs to prevent filter injection
 export const safeId = z.string().regex(/^[a-zA-Z0-9_-]+$/, 'Invalid ID format');
@@ -176,6 +177,8 @@ const COLLECTION_RULES: Record<string, Record<string, FieldRule>> = {
         stage: { kind: 'select', values: ['Lead', 'Qualified', 'Proposal', 'Won', 'Lost'] as const },
         value: { kind: 'num', min: 0, max: 1e15 },
         last_interaction: { kind: 'text', max: 100 },
+        title: { kind: 'text', max: 500 },
+        expected_close: { kind: 'text', max: 100 },
     },
     projects: {
         name: { kind: 'text', max: 500 },
@@ -183,6 +186,9 @@ const COLLECTION_RULES: Record<string, Record<string, FieldRule>> = {
         status: { kind: 'select', values: ['Active', 'Completed', 'Archived'] as const },
         budget: { kind: 'num', min: 0, max: 1e15 },
         estimated_hours: { kind: 'num', min: 0, max: 1e9 },
+        hourly_rate: { kind: 'num', min: 0, max: 1e15 },
+        description: { kind: 'text', max: 5000 },
+        due_date: { kind: 'text', max: 100 },
     },
     tasks: {
         title: { kind: 'text', max: 1000 },
@@ -190,6 +196,8 @@ const COLLECTION_RULES: Record<string, Record<string, FieldRule>> = {
         assigned_to: { kind: 'text', max: 200 },
         due_date: { kind: 'text', max: 100 },
         status: { kind: 'select', values: ['To Do', 'In Progress', 'Done'] as const },
+        priority: { kind: 'select', values: ['Low', 'Medium', 'High'] as const },
+        description: { kind: 'text', max: 5000 },
     },
     invoices: {
         invoice_number: { kind: 'text', max: 100 },
@@ -201,6 +209,7 @@ const COLLECTION_RULES: Record<string, Record<string, FieldRule>> = {
         status: { kind: 'select', values: ['Draft', 'Sent', 'Paid', 'Overdue'] as const },
         tax_rate: { kind: 'num', min: 0, max: 100 },
         line_items: { kind: 'json_array', maxItems: 500, item: { description: 500, quantity: 1e9, rate: 1e15 } },
+        notes: { kind: 'text', max: 5000 },
     },
     time_entries: {
         project_id: { kind: 'text', max: 100 },
@@ -208,6 +217,7 @@ const COLLECTION_RULES: Record<string, Record<string, FieldRule>> = {
         description: { kind: 'text', max: 5000 },
         date: { kind: 'text', max: 100 },
         hours: { kind: 'num', min: 0, max: 1e9 },
+        invoice_id: { kind: 'text', max: 100 },
     },
     expenses: {
         project_id: { kind: 'text', max: 100 },
@@ -226,12 +236,26 @@ const COLLECTION_RULES: Record<string, Record<string, FieldRule>> = {
         description: { kind: 'text', max: 2000 },
         type: {
             kind: 'select',
-            values: ['CONTACT_ADDED', 'PROJECT_CREATED', 'INVOICE_CREATED', 'INVOICE_SENT', 'TASK_COMPLETED', 'DEAL_ADDED', 'EXPENSE_ADDED'] as const,
+            values: ACTIVITY_TYPES,
         },
     },
     import_batches: {
         file_name: { kind: 'text', max: 500 },
         contact_count: { kind: 'num', min: 0, max: 1e9 },
+    },
+    business_profiles: {
+        business_name: { kind: 'text', max: 500 },
+        address: { kind: 'text', max: 2000 },
+        email: { kind: 'text', max: 500 },
+        phone: { kind: 'text', max: 100 },
+        website: { kind: 'text', max: 500 },
+        tax_id: { kind: 'text', max: 200 },
+        currency: { kind: 'text', max: 3 },
+        default_tax_rate: { kind: 'num', min: 0, max: 100 },
+        payment_terms_days: { kind: 'num', min: 0, max: 365 },
+        payment_instructions: { kind: 'text', max: 2000 },
+        invoice_prefix: { kind: 'text', max: 20 },
+        invoice_footer: { kind: 'text', max: 500 },
     },
 };
 
