@@ -1,6 +1,23 @@
 import { pb, onAuthChange } from './pocketbase';
 import type { PBAuthModel } from '../types/pb-types';
 
+// PocketBase puts the useful part of a validation error in response.data
+// (e.g. { email: { message: "The email is invalid or already in use." } }).
+// Surface that instead of the generic "Failed to create record.".
+export function describeError(err: unknown, fallback: string): string {
+    const e = err as { status?: number; message?: string; response?: { message?: string; data?: Record<string, { message?: string }> } };
+    if (e?.status === 0) return 'Could not reach the server. Check your connection and try again.';
+    const fields = e?.response?.data;
+    if (fields && typeof fields === 'object') {
+        const msgs = Object.entries(fields)
+            .map(([field, v]) => (v?.message ? `${field === 'passwordConfirm' ? 'password' : field}: ${v.message}` : ''))
+            .filter(Boolean);
+        if (msgs.length) return msgs.join(' ');
+    }
+    if (e?.status === 400 && /authenticate/i.test(e?.response?.message || e?.message || '')) return 'Incorrect email or password.';
+    return e?.response?.message || e?.message || fallback;
+}
+
 export interface AuthResult {
     user?: PBAuthModel;
     token?: string;
@@ -16,7 +33,7 @@ export async function signIn(email: string, password: string): Promise<AuthResul
             token: authData.token,
         };
     } catch (err: unknown) {
-        return { error: (err as Error).message || 'Sign-in failed' };
+        return { error: describeError(err, 'Sign-in failed') };
     }
 }
 
@@ -39,7 +56,7 @@ export async function signUp(email: string, password: string, name: string): Pro
             token: authData.token,
         };
     } catch (err: unknown) {
-        return { error: (err as Error).message || 'Sign-up failed' };
+        return { error: describeError(err, 'Sign-up failed') };
     }
 }
 

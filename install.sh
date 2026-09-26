@@ -121,10 +121,12 @@ echo "🚀 Starting BareStack CRM..."
 #   - restrict origins with --origins=https://your-app-domain.example
 #   - set --publicUrl=https://api.your-domain.example
 # so the API and admin console aren't reachable over plaintext.
-./pocketbase serve --dir ./pb_data --migrationsDir ./pb_migrations --http="0.0.0.0:${PB_PORT}" &
+./pocketbase serve --dir ./pb_data --migrationsDir ./pb_migrations --hooksDir ./pb_hooks --http="0.0.0.0:${PB_PORT}" &
 PB_PID=\$!
 sleep 2
-npm run preview -- --port 8080 --host 0.0.0.0 &
+# serve.cjs is the production static server: security headers, gzip, caching,
+# SPA routing, and no host allow-list (vite preview only accepts known hosts).
+PORT=8080 node serve.cjs &
 APP_PID=\$!
 echo ""
 echo "✅ BareStack CRM running!"

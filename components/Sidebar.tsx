@@ -32,6 +32,7 @@ const SidebarContent: React.FC<{
                 <NavLink
                     key={item.href}
                     to={item.href}
+                    end={item.href === '/'}
                     onClick={onNavigate}
                     className={({ isActive }) =>
                         `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-150 rounded-none ${isActive
@@ -86,7 +87,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
     const userName = data.userProfile.name || data.userProfile.email || 'User';
     const userEmail = data.userProfile.email || '';
-    const userInitial = userName[0].toUpperCase();
+    const userInitial = (userName[0] || 'U').toUpperCase();
 
     const iconMap: Record<string, React.ReactNode> = {
         grid: <Icons.LayoutGrid className="w-4 h-4" />,

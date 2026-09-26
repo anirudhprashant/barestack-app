@@ -1,8 +1,8 @@
 {
   "name": "barestack-crm",
-  "description": "Modern CRM for agencies and freelancers with React, TypeScript, and PocketBase",
+  "description": "Open-source business OS for agencies and freelancers: CRM, projects, time tracking, invoicing, expenses and reports. React, TypeScript and PocketBase.",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "license": "AGPL-3.0-only",
   "repository": {

@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 
 const PORT = process.env.PORT || 8084;
 const DIST_DIR = path.join(__dirname, 'dist');
@@ -16,7 +17,16 @@ const mimeTypes = {
   '.ico': 'image/x-icon',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.txt': 'text/plain; charset=utf-8',
+  '.webmanifest': 'application/manifest+json',
+  '.map': 'application/json',
 };
+
+// Text-ish responses worth compressing.
+const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.txt', '.webmanifest', '.map', '.ico']);
 
 // PocketBase runs on a different origin (its own host/port), so the browser
 // must be allowed to talk to it. Override via CSP_CONNECT_SRC when the backend
@@ -32,6 +42,8 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob:",
+  // The invoice preview renders the generated PDF in an iframe from a blob: URL.
+  "frame-src 'self' blob:",
   `connect-src ${CONNECT_SRC}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
@@ -80,6 +92,11 @@ const server = http.createServer((req, res) => {
 
   const ext = path.extname(filePath);
   const contentType = mimeTypes[ext] || 'application/octet-stream';
+  // Vite fingerprints everything under /assets, so those can be cached
+  // forever; index.html must always be revalidated to pick up new deploys.
+  const cacheControl = filePath.startsWith(path.join(DIST_DIR, 'assets') + path.sep)
+    ? 'public, max-age=31536000, immutable'
+    : 'no-cache';
 
   fs.readFile(filePath, (err, content) => {
     if (err) {
@@ -87,8 +104,22 @@ const server = http.createServer((req, res) => {
       res.end('Not found');
       return;
     }
-    res.writeHead(200, { ...securityHeaders, 'Content-Type': contentType });
-    res.end(content);
+    const headers = { ...securityHeaders, 'Content-Type': contentType, 'Cache-Control': cacheControl, 'Vary': 'Accept-Encoding' };
+    const acceptsGzip = /\bgzip\b/.test(req.headers['accept-encoding'] || '');
+    if (acceptsGzip && COMPRESSIBLE.has(ext) && content.length > 1024) {
+      zlib.gzip(content, (zerr, gz) => {
+        if (zerr) {
+          res.writeHead(200, headers);
+          res.end(req.method === 'HEAD' ? undefined : content);
+          return;
+        }
+        res.writeHead(200, { ...headers, 'Content-Encoding': 'gzip' });
+        res.end(req.method === 'HEAD' ? undefined : gz);
+      });
+      return;
+    }
+    res.writeHead(200, headers);
+    res.end(req.method === 'HEAD' ? undefined : content);
   });
 });
 

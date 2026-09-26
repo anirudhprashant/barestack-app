@@ -1,31 +1,130 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Icon, Modal, Input } from './ui';
-import { Invoice, InvoiceStatus, Contact } from '../types';
-import { useData } from '../dataStore';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { addDays, format } from 'date-fns';
+import { Button, Icon, IconButton, Modal, Input, Select, Textarea } from './ui';
+import { Invoice, InvoiceStatus, Contact, LineItem, TimeEntry } from '../types';
+import { useData, useCurrency } from '../dataStore';
 import { useToast } from '../src/context/ToastContext';
 import { ContactForm } from './ContactForm';
-import { addDays } from 'date-fns';
+import { formatMoney, currencySymbol, formatHours } from '../src/lib/format';
+import { toDateInput, toStoredDate, todayInput, parseDateOnly, formatDateOnly } from '../src/lib/dates';
+import { invoiceSubtotal, invoiceTax, invoiceTotal, lineItemAmount, nextInvoiceNumber, newLineItemId } from '../src/lib/invoice';
 
-export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice }> = ({ onClose, initialData }) => {
-    const { data, addInvoice, updateInvoice, addRecentActivity } = useData();
+interface InvoiceFormProps {
+    onClose: () => void;
+    initialData?: Invoice;
+    initialClientId?: string;
+    // Pre-select unbilled time entries (e.g. "Bill time" from a project).
+    initialTimeEntryIds?: string[];
+    onSaved?: (invoice: Invoice) => void;
+}
+
+interface DraftItem {
+    id: string;
+    description: string;
+    quantity: string;
+    rate: string;
+}
+
+const toDraft = (li: LineItem): DraftItem => ({
+    id: li.id || newLineItemId(),
+    description: li.description,
+    quantity: String(li.quantity ?? ''),
+    rate: String(li.rate ?? ''),
+});
+
+const blankItem = (): DraftItem => ({ id: newLineItemId(), description: '', quantity: '1', rate: '' });
+
+export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, initialData, initialClientId, initialTimeEntryIds, onSaved }) => {
+    const { data, addInvoice, updateInvoice, updateTimeEntry, addRecentActivity } = useData();
+    const currency = useCurrency();
+    const profile = data.businessProfile;
     const { toast } = useToast();
-    const [clientId, setClientId] = useState(initialData?.client_id || '');
-    const [issueDate, setIssueDate] = useState(initialData?.issue_date ? new Date(initialData.issue_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-    const [dueDate, setDueDate] = useState(initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : addDays(new Date(), 30).toISOString().split('T')[0]);
+    const isEditing = !!initialData?.id;
 
-    const firstItem = initialData?.line_items[0];
-    const [description, setDescription] = useState(firstItem?.description || 'Consulting Services');
-    const [rate, setRate] = useState(firstItem?.rate.toString() || '100');
-    const [quantity, setQuantity] = useState(firstItem?.quantity.toString() || '1');
-
+    const [clientId, setClientId] = useState(initialData?.client_id || initialClientId || data.contacts[0]?.id || '');
+    const [invoiceNumber, setInvoiceNumber] = useState(
+        initialData?.invoice_number || nextInvoiceNumber(data.invoices.map(i => i.invoice_number), profile.invoice_prefix || '')
+    );
+    const [issueDate, setIssueDate] = useState(initialData ? toDateInput(initialData.issue_date) : todayInput());
+    const [dueDate, setDueDate] = useState(
+        initialData ? toDateInput(initialData.due_date) : format(addDays(new Date(), profile.payment_terms_days ?? 30), 'yyyy-MM-dd')
+    );
+    const [status, setStatus] = useState<InvoiceStatus>(initialData?.status || InvoiceStatus.Draft);
+    const [taxRate, setTaxRate] = useState(String(initialData ? initialData.tax_rate ?? 0 : profile.default_tax_rate || 0));
+    const [notes, setNotes] = useState(initialData?.notes || '');
+    const [items, setItems] = useState<DraftItem[]>(
+        initialData?.line_items?.length ? initialData.line_items.map(toDraft) : [blankItem()]
+    );
+    // Time entries this invoice will mark as billed on save.
+    const [billedEntryIds, setBilledEntryIds] = useState<Set<string>>(new Set());
+    const [timePickerOpen, setTimePickerOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
 
-    useEffect(() => {
-        if (data.contacts.length > 0 && !clientId && !initialData) {
-            setClientId(data.contacts[0].id!);
+    const parsedItems: LineItem[] = items.map(i => ({
+        id: i.id,
+        description: i.description.trim(),
+        quantity: parseFloat(i.quantity) || 0,
+        rate: parseFloat(i.rate) || 0,
+    }));
+    const totals = { line_items: parsedItems, tax_rate: parseFloat(taxRate) || 0 };
+
+    const unbilled = useMemo(() => {
+        const projectIds = new Set(data.projects.filter(p => p.client_id === clientId).map(p => p.id));
+        return data.timeEntries.filter(te => te.is_billable && !te.invoice_id && projectIds.has(te.project_id) && !billedEntryIds.has(te.id!));
+    }, [data.timeEntries, data.projects, clientId, billedEntryIds]);
+
+    const addTimeAsItems = (entries: TimeEntry[]) => {
+        if (entries.length === 0) return;
+        const byProject = new Map<string, TimeEntry[]>();
+        for (const te of entries) {
+            byProject.set(te.project_id, [...(byProject.get(te.project_id) || []), te]);
         }
-    }, [data.contacts, clientId, initialData]);
+        const newItems: DraftItem[] = [];
+        for (const [projectId, list] of byProject) {
+            const project = data.projects.find(p => p.id === projectId);
+            const hours = Math.round(list.reduce((s, te) => s + te.hours, 0) * 100) / 100;
+            const dates = list.map(te => parseDateOnly(te.date)).filter(Boolean) as Date[];
+            const min = dates.length ? new Date(Math.min(...dates.map(d => d.getTime()))) : null;
+            const max = dates.length ? new Date(Math.max(...dates.map(d => d.getTime()))) : null;
+            const range = min && max ? (min.getTime() === max.getTime() ? format(min, 'MMM d') : `${format(min, 'MMM d')} – ${format(max, 'MMM d')}`) : '';
+            newItems.push({
+                id: newLineItemId(),
+                description: `${project?.name || 'Project'} time${range ? ` (${range})` : ''}`,
+                quantity: String(hours),
+                rate: project?.hourly_rate ? String(project.hourly_rate) : '',
+            });
+        }
+        // Replace a single untouched blank row instead of leaving it dangling.
+        setItems(prev => {
+            const onlyBlank = prev.length === 1 && !prev[0].description && !prev[0].rate;
+            return onlyBlank ? newItems : [...prev, ...newItems];
+        });
+        setBilledEntryIds(prev => new Set([...prev, ...entries.map(e => e.id!)]));
+    };
+
+    // Honour pre-selected entries once. The ref guard keeps StrictMode's
+    // double-invoked effects from adding the lines twice.
+    const seeded = useRef(false);
+    useEffect(() => {
+        if (seeded.current || !initialTimeEntryIds?.length) return;
+        seeded.current = true;
+        const pre = data.timeEntries.filter(te => initialTimeEntryIds.includes(te.id!) && !te.invoice_id);
+        addTimeAsItems(pre);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const updateItem = (id: string, field: keyof DraftItem, value: string) => {
+        setItems(prev => prev.map(i => (i.id === id ? { ...i, [field]: value } : i)));
+    };
+
+    const handleIssueDateChange = (value: string) => {
+        setIssueDate(value);
+        // Keep the payment window when the issue date moves (new invoices only).
+        if (!isEditing && value) {
+            setDueDate(format(addDays(parseDateOnly(value)!, profile.payment_terms_days ?? 30), 'yyyy-MM-dd'));
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,68 +132,74 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
             toast('Please select a client.', 'error');
             return;
         }
+        const lineItems = parsedItems.filter(li => li.description || li.quantity * li.rate !== 0);
+        if (lineItems.length === 0) {
+            toast('Add at least one line item.', 'error');
+            return;
+        }
+        if (lineItems.some(li => !li.description)) {
+            toast('Every line item needs a description.', 'error');
+            return;
+        }
+        const number = invoiceNumber.trim();
+        if (!number) {
+            toast('Invoice number is required.', 'error');
+            return;
+        }
+        if (data.invoices.some(i => i.invoice_number === number && i.id !== initialData?.id)) {
+            toast(`Invoice ${number} already exists.`, 'error');
+            return;
+        }
+        if (dueDate && issueDate && dueDate < issueDate) {
+            toast('Due date is before the issue date.', 'error');
+            return;
+        }
+
         setLoading(true);
+        const clientName = data.contacts.find(c => c.id === clientId)?.name || 'Unknown';
+        const payload = {
+            invoice_number: number,
+            client_id: clientId,
+            issue_date: toStoredDate(issueDate),
+            due_date: toStoredDate(dueDate || issueDate),
+            line_items: lineItems,
+            tax_rate: Math.min(100, Math.max(0, parseFloat(taxRate) || 0)),
+            status,
+            notes: notes.trim(),
+            paid_date: status === InvoiceStatus.Paid ? (initialData?.paid_date || toStoredDate(new Date())) : '',
+        };
 
         try {
-            const lineItems = [{
-                id: initialData?.line_items[0]?.id || `li${Date.now()}`,
-                description,
-                quantity: parseFloat(quantity),
-                rate: parseFloat(rate)
-            }];
-
-            if (initialData) {
-                const updatedInvoice: Invoice = {
-                    ...initialData,
-                    client_id: clientId,
-                    issue_date: new Date(issueDate).toISOString(),
-                    due_date: new Date(dueDate).toISOString(),
-                    line_items: lineItems,
-                };
-                await updateInvoice(updatedInvoice);
-                try {
-                    await addRecentActivity({
-                        timestamp: new Date().toISOString(),
-                        type: 'INVOICE_UPDATED',
-                        description: `Updated invoice ${updatedInvoice.invoice_number}`
-                    });
-                } catch (logError) {
-                    console.error("Failed to log activity:", logError);
-                }
+            let saved: Invoice;
+            if (isEditing) {
+                saved = await updateInvoice({ id: initialData!.id!, ...payload });
+                const becamePaid = status === InvoiceStatus.Paid && initialData!.status !== InvoiceStatus.Paid;
+                addRecentActivity({
+                    type: becamePaid ? 'INVOICE_PAID' : 'INVOICE_UPDATED',
+                    description: becamePaid ? `Invoice ${number} marked as paid` : `Updated invoice ${number}`,
+                });
             } else {
-                const lastInvoiceNumber = data.invoices.reduce((max, inv) => {
-                    const num = parseInt(inv.invoice_number.split('-')[1]);
-                    return num > max ? num : max;
-                }, 0);
+                saved = await addInvoice(payload);
+                addRecentActivity({
+                    type: 'INVOICE_CREATED',
+                    description: `Created invoice ${number} for ${clientName}`,
+                });
+            }
 
-                const newInvoice: Omit<Invoice, 'id' | 'user_id' | 'created_at'> = {
-                    invoice_number: `${new Date().getFullYear()}-${String(lastInvoiceNumber + 1).padStart(3, '0')}`,
-                    client_id: clientId,
-                    issue_date: new Date(issueDate).toISOString(),
-                    due_date: new Date(dueDate).toISOString(),
-                    line_items: lineItems,
-                    tax_rate: 0,
-                    status: InvoiceStatus.Draft,
-                };
-
-                await addInvoice(newInvoice);
-                const clientName = data.contacts.find(c => c.id === clientId)?.name || 'Unknown';
-
-                try {
-                    await addRecentActivity({
-                        timestamp: new Date().toISOString(),
-                        type: 'INVOICE_CREATED',
-                        description: `Created new invoice ${newInvoice.invoice_number} for ${clientName}`
-                    });
-                } catch (logError) {
-                    console.error("Failed to log activity:", logError);
+            if (billedEntryIds.size > 0) {
+                const results = await Promise.allSettled(
+                    [...billedEntryIds].map(id => updateTimeEntry({ id, invoice_id: saved.id! }))
+                );
+                if (results.some(r => r.status === 'rejected')) {
+                    toast('Invoice saved, but some time entries could not be marked as billed.', 'error');
                 }
             }
 
-            toast('Invoice saved', 'success');
+            toast(isEditing ? 'Invoice updated' : 'Invoice created', 'success');
+            onSaved?.(saved);
             onClose();
         } catch (error) {
-            console.error("Failed to save invoice:", error);
+            console.error('Failed to save invoice:', error);
             toast('An error occurred while saving the invoice.', 'error');
         } finally {
             setLoading(false);
@@ -106,54 +211,185 @@ export const InvoiceForm: React.FC<{ onClose: () => void; initialData?: Invoice 
         setIsAddClientModalOpen(false);
     };
 
+    const sym = currencySymbol(currency);
+
     return (
         <>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label htmlFor="client" className="block text-sm font-semibold text-charcoal mb-1.5">Client</label>
-                    <div className="flex space-x-2">
-                        <div className="flex-grow">
-                            <select
-                                id="client"
+            <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="sm:col-span-2">
+                        <label htmlFor="invoice-client" className="block text-sm font-semibold text-charcoal mb-1.5">Client</label>
+                        <div className="flex space-x-2">
+                            <Select
+                                id="invoice-client"
+                                className="flex-grow"
                                 value={clientId}
-                                onChange={e => setClientId(e.target.value)}
+                                onChange={e => { setClientId(e.target.value); setBilledEntryIds(new Set()); }}
                                 required
-                                className="w-full p-2.5 bg-canvas text-charcoal rounded-none border border-border focus:outline-none focus:border-content focus:border-2 appearance-none bg-no-repeat bg-right pr-8 transition-colors"
-                                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23141C11' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")` }}
+                                disabled={billedEntryIds.size > 0}
                             >
-                                <option value="" disabled>Select a Client</option>
-                                {data.contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
+                                <option value="" disabled>Select a client</option>
+                                {data.contacts.map(c => <option key={c.id} value={c.id}>{c.name}{c.company ? ` (${c.company})` : ''}</option>)}
+                            </Select>
+                            <Button type="button" variant="secondary" onClick={() => setIsAddClientModalOpen(true)} title="Add new client" aria-label="Add new client">
+                                <Icon name="plus" className="w-5 h-5" />
+                            </Button>
                         </div>
-                        <Button type="button" variant="secondary" onClick={() => setIsAddClientModalOpen(true)} title="Add New Client">
-                            <Icon name="plus" className="w-5 h-5" />
-                        </Button>
+                    </div>
+                    <Input label="Invoice #" id="invoice-number" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} required />
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <Input label="Issue date" id="issueDate" type="date" value={issueDate} onChange={e => handleIssueDateChange(e.target.value)} required />
+                    <Input label="Due date" id="dueDate" type="date" value={dueDate} min={issueDate} onChange={e => setDueDate(e.target.value)} required />
+                    <Select label="Status" id="invoice-status" className="col-span-2 sm:col-span-1" value={status} onChange={e => setStatus(e.target.value as InvoiceStatus)}>
+                        {Object.values(InvoiceStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                    </Select>
+                </div>
+
+                <div className="border-t border-border pt-4">
+                    <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                        <h4 className="text-sm font-semibold text-charcoal">Line items</h4>
+                        {(unbilled.length > 0) && (
+                            <button type="button" onClick={() => setTimePickerOpen(true)} className="text-xs font-semibold text-accent hover:underline flex items-center gap-1">
+                                <Icon name="clock" className="w-3.5 h-3.5" />
+                                Add unbilled time ({formatHours(unbilled.reduce((s, te) => s + te.hours, 0))})
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="hidden sm:grid grid-cols-[1fr_80px_110px_110px_32px] gap-2 text-xs font-semibold uppercase tracking-wider text-muted mb-1.5 px-0.5">
+                        <span>Description</span><span>Qty</span><span>Rate ({sym})</span><span className="text-right">Amount</span><span />
+                    </div>
+                    <div className="space-y-3 sm:space-y-2">
+                        {items.map((item, idx) => (
+                            <div key={item.id} className="grid grid-cols-[1fr_1fr_32px] sm:grid-cols-[1fr_80px_110px_110px_32px] gap-2 items-center border sm:border-0 border-border p-2 sm:p-0">
+                                <input
+                                    aria-label={`Line ${idx + 1} description`}
+                                    className="col-span-3 sm:col-span-1 min-w-0 w-full p-2 bg-canvas border border-border text-sm focus:outline-none focus:border-content"
+                                    placeholder="Description"
+                                    value={item.description}
+                                    onChange={e => updateItem(item.id, 'description', e.target.value)}
+                                />
+                                <input
+                                    aria-label={`Line ${idx + 1} quantity`}
+                                    type="number" step="any" min="0"
+                                    className="min-w-0 w-full p-2 bg-canvas border border-border text-sm tabular-nums focus:outline-none focus:border-content"
+                                    placeholder="Qty"
+                                    value={item.quantity}
+                                    onChange={e => updateItem(item.id, 'quantity', e.target.value)}
+                                />
+                                <input
+                                    aria-label={`Line ${idx + 1} rate`}
+                                    type="number" step="0.01"
+                                    className="min-w-0 w-full p-2 bg-canvas border border-border text-sm tabular-nums focus:outline-none focus:border-content"
+                                    placeholder="Rate"
+                                    value={item.rate}
+                                    onChange={e => updateItem(item.id, 'rate', e.target.value)}
+                                />
+                                <span className="hidden sm:block text-right text-sm font-semibold tabular-nums">
+                                    {formatMoney(lineItemAmount({ quantity: parseFloat(item.quantity) || 0, rate: parseFloat(item.rate) || 0 }), currency)}
+                                </span>
+                                <IconButton
+                                    icon="x"
+                                    label={`Remove line ${idx + 1}`}
+                                    onClick={() => setItems(prev => (prev.length > 1 ? prev.filter(i => i.id !== item.id) : [blankItem()]))}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                    <button type="button" onClick={() => setItems(prev => [...prev, blankItem()])} className="mt-3 text-sm font-semibold text-charcoal hover:underline flex items-center gap-1">
+                        <Icon name="plus" className="w-4 h-4" /> Add line
+                    </button>
+                    {billedEntryIds.size > 0 && (
+                        <p className="text-xs text-muted mt-2">
+                            {billedEntryIds.size} time entr{billedEntryIds.size === 1 ? 'y' : 'ies'} will be marked as billed.{' '}
+                            <button type="button" className="underline" onClick={() => setBilledEntryIds(new Set())}>Don't mark</button>
+                        </p>
+                    )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-5 sm:items-start border-t border-border pt-4">
+                    <Textarea
+                        label="Notes"
+                        hint="shown on the invoice"
+                        id="invoice-notes"
+                        className="flex-1"
+                        rows={3}
+                        value={notes}
+                        onChange={e => setNotes(e.target.value)}
+                        placeholder="Thanks for your business!"
+                    />
+                    <div className="sm:w-64 space-y-2 text-sm">
+                        <div className="flex justify-between"><span className="text-muted">Subtotal</span><span className="tabular-nums font-medium">{formatMoney(invoiceSubtotal(totals), currency)}</span></div>
+                        <div className="flex justify-between items-center gap-2">
+                            <label htmlFor="taxRate" className="text-muted">Tax %</label>
+                            <input id="taxRate" type="number" min="0" max="100" step="0.01" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="w-20 p-1.5 bg-canvas border border-border text-right tabular-nums focus:outline-none focus:border-content" />
+                            <span className="tabular-nums font-medium ml-auto">{formatMoney(invoiceTax(totals), currency)}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-charcoal pt-2 text-base"><span className="font-bold">Total</span><span className="tabular-nums font-bold">{formatMoney(invoiceTotal(totals), currency)}</span></div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label="Issue Date" id="issueDate" type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} required />
-                    <Input label="Due Date" id="dueDate" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} required />
-                </div>
-
-                <div className="border-t border-border pt-4 mt-2">
-                    <h4 className="text-sm font-semibold text-charcoal mb-3">Line Item</h4>
-                    <Input label="Description" id="description" value={description} onChange={e => setDescription(e.target.value)} required />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
-                        <Input label="Quantity" id="quantity" type="number" step="0.1" value={quantity} onChange={e => setQuantity(e.target.value)} required />
-                        <Input label="Rate ($)" id="rate" type="number" step="0.01" value={rate} onChange={e => setRate(e.target.value)} required />
-                    </div>
-                </div>
-
-                <div className="flex justify-end space-x-2 pt-4">
+                <div className="flex justify-end space-x-2 pt-2">
                     <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-                    <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : (initialData ? 'Update Invoice' : 'Create Invoice')}</Button>
+                    <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : (isEditing ? 'Update Invoice' : 'Create Invoice')}</Button>
                 </div>
             </form>
 
             <Modal isOpen={isAddClientModalOpen} onClose={() => setIsAddClientModalOpen(false)} title="Add New Client">
                 <ContactForm onClose={() => setIsAddClientModalOpen(false)} onSuccess={handleClientAdded} />
             </Modal>
+
+            <Modal isOpen={timePickerOpen} onClose={() => setTimePickerOpen(false)} title="Add unbilled time" maxWidthClass="max-w-2xl">
+                <UnbilledTimePicker
+                    entries={unbilled}
+                    onCancel={() => setTimePickerOpen(false)}
+                    onAdd={(sel) => { addTimeAsItems(sel); setTimePickerOpen(false); }}
+                />
+            </Modal>
         </>
+    );
+};
+
+const UnbilledTimePicker: React.FC<{ entries: TimeEntry[]; onAdd: (entries: TimeEntry[]) => void; onCancel: () => void }> = ({ entries, onAdd, onCancel }) => {
+    const { data } = useData();
+    const [selected, setSelected] = useState<Set<string>>(() => new Set(entries.map(e => e.id!)));
+    const projectName = (id: string) => data.projects.find(p => p.id === id)?.name || 'Unknown project';
+    const chosen = entries.filter(e => selected.has(e.id!));
+    const toggle = (id: string) => setSelected(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        return next;
+    });
+
+    return (
+        <div className="space-y-4">
+            <p className="text-sm text-muted">Selected entries are grouped into one line per project at the project's hourly rate.</p>
+            <div className="max-h-80 overflow-y-auto border border-border divide-y divide-border/50">
+                <label className="flex items-center gap-3 p-2.5 bg-surface text-xs font-semibold uppercase tracking-wider text-muted sticky top-0">
+                    <input type="checkbox" className="accent-charcoal" checked={selected.size === entries.length} onChange={e => setSelected(e.target.checked ? new Set(entries.map(x => x.id!)) : new Set())} />
+                    Select all
+                </label>
+                {entries.map(te => (
+                    <label key={te.id} className="flex items-center gap-3 p-2.5 cursor-pointer hover:bg-surface/50">
+                        <input type="checkbox" className="accent-charcoal" checked={selected.has(te.id!)} onChange={() => toggle(te.id!)} />
+                        <span className="text-xs text-muted w-20 shrink-0">{formatDateOnly(te.date, 'MMM d')}</span>
+                        <span className="flex-1 min-w-0">
+                            <span className="block text-sm font-medium text-charcoal truncate">{projectName(te.project_id)}</span>
+                            {te.description && <span className="block text-xs text-muted truncate">{te.description}</span>}
+                        </span>
+                        <span className="text-sm font-bold tabular-nums">{formatHours(te.hours)}</span>
+                    </label>
+                ))}
+            </div>
+            <div className="flex justify-between items-center">
+                <span className="text-sm text-muted">{chosen.length} selected · {formatHours(chosen.reduce((s, e) => s + e.hours, 0))}</span>
+                <div className="flex gap-2">
+                    <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+                    <Button onClick={() => onAdd(chosen)} disabled={chosen.length === 0}>Add to invoice</Button>
+                </div>
+            </div>
+        </div>
     );
 };

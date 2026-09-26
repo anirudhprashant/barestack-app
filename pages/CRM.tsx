@@ -1,463 +1,220 @@
-import React, { useState, FC, useMemo } from 'react';
-import { useData } from '../dataStore';
-import { Contact, DealStage, Note } from '../types';
-import { Button, Modal, Icon, Textarea, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useData, useCurrency } from '../dataStore';
+import { Contact, DealStage, Deal } from '../types';
+import { Button, Modal, Icon, IconButton, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyState, SearchInput } from '../components/ui';
 import { ContactForm } from '../components/ContactForm';
+import { ContactDetail } from '../components/ContactDetail';
 import { ImportModal } from '../components/ImportModal';
 import { EditableCell } from '../components/EditableCell';
+import CrmHeader from '../components/CrmHeader';
 import { useToast } from '../src/context/ToastContext';
+import { formatMoney, initials, avatarColor } from '../src/lib/format';
+import { toCSV, downloadText } from '../src/lib/csv';
+import { dealStageClass } from '../components/badges';
 
-const ITEMS_PER_PAGE = 10;
+const PAGE_SIZE = 25;
 
 type ViewMode = 'table' | 'kanban';
+type SortKey = 'recent' | 'name' | 'company';
 
-// PocketBase exposes the timestamp as the system `created` field; older code
-// referenced `created_at`. Read either and bail out if it isn't a valid date
-// so the UI never renders "Invalid Date".
-const formatNoteDate = (note: Note): string | null => {
-    const raw = (note as any).created || note.created_at;
-    if (!raw) return null;
-    const d = new Date(raw);
-    if (isNaN(d.getTime())) return null;
-    return d.toLocaleString();
+const stageColumn: Record<DealStage, { bg: string; border: string }> = {
+    [DealStage.Lead]: { bg: 'bg-surface', border: 'border-border' },
+    [DealStage.Qualified]: { bg: 'bg-activity-purple/5', border: 'border-activity-purple/20' },
+    [DealStage.Proposal]: { bg: 'bg-activity-blue/5', border: 'border-activity-blue/20' },
+    [DealStage.Won]: { bg: 'bg-activity-green/5', border: 'border-activity-green/20' },
+    [DealStage.Lost]: { bg: 'bg-activity-red/5', border: 'border-activity-red/20' },
 };
 
-const stageColors: Record<DealStage, { bg: string, border: string, badge: string }> = {
-    [DealStage.Lead]: { bg: 'bg-surface', border: 'border-border', badge: 'bg-surface text-muted' },
-    [DealStage.Qualified]: { bg: 'bg-activity-purple/10', border: 'border-activity-purple/20', badge: 'bg-activity-purple/10 text-activity-purple' },
-    [DealStage.Proposal]: { bg: 'bg-activity-blue/10', border: 'border-activity-blue/20', badge: 'bg-activity-blue/10 text-activity-blue' },
-    [DealStage.Won]: { bg: 'bg-activity-green/10', border: 'border-activity-green/20', badge: 'bg-activity-green/10 text-activity-green' },
-    [DealStage.Lost]: { bg: 'bg-activity-red/10', border: 'border-activity-red/20', badge: 'bg-activity-red/10 text-activity-red' },
-};
-
-// Add Note Form Component
-const AddNoteForm: FC<{ contactId: string }> = ({ contactId }) => {
-    const { addNote } = useData();
-    const { toast } = useToast();
-    const [noteContent, setNoteContent] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!noteContent.trim()) return;
-
-        setLoading(true);
-        try {
-            await addNote({
-                contact_id: contactId,
-                content: noteContent,
-            });
-            setNoteContent('');
-        } catch (error) {
-            console.error('Failed to add note:', error);
-            toast('Failed to add note. Please try again.', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <form onSubmit={handleSubmit} className="space-y-2">
-            <Textarea
-                label="Add a note"
-                id={`note-${contactId}`}
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                rows={3}
-                placeholder="Enter your note here..."
-            />
-            <Button type="submit" variant="primary" disabled={loading || !noteContent.trim()} className="text-sm">
-                {loading ? 'Saving...' : 'Add Note'}
-            </Button>
-        </form>
-    );
-};
+const VIEW_KEY = 'barestack.crm.view';
 
 const CRM: React.FC = () => {
     const { data, deleteContact, updateDeal, addDeal, addRecentActivity, updateContact } = useData();
-    const { toast } = useToast();
+    const currency = useCurrency();
+    const { toast, confirm } = useToast();
     const { contacts, deals } = data;
+    const [searchParams, setSearchParams] = useSearchParams();
     const [searchTerm, setSearchTerm] = useState('');
+    const [tagFilter, setTagFilter] = useState<string | null>(null);
+    const [sortKey, setSortKey] = useState<SortKey>('recent');
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-    const [editingContact, setEditingContact] = useState<Contact | null>(null);
-    const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
-    const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+    const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
     const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [viewMode, setViewMode] = useState<ViewMode>('table');
+    const [viewMode, setViewMode] = useState<ViewMode>(() => {
+        try { return (localStorage.getItem(VIEW_KEY) as ViewMode) || 'table'; } catch { return 'table'; }
+    });
     const [draggedContact, setDraggedContact] = useState<Contact | null>(null);
     const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
 
-    const filteredContacts = contacts.filter(contact =>
-        contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (contact.company && contact.company.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    useEffect(() => {
+        try { localStorage.setItem(VIEW_KEY, viewMode); } catch { /* private mode */ }
+    }, [viewMode]);
 
-    const totalPages = Math.ceil(filteredContacts.length / ITEMS_PER_PAGE);
-    const paginatedContacts = filteredContacts.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
-    );
+    // Deep links from search / command palette: /crm?contact=<id>, /crm?new=1
+    useEffect(() => {
+        const id = searchParams.get('contact');
+        if (id && contacts.some(c => c.id === id)) setSelectedContactId(id);
+        if (searchParams.get('new')) setIsAddContactModalOpen(true);
+        if (id || searchParams.get('new')) setSearchParams({}, { replace: true });
+    }, [searchParams, contacts, setSearchParams]);
 
-    const getContactStage = (contactId: string) => {
-        const contactDeals = deals.filter(d => d.contact_id === contactId);
-        if (contactDeals.length === 0) return DealStage.Lead;
-        return contactDeals[0].stage;
-    };
+    // Latest deal per contact (deals arrive newest first).
+    const latestDeal = useMemo(() => {
+        const map = new Map<string, Deal>();
+        for (const d of deals) if (!map.has(d.contact_id)) map.set(d.contact_id, d);
+        return map;
+    }, [deals]);
+    const getContactStage = (contactId: string) => latestDeal.get(contactId)?.stage || DealStage.Lead;
 
-    const handleDeleteContact = (contact: Contact) => {
-        setContactToDelete(contact);
-    };
+    const allTags = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const c of contacts) for (const t of c.tags || []) counts.set(t, (counts.get(t) || 0) + 1);
+        return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
+    }, [contacts]);
 
-    const confirmDelete = async () => {
-        if (contactToDelete && contactToDelete.id) {
-            try {
-                await deleteContact(contactToDelete.id);
-                if (selectedContact?.id === contactToDelete.id) setSelectedContact(null);
-                setContactToDelete(null);
-            } catch (error) {
-                console.error("Failed to delete contact:", error);
-                toast("Failed to delete contact. Please try again.", 'error');
-            }
+    const filteredContacts = useMemo(() => {
+        const q = searchTerm.trim().toLowerCase();
+        const list = contacts.filter(contact =>
+            (!tagFilter || contact.tags?.includes(tagFilter)) &&
+            (!q ||
+                contact.name.toLowerCase().includes(q) ||
+                contact.email?.toLowerCase().includes(q) ||
+                contact.phone?.toLowerCase().includes(q) ||
+                contact.company?.toLowerCase().includes(q) ||
+                contact.tags?.some(t => t.toLowerCase().includes(q)))
+        );
+        if (sortKey === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
+        if (sortKey === 'company') list.sort((a, b) => (a.company || '~').localeCompare(b.company || '~') || a.name.localeCompare(b.name));
+        return list;
+    }, [contacts, searchTerm, tagFilter, sortKey]);
+
+    // Any filter change sends you back to page 1 (otherwise you can land on an
+    // empty page past the end of the new result set).
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, tagFilter, sortKey]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredContacts.length / PAGE_SIZE));
+    const page = Math.min(currentPage, totalPages);
+    const paginatedContacts = filteredContacts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+    const selectedContact = selectedContactId ? contacts.find(c => c.id === selectedContactId) || null : null;
+
+    const saveField = async (contact: Contact, field: keyof Contact, value: string) => {
+        try {
+            await updateContact({ id: contact.id!, [field]: value });
+        } catch (error) {
+            toast(`Could not update ${String(field)}.`, 'error');
+            throw error;
         }
     };
 
-    const getInitials = (name: string) => {
-        return name
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-    };
-
-    const getRandomColor = (name: string) => {
-        const colors = ['bg-activity-red/10 text-activity-red', 'bg-activity-green/10 text-activity-green', 'bg-activity-blue/10 text-activity-blue', 'bg-activity-orange/10 text-activity-orange', 'bg-activity-purple/10 text-activity-purple', 'bg-activity-indigo/10 text-activity-indigo'];
-        let hash = 0;
-        for (let i = 0; i < name.length; i++) {
-            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    const requestDelete = async (contact: Contact) => {
+        const counts = {
+            deals: deals.filter(d => d.contact_id === contact.id).length,
+            projects: data.projects.filter(p => p.client_id === contact.id).length,
+            invoices: data.invoices.filter(i => i.client_id === contact.id).length,
+        };
+        const extra = Object.entries(counts).filter(([, n]) => n > 0).map(([k, n]) => `${n} ${n === 1 ? k.slice(0, -1) : k}`);
+        const ok = await confirm({
+            title: 'Delete contact',
+            message: `Delete ${contact.name}?${extra.length ? ` This also deletes their ${extra.join(', ')}, plus notes and project tasks/time.` : ''} This cannot be undone.`,
+            danger: true,
+            confirmLabel: 'Delete',
+        });
+        if (!ok) return;
+        try {
+            await deleteContact(contact.id!);
+            if (selectedContactId === contact.id) setSelectedContactId(null);
+            setSelectedIds(prev => { const n = new Set(prev); n.delete(contact.id!); return n; });
+            toast('Contact deleted', 'success');
+        } catch (error) {
+            console.error('Failed to delete contact:', error);
+            toast('Failed to delete contact. Please try again.', 'error');
         }
-        return colors[Math.abs(hash) % colors.length];
     };
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.checked) {
-            setSelectedIds(new Set(paginatedContacts.map(c => c.id).filter((id): id is string => !!id)));
-        } else {
-            setSelectedIds(new Set());
-        }
+        setSelectedIds(e.target.checked ? new Set(paginatedContacts.map(c => c.id!).filter(Boolean)) : new Set());
     };
 
     const handleSelectOne = (id: string) => {
-        const newSelected = new Set(selectedIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedIds(newSelected);
-    };
-
-    const handleBulkDelete = () => {
-        if (selectedIds.size > 0) {
-            setIsBulkDeleteModalOpen(true);
-        }
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
     };
 
     const confirmBulkDelete = async () => {
-        try {
-            for (const id of selectedIds) {
+        const ok = await confirm({
+            title: 'Delete contacts',
+            message: `Delete ${selectedIds.size} contact${selectedIds.size === 1 ? '' : 's'} along with their deals, projects, invoices and notes? This cannot be undone.`,
+            danger: true,
+            confirmLabel: 'Delete all',
+        });
+        if (!ok) return;
+        let failed = 0;
+        for (const id of selectedIds) {
+            try {
                 await deleteContact(id);
+            } catch {
+                failed++;
             }
-            setSelectedIds(new Set());
-            setIsBulkDeleteModalOpen(false);
-            toast('Contacts deleted', 'success');
+        }
+        setSelectedIds(new Set());
+        toast(failed ? `${failed} contact(s) could not be deleted.` : 'Contacts deleted', failed ? 'error' : 'success');
+    };
+
+    const setStage = async (contact: Contact, stage: DealStage) => {
+        const existing = latestDeal.get(contact.id!);
+        if (existing) {
+            if (existing.stage === stage) return;
+            await updateDeal({ id: existing.id!, stage, last_interaction: new Date().toISOString() });
+            if (stage === DealStage.Won) addRecentActivity({ type: 'DEAL_WON', description: `Deal won with ${contact.name}` });
+        } else {
+            await addDeal({ contact_id: contact.id!, title: '', value: 0, stage, last_interaction: new Date().toISOString() });
+            addRecentActivity({ type: 'DEAL_ADDED', description: `New deal created for ${contact.name} at stage ${stage}` });
+        }
+    };
+
+    const handleStageChange = async (contact: Contact, stage: DealStage) => {
+        try {
+            await setStage(contact, stage);
         } catch (error) {
-            console.error("Failed to bulk delete contacts:", error);
-            toast("Failed to delete some contacts. Please try again.", 'error');
+            console.error('Failed to update stage:', error);
+            toast('Could not update the stage.', 'error');
         }
     };
 
     const handleBulkStageUpdate = async (stage: DealStage) => {
-        try {
-            for (const id of selectedIds) {
-                const contactDeals = deals.filter(d => d.contact_id === id);
-                if (contactDeals.length > 0) {
-                    await updateDeal({ ...contactDeals[0], stage, last_interaction: new Date().toISOString() });
-                } else {
-                    await addDeal({
-                        contact_id: id,
-                        value: 1,
-                        stage,
-                        last_interaction: new Date().toISOString()
-                    });
-                }
-            }
-            setSelectedIds(new Set());
-            toast('Stages updated', 'success');
-        } catch (error) {
-            console.error("Failed to update bulk stage:", error);
-            toast("Failed to update stages. Please try again.", 'error');
+        let failed = 0;
+        for (const id of selectedIds) {
+            const contact = contacts.find(c => c.id === id);
+            if (!contact) continue;
+            try { await setStage(contact, stage); } catch { failed++; }
         }
+        setSelectedIds(new Set());
+        toast(failed ? `${failed} stage update(s) failed.` : 'Stages updated', failed ? 'error' : 'success');
     };
 
-    const kanbanData = useMemo(() => {
-        return Object.values(DealStage).map(stage => ({
-            stage,
-            contacts: filteredContacts.filter(c => getContactStage(c.id!) === stage),
+    const exportContacts = (list: Contact[]) => {
+        const rows = list.map(c => ({
+            name: c.name,
+            email: c.email,
+            phone: c.phone,
+            company: c.company,
+            tags: (c.tags || []).join(', '),
+            stage: getContactStage(c.id!),
         }));
-    }, [filteredContacts, deals]);
-
-    const handleStageChange = async (contact: Contact, newStage: DealStage) => {
-        const contactDeals = deals.filter(d => d.contact_id === contact.id);
-        if (contactDeals.length > 0) {
-            await updateDeal({
-                ...contactDeals[0],
-                stage: newStage,
-                last_interaction: new Date().toISOString()
-            });
-        } else {
-            await addDeal({
-                contact_id: contact.id!,
-                value: 1,
-                stage: newStage,
-                last_interaction: new Date().toISOString()
-            });
-            await addRecentActivity({
-                timestamp: new Date().toISOString(),
-                type: 'DEAL_ADDED',
-                description: `New deal created for ${contact.name} at stage ${newStage}`
-            });
-        }
+        downloadText(toCSV(rows), `contacts_${new Date().toISOString().slice(0, 10)}.csv`);
     };
 
-    const renderTableView = () => (
-        <>
-            {filteredContacts.length > 0 ? (
-                <div className="bg-canvas border border-border overflow-hidden">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-10">
-                                    <input
-                                        type="checkbox"
-                                        id="select-all-contacts"
-                                        name="select-all"
-                                        className="rounded-none border-border text-charcoal focus:ring-charcoal"
-                                        checked={paginatedContacts.length > 0 && selectedIds.size === paginatedContacts.length}
-                                        onChange={handleSelectAll}
-                                    />
-                                </TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Phone</TableHead>
-                                <TableHead>Company</TableHead>
-                                <TableHead>Stage</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {paginatedContacts.map(contact => (
-                                <TableRow key={contact.id}>
-                                    <TableCell onClick={(e) => e.stopPropagation()}>
-                                        <input
-                                            type="checkbox"
-                                            id={`select-${contact.id}`}
-                                            name={`select-contact-${contact.id}`}
-                                            className="rounded-none border-border text-charcoal focus:ring-charcoal"
-                                            checked={!!contact.id && selectedIds.has(contact.id)}
-                                            onChange={() => contact.id && handleSelectOne(contact.id)}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center space-x-3">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${getRandomColor(contact.name)}`}>
-                                                {getInitials(contact.name)}
-                                            </div>
-                                            <EditableCell
-                                                value={contact.name}
-                                                onSave={(val) => updateContact({ ...contact, name: val })}
-                                                className="font-medium text-charcoal"
-                                            />
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <EditableCell
-                                            value={contact.email}
-                                            onSave={(val) => updateContact({ ...contact, email: val })}
-                                            type="email"
-                                            className="text-sm text-muted"
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <EditableCell
-                                            value={contact.phone || ''}
-                                            onSave={(val) => updateContact({ ...contact, phone: val })}
-                                            type="tel"
-                                            placeholder="Add phone"
-                                            className="text-sm text-muted"
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <EditableCell
-                                            value={contact.company || ''}
-                                            onSave={(val) => updateContact({ ...contact, company: val })}
-                                            placeholder="Add company"
-                                            className={contact.company ? "text-charcoal font-medium" : "text-sm text-muted"}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <div onClick={(e) => e.stopPropagation()}>
-                                            <select
-                                                value={getContactStage(contact.id!)}
-                                                onChange={async (e) => {
-                                                    e.stopPropagation();
-                                                    const newStage = e.target.value as DealStage;
-                                                    const contactDeals = deals.filter(d => d.contact_id === contact.id);
-
-                                                    if (contactDeals.length > 0) {
-                                                        await updateDeal({
-                                                            ...contactDeals[0],
-                                                            stage: newStage,
-                                                            last_interaction: new Date().toISOString()
-                                                        });
-                                                    } else {
-                                                        await addDeal({
-                                                            contact_id: contact.id!,
-                                                            value: 1,
-                                                            stage: newStage,
-                                                            last_interaction: new Date().toISOString()
-                                                        });
-                                                        await addRecentActivity({
-                                                            timestamp: new Date().toISOString(),
-                                                            type: 'DEAL_ADDED',
-                                                            description: `New deal created for ${contact.name} at stage ${newStage}`
-                                                        });
-                                                    }
-                                                }}
-                                                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border-0 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-charcoal/20 ${getContactStage(contact.id!) === DealStage.Won ? 'bg-activity-green/10 text-activity-green' :
-                                                            getContactStage(contact.id!) === DealStage.Lost ? 'bg-activity-red/10 text-activity-red' :
-                                                            getContactStage(contact.id!) === DealStage.Proposal ? 'bg-activity-blue/10 text-activity-blue' :
-                                                            getContactStage(contact.id!) === DealStage.Qualified ? 'bg-activity-purple/10 text-activity-purple' :
-                                                            'bg-surface text-muted'
-                                                        }`}
-                                            >
-                                                {Object.values(DealStage).map(stage => (
-                                                    <option key={stage} value={stage}>{stage}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end space-x-2">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedContact(contact);
-                                                }}
-                                                className="p-1.5 text-charcoal hover:bg-surface transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-charcoal"
-                                                title="View Details"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                                                    <circle cx="12" cy="12" r="3" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setEditingContact(contact);
-                                                }}
-                                                className="p-1.5 text-charcoal hover:bg-surface transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-charcoal"
-                                                title="Edit Contact"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteContact(contact);
-                                                }}
-                                                className="p-1.5 text-activity-red hover:bg-activity-red/10 transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-activity-red"
-                                                title="Delete Contact"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <polyline points="3 6 5 6 21 6" />
-                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                                    <line x1="10" y1="11" x2="10" y2="17" />
-                                                    <line x1="14" y1="11" x2="14" y2="17" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-
-                    {totalPages > 1 && (
-                        <div className="flex justify-between items-center p-4 border-t border-border bg-surface">
-                            <div className="text-sm text-muted">
-                                Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredContacts.length)} of {filteredContacts.length} results
-                            </div>
-                            <div className="flex space-x-2">
-                                <Button
-                                    variant="secondary"
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="py-1 px-3 text-sm"
-                                >
-                                    Previous
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="py-1 px-3 text-sm"
-                                >
-                                    Next
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <div className="text-center py-12 bg-canvas border border-dashed border-border">
-                    <div className="w-16 h-16 bg-surface rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Icon name="users" className="w-8 h-8 text-muted" />
-                    </div>
-                    <h3 className="text-lg font-medium text-charcoal mb-1">No contacts found</h3>
-                    <p className="text-muted mb-6">Get started by adding a new contact or importing from CSV.</p>
-                </div>
-            )}
-        </>
-    );
-
-    const handleDragStart = (e: React.DragEvent, contact: Contact) => {
-        setDraggedContact(contact);
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', contact.id!);
-    };
-
-    const handleDragOver = (e: React.DragEvent, stage: DealStage) => {
-        e.preventDefault();
-        if (draggedContact && getContactStage(draggedContact.id!) !== stage) {
-            setDragOverStage(stage);
-        }
-    };
-
-    const handleDragLeave = () => {
-        setDragOverStage(null);
-    };
+    const kanbanData = useMemo(() => Object.values(DealStage).map(stage => ({
+        stage,
+        contacts: filteredContacts.filter(c => getContactStage(c.id!) === stage),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    })), [filteredContacts, latestDeal]);
 
     const handleDrop = async (e: React.DragEvent, newStage: DealStage) => {
         e.preventDefault();
@@ -468,59 +225,170 @@ const CRM: React.FC = () => {
         setDragOverStage(null);
     };
 
+    const renderTableView = () => (
+        filteredContacts.length > 0 ? (
+            <div className="bg-canvas border border-border overflow-hidden">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-10">
+                                <input
+                                    type="checkbox"
+                                    aria-label="Select all contacts on this page"
+                                    className="accent-charcoal"
+                                    checked={paginatedContacts.length > 0 && paginatedContacts.every(c => selectedIds.has(c.id!))}
+                                    onChange={handleSelectAll}
+                                />
+                            </TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead className="hidden lg:table-cell">Phone</TableHead>
+                            <TableHead className="hidden md:table-cell">Company</TableHead>
+                            <TableHead>Stage</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {paginatedContacts.map(contact => {
+                            const stage = getContactStage(contact.id!);
+                            return (
+                                <TableRow key={contact.id}>
+                                    <TableCell onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            aria-label={`Select ${contact.name}`}
+                                            className="accent-charcoal"
+                                            checked={!!contact.id && selectedIds.has(contact.id)}
+                                            onChange={() => contact.id && handleSelectOne(contact.id)}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3 min-w-[160px]">
+                                            <button
+                                                onClick={() => setSelectedContactId(contact.id!)}
+                                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${avatarColor(contact.name)}`}
+                                                aria-label={`Open ${contact.name}`}
+                                            >
+                                                {initials(contact.name)}
+                                            </button>
+                                            <div className="min-w-0 flex-1">
+                                                <EditableCell value={contact.name} required onSave={(val) => saveField(contact, 'name', val)} className="font-medium text-charcoal" />
+                                                {contact.tags?.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 -mt-0.5">
+                                                        {contact.tags.slice(0, 3).map(t => (
+                                                            <button key={t} onClick={() => setTagFilter(t)} className="text-[10px] font-semibold px-1.5 bg-surface border border-border text-muted hover:text-charcoal">{t}</button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <EditableCell value={contact.email} required type="email" onSave={(val) => saveField(contact, 'email', val)} className="text-sm text-muted" />
+                                    </TableCell>
+                                    <TableCell className="hidden lg:table-cell">
+                                        <EditableCell value={contact.phone || ''} type="tel" placeholder="Add phone" onSave={(val) => saveField(contact, 'phone', val)} className="text-sm text-muted" />
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">
+                                        <EditableCell value={contact.company || ''} placeholder="Add company" onSave={(val) => saveField(contact, 'company', val)} className={contact.company ? 'text-charcoal font-medium' : 'text-sm text-muted'} />
+                                    </TableCell>
+                                    <TableCell>
+                                        <select
+                                            aria-label={`Stage for ${contact.name}`}
+                                            value={stage}
+                                            onChange={(e) => handleStageChange(contact, e.target.value as DealStage)}
+                                            className={`px-2.5 py-1 text-xs font-semibold border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-charcoal/20 ${dealStageClass[stage]}`}
+                                        >
+                                            {Object.values(DealStage).map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end gap-0.5">
+                                            <IconButton icon="eye" label="View details" onClick={() => setSelectedContactId(contact.id!)} />
+                                            {contact.email && (
+                                                <a href={`mailto:${contact.email}`} title="Send email" aria-label={`Email ${contact.name}`} className="p-1.5 text-charcoal hover:bg-surface transition-colors hidden sm:inline-flex">
+                                                    <Icon name="mail" className="w-[18px] h-[18px]" />
+                                                </a>
+                                            )}
+                                            <IconButton icon="trash" label="Delete contact" tone="danger" onClick={() => requestDelete(contact)} />
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+
+                <div className="flex flex-col sm:flex-row gap-3 justify-between items-center p-4 border-t border-border bg-surface">
+                    <div className="text-sm text-muted">
+                        Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredContacts.length)} of {filteredContacts.length}
+                    </div>
+                    {totalPages > 1 && (
+                        <div className="flex items-center gap-2">
+                            <Button variant="secondary" onClick={() => setCurrentPage(Math.max(1, page - 1))} disabled={page === 1} className="py-1 px-3 text-sm">Previous</Button>
+                            <span className="text-sm text-muted tabular-nums">{page} / {totalPages}</span>
+                            <Button variant="secondary" onClick={() => setCurrentPage(Math.min(totalPages, page + 1))} disabled={page === totalPages} className="py-1 px-3 text-sm">Next</Button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        ) : contacts.length === 0 ? (
+            <EmptyState icon="users" title="No contacts yet" description="Add your first client or import a spreadsheet of contacts.">
+                <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}><Icon name="upload" className="w-4 h-4 mr-2" />Import CSV</Button>
+                <Button onClick={() => setIsAddContactModalOpen(true)}><Icon name="plus" className="w-4 h-4 mr-2" />Add Contact</Button>
+            </EmptyState>
+        ) : (
+            <EmptyState icon="search" title="No contacts match" description="Try a different search or clear the tag filter." />
+        )
+    );
+
     const renderKanbanView = () => (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
             {kanbanData.map(({ stage, contacts: stageContacts }) => {
-                const { bg, border, badge } = stageColors[stage];
-                const totalValue = stageContacts.reduce((sum, c) => {
-                    const contactDeals = deals.filter(d => d.contact_id === c.id);
-                    return sum + (contactDeals[0]?.value || 0);
-                }, 0);
+                const { bg, border } = stageColumn[stage];
+                const totalValue = stageContacts.reduce((sum, c) => sum + (latestDeal.get(c.id!)?.value || 0), 0);
                 const isDragOver = dragOverStage === stage;
 
                 return (
                     <div
                         key={stage}
-                        className={`${bg} border-2 ${isDragOver ? 'border-charcoal ring-2 ring-offset-2 ring-charcoal' : border} p-3 flex flex-col min-h-[280px] lg:min-h-[400px]`}
-                        onDragOver={(e) => handleDragOver(e, stage)}
-                        onDragLeave={handleDragLeave}
+                        className={`${bg} border-2 ${isDragOver ? 'border-charcoal' : border} p-3 flex flex-col min-h-[200px] lg:min-h-[400px]`}
+                        onDragOver={(e) => { e.preventDefault(); if (draggedContact && getContactStage(draggedContact.id!) !== stage) setDragOverStage(stage); }}
+                        onDragLeave={() => setDragOverStage(null)}
                         onDrop={(e) => handleDrop(e, stage)}
                     >
                         <div className={`flex items-center justify-between mb-3 pb-2 border-b-2 ${border}`}>
-                            <div>
-                                <h3 className="font-bold text-charcoal uppercase tracking-wider text-xs">{stage}</h3>
-                                <span className={`inline-block mt-0.5 px-1.5 py-0.5 text-xs font-bold rounded-full ${badge}`}>
-                                    {stageContacts.length}
-                                </span>
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-charcoal uppercase tracking-wider text-xs font-body">{stage}</h3>
+                                <span className={`px-1.5 py-0.5 text-xs font-bold ${dealStageClass[stage]}`}>{stageContacts.length}</span>
                             </div>
-                            <span className="text-xs font-bold text-muted">
-                                ${totalValue.toLocaleString()}
-                            </span>
+                            <span className="text-xs font-bold text-muted tabular-nums">{formatMoney(totalValue, currency, { compact: true })}</span>
                         </div>
 
                         <div className="flex-1 space-y-2 overflow-y-auto">
-                            {stageContacts.length > 0 ? (
-                                stageContacts.map(contact => (
-                                    <div
-                                        key={contact.id}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, contact)}
-                                        onClick={() => setSelectedContact(contact)}
-                                        className={`bg-canvas border border-border p-2.5 cursor-grab active:cursor-grabbing hover:border-charcoal transition-all duration-150 ${draggedContact?.id === contact.id ? 'opacity-50' : ''}`}
-                                    >
-                                        <div className="flex items-center space-x-2 mb-1.5">
-                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${getRandomColor(contact.name)}`}>
-                                                {getInitials(contact.name)}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="font-semibold text-charcoal text-xs truncate">{contact.name}</p>
-                                                <p className="text-[10px] text-muted truncate">{contact.company || 'No company'}</p>
-                                            </div>
+                            {stageContacts.length > 0 ? stageContacts.map(contact => (
+                                <div
+                                    key={contact.id}
+                                    draggable
+                                    onDragStart={(e) => { setDraggedContact(contact); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', contact.id!); }}
+                                    onDragEnd={() => { setDraggedContact(null); setDragOverStage(null); }}
+                                    onClick={() => setSelectedContactId(contact.id!)}
+                                    className={`bg-canvas border border-border p-2.5 cursor-grab active:cursor-grabbing hover:border-charcoal transition-all duration-150 ${draggedContact?.id === contact.id ? 'opacity-50' : ''}`}
+                                >
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${avatarColor(contact.name)}`}>
+                                            {initials(contact.name)}
                                         </div>
-                                        <p className="text-[10px] text-muted truncate pl-9">{contact.email}</p>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-semibold text-charcoal text-xs truncate">{contact.name}</p>
+                                            <p className="text-[10px] text-muted truncate">{contact.company || 'No company'}</p>
+                                        </div>
                                     </div>
-                                ))
-                            ) : (
+                                    {(latestDeal.get(contact.id!)?.value || 0) > 0 && (
+                                        <p className="text-[11px] font-bold text-charcoal pl-9 tabular-nums">{formatMoney(latestDeal.get(contact.id!)!.value, currency)}</p>
+                                    )}
+                                </div>
+                            )) : (
                                 <div className={`flex items-center justify-center h-16 text-xs font-medium border-2 border-dashed ${isDragOver ? 'border-charcoal bg-surface' : 'border-border'} text-muted`}>
                                     {isDragOver ? 'Drop here' : 'No contacts'}
                                 </div>
@@ -534,85 +402,75 @@ const CRM: React.FC = () => {
 
     return (
         <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-                <div className="relative w-full max-w-md">
-                    <Icon name="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted w-5 h-5" />
-                    <input
-                        type="text"
-                        placeholder="Search contacts..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        id="search-contacts"
-                        name="search"
-                        className="w-full pl-10 pr-4 py-2 border border-border bg-canvas rounded-none focus:outline-none focus:border-content focus:border-2 transition-colors text-charcoal"
-                    />
-                </div>
-                <div className="flex space-x-2 w-full sm:w-auto justify-end items-center">
-                    {/* View Toggle */}
-                    <div className="flex border border-border overflow-hidden">
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={`px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'table' ? 'bg-charcoal text-canvas' : 'bg-canvas text-muted hover:bg-surface'}`}
-                        >
-                            <Icon name="document" className="w-4 h-4 inline mr-1" /> Table
+            <CrmHeader>
+                <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
+                    <Icon name="upload" className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">Import</span>
+                </Button>
+                <Button onClick={() => setIsAddContactModalOpen(true)}>
+                    <Icon name="plus" className="w-4 h-4 mr-2" /> Add Contact
+                </Button>
+            </CrmHeader>
+
+            <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+                <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder="Search name, email, company, tag..." className="w-full md:max-w-sm" id="search-contacts" />
+                <div className="flex items-center gap-2 md:ml-auto">
+                    <select aria-label="Sort contacts" value={sortKey} onChange={e => setSortKey(e.target.value as SortKey)} className="text-sm border border-border bg-canvas px-2 py-2 focus:outline-none focus:border-content">
+                        <option value="recent">Newest first</option>
+                        <option value="name">Name A–Z</option>
+                        <option value="company">Company A–Z</option>
+                    </select>
+                    <div className="flex border border-border overflow-hidden" role="tablist" aria-label="View">
+                        <button role="tab" aria-selected={viewMode === 'table'} onClick={() => setViewMode('table')} className={`px-3 py-2 text-sm font-medium transition-colors flex items-center ${viewMode === 'table' ? 'bg-charcoal text-canvas' : 'bg-canvas text-muted hover:bg-surface'}`}>
+                            <Icon name="list" className="w-4 h-4 sm:mr-1" /><span className="hidden sm:inline">Table</span>
                         </button>
-                        <button
-                            onClick={() => setViewMode('kanban')}
-                            className={`px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'kanban' ? 'bg-charcoal text-canvas' : 'bg-canvas text-muted hover:bg-surface'}`}
-                        >
-                            <svg className="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="3" y="3" width="5" height="18" rx="1" />
-                                <rect x="10" y="3" width="5" height="12" rx="1" />
-                                <rect x="17" y="3" width="5" height="15" rx="1" />
-                            </svg>
-                            Kanban
+                        <button role="tab" aria-selected={viewMode === 'kanban'} onClick={() => setViewMode('kanban')} className={`px-3 py-2 text-sm font-medium transition-colors flex items-center ${viewMode === 'kanban' ? 'bg-charcoal text-canvas' : 'bg-canvas text-muted hover:bg-surface'}`}>
+                            <Icon name="layers" className="w-4 h-4 sm:mr-1" /><span className="hidden sm:inline">Board</span>
                         </button>
                     </div>
-                    <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
-                        <Icon name="upload" className="w-4 h-4 mr-2" /> Import CSV
-                    </Button>
-                    <Button className="bg-charcoal text-canvas hover:bg-content border-charcoal" onClick={() => setIsAddContactModalOpen(true)}>
-                        <Icon name="plus" className="w-4 h-4 mr-2" /> Add Contact
-                    </Button>
+                    <IconButton icon="download" label="Export contacts to CSV" onClick={() => exportContacts(filteredContacts)} disabled={filteredContacts.length === 0} />
                 </div>
             </div>
 
+            {allTags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 mb-4">
+                    <Icon name="tag" className="w-3.5 h-3.5 text-muted mr-0.5" />
+                    {allTags.map(([tag, count]) => (
+                        <button
+                            key={tag}
+                            onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
+                            className={`text-xs font-semibold px-2 py-1 border transition-colors ${tagFilter === tag ? 'bg-charcoal text-canvas border-charcoal' : 'bg-canvas text-muted border-border hover:border-charcoal hover:text-charcoal'}`}
+                        >
+                            {tag} <span className="opacity-60">{count}</span>
+                        </button>
+                    ))}
+                    {tagFilter && !allTags.some(([t]) => t === tagFilter) && (
+                        <button onClick={() => setTagFilter(null)} className="text-xs font-semibold px-2 py-1 border bg-charcoal text-canvas border-charcoal">{tagFilter} ✕</button>
+                    )}
+                </div>
+            )}
+
             {viewMode === 'table' ? renderTableView() : renderKanbanView()}
 
-            {/* Bulk Actions Bar */}
             {selectedIds.size > 0 && (
-                <div className="fixed bottom-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-auto bg-canvas border border-border px-4 sm:px-6 py-3 flex items-center space-x-3 sm:space-x-4 animate-in slide-in-from-bottom-4 z-50">
-                    <span className="text-sm font-medium text-charcoal">{selectedIds.size} selected</span>
-                    <div className="h-4 w-px bg-border" />
-                    <div className="flex items-center space-x-2">
-                        <span className="text-xs text-muted uppercase font-bold tracking-wider">Set Stage:</span>
-                        <div className="flex space-x-1">
-                            {Object.values(DealStage).filter(s => typeof s === 'string').map((stage) => (
-                                <button
-                                    key={stage}
-                                    onClick={() => handleBulkStageUpdate(stage as DealStage)}
-                                    className="px-2 py-1 text-xs rounded-full bg-surface hover:bg-border text-charcoal transition-colors"
-                                >
-                                    {stage}
-                                </button>
-                            ))}
-                        </div>
+                <div className="fixed bottom-4 left-4 right-4 md:left-[calc(50%+110px)] md:right-auto md:-translate-x-1/2 bg-canvas border border-charcoal shadow-hard px-4 py-3 flex flex-wrap items-center gap-3 z-40">
+                    <span className="text-sm font-semibold text-charcoal">{selectedIds.size} selected</span>
+                    <div className="h-4 w-px bg-border hidden sm:block" />
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs text-muted uppercase font-bold tracking-wider">Stage:</span>
+                        {Object.values(DealStage).map(stage => (
+                            <button key={stage} onClick={() => handleBulkStageUpdate(stage)} className={`px-2 py-1 text-xs font-semibold hover:ring-1 hover:ring-charcoal ${dealStageClass[stage]}`}>
+                                {stage}
+                            </button>
+                        ))}
                     </div>
-                    <div className="h-4 w-px bg-border" />
-                    <Button
-                        variant="ghost"
-                        onClick={handleBulkDelete}
-                        className="text-activity-red hover:bg-activity-red/10"
-                    >
-                        <Icon name="trash" className="w-4 h-4 mr-2" /> Delete
+                    <div className="h-4 w-px bg-border hidden sm:block" />
+                    <Button variant="ghost" className="py-1 px-2 text-sm" onClick={() => exportContacts(contacts.filter(c => selectedIds.has(c.id!)))}>
+                        <Icon name="download" className="w-4 h-4 mr-1" /> Export
                     </Button>
-                    <Button
-                        variant="ghost"
-                        onClick={() => setSelectedIds(new Set())}
-                        className="text-muted"
-                    >
-                        <Icon name="x" className="w-4 h-4" />
+                    <Button variant="ghost" onClick={confirmBulkDelete} className="py-1 px-2 text-sm text-activity-red hover:bg-activity-red/10">
+                        <Icon name="trash" className="w-4 h-4 mr-1" /> Delete
                     </Button>
+                    <IconButton icon="x" label="Clear selection" onClick={() => setSelectedIds(new Set())} />
                 </div>
             )}
 
@@ -624,112 +482,8 @@ const CRM: React.FC = () => {
                 <ImportModal onClose={() => setIsImportModalOpen(false)} />
             </Modal>
 
-            <Modal isOpen={!!editingContact} onClose={() => setEditingContact(null)} title="Edit Contact">
-                {editingContact && (
-                    <ContactForm
-                        contact={editingContact}
-                        onClose={() => setEditingContact(null)}
-                        onSuccess={() => {
-                            setEditingContact(null);
-                        }}
-                    />
-                )}
-            </Modal>
-
-            {selectedContact && (
-                <Modal isOpen={!!selectedContact} onClose={() => setSelectedContact(null)} title={selectedContact.name} maxWidthClass="max-w-xl">
-                    <div className="p-4">
-                        <div className="flex items-center space-x-4 mb-6 min-w-0">
-                            <div className={`w-16 h-16 shrink-0 rounded-full flex items-center justify-center font-bold text-2xl ${getRandomColor(selectedContact.name)}`}>
-                                {getInitials(selectedContact.name)}
-                            </div>
-                            <div className="min-w-0">
-                                <h3 className="text-xl font-bold text-charcoal truncate">{selectedContact.name}</h3>
-                                <p className="text-muted truncate">{selectedContact.company || 'No company'}</p>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                            <div className="min-w-0 px-3 py-2 bg-surface border border-border">
-                                <label className="text-xs text-muted uppercase font-semibold tracking-wide">Email</label>
-                                <p className="text-charcoal text-sm break-words">
-                                    {selectedContact.email
-                                        ? <a href={`mailto:${selectedContact.email}`} className="hover:text-accent transition-colors">{selectedContact.email}</a>
-                                        : '-'}
-                                </p>
-                            </div>
-                            <div className="min-w-0 px-3 py-2 bg-surface border border-border">
-                                <label className="text-xs text-muted uppercase font-semibold tracking-wide">Phone</label>
-                                <p className="text-charcoal text-sm break-words">{selectedContact.phone || '-'}</p>
-                            </div>
-                        </div>
-                        <div className="border-t border-border pt-6">
-                            <h4 className="text-sm font-semibold text-charcoal mb-3">Notes</h4>
-                            {data.notes.filter(n => n.contact_id === selectedContact.id).length > 0 ? (
-                                <div className="space-y-3 mb-4">
-                                    {data.notes
-                                        .filter(n => n.contact_id === selectedContact.id)
-                                        .map(note => {
-                                            const noteDate = formatNoteDate(note);
-
-                                            return (
-                                                <div key={note.id} className="p-3 bg-surface border border-border">
-                                                    <p className="text-sm text-charcoal whitespace-pre-wrap break-words">{note.content}</p>
-                                                    {noteDate && (
-                                                        <p className="text-xs text-muted mt-1">
-                                                            {noteDate}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-muted mb-4">No notes yet.</p>
-                            )}
-                            <AddNoteForm contactId={selectedContact.id!} />
-                        </div>
-                    </div>
-                </Modal>
-            )}
-
-            <Modal
-                isOpen={!!contactToDelete}
-                onClose={() => setContactToDelete(null)}
-                title="Delete Contact"
-            >
-                <div className="space-y-4">
-                    <p className="text-charcoal">
-                        Are you sure you want to delete <strong>{contactToDelete?.name}</strong>? This action cannot be undone and will delete all associated deals.
-                    </p>
-                    <div className="flex justify-end space-x-3">
-                        <Button variant="ghost" onClick={() => setContactToDelete(null)}>
-                            Cancel
-                        </Button>
-                        <Button variant="danger" onClick={confirmDelete}>
-                            Delete Contact
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
-
-            <Modal
-                isOpen={isBulkDeleteModalOpen}
-                onClose={() => setIsBulkDeleteModalOpen(false)}
-                title="Delete Contacts"
-            >
-                <div className="space-y-4">
-                    <p className="text-charcoal">
-                        Are you sure you want to delete <strong>{selectedIds.size}</strong> contacts? This action cannot be undone and will delete all associated deals.
-                    </p>
-                    <div className="flex justify-end space-x-3">
-                        <Button variant="ghost" onClick={() => setIsBulkDeleteModalOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button variant="danger" onClick={confirmBulkDelete}>
-                            Delete All
-                        </Button>
-                    </div>
-                </div>
+            <Modal isOpen={!!selectedContact} onClose={() => setSelectedContactId(null)} title="Contact" maxWidthClass="max-w-2xl">
+                {selectedContact && <ContactDetail contact={selectedContact} onDelete={requestDelete} />}
             </Modal>
         </div>
     );

@@ -11,61 +11,81 @@ interface ContactFormProps {
 }
 
 export const ContactForm: FC<ContactFormProps> = ({ contact, onClose, onSuccess }) => {
-    const { addContact, updateContact, addRecentActivity } = useData();
+    const { data, addContact, updateContact, addRecentActivity } = useData();
     const { toast } = useToast();
     const [formData, setFormData] = useState({
         name: contact?.name || '',
         email: contact?.email || '',
         phone: contact?.phone || '',
         company: contact?.company || '',
-        tags: contact?.tags?.join(', ') || '',
+        tags: (contact?.tags || []).join(', '),
     });
     const [loading, setLoading] = useState(false);
-    const isEditing = !!contact;
+    const isEditing = !!contact?.id;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { id, value } = e.target;
-        setFormData(prev => ({ ...prev, [id]: value }));
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
+
+    const emailLower = formData.email.trim().toLowerCase();
+    const duplicate = emailLower
+        ? data.contacts.find(c => c.id !== contact?.id && c.email?.toLowerCase() === emailLower)
+        : undefined;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
             const contactData = {
-                ...formData,
+                name: formData.name.trim(),
+                email: formData.email.trim(),
+                phone: formData.phone.trim(),
+                company: formData.company.trim(),
                 tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
             };
 
+            let saved: Contact;
             if (isEditing) {
-                await updateContact({ ...contact, ...contactData });
-                if (onSuccess) onSuccess({ ...contact, ...contactData } as Contact);
+                saved = await updateContact({ id: contact!.id!, ...contactData });
             } else {
-                const newContact = await addContact(contactData);
-                await addRecentActivity({
-                    timestamp: new Date().toISOString(),
+                saved = await addContact(contactData);
+                addRecentActivity({
                     type: 'CONTACT_ADDED',
-                    description: `New contact added: ${formData.name}`
+                    description: `New contact added: ${contactData.name}`
                 });
-                if (onSuccess) onSuccess(newContact);
             }
-            toast('Contact saved', 'success');
+            toast(isEditing ? 'Contact updated' : 'Contact added', 'success');
+            onSuccess?.(saved);
             onClose();
         } catch (error) {
-            console.error("Failed to save contact:", error);
+            console.error('Failed to save contact:', error);
             toast('Failed to save contact', 'error');
         } finally {
             setLoading(false);
         }
     };
 
+    // Field ids are prefixed so this form can sit inside another form's modal
+    // (e.g. "add client" from the invoice form) without duplicate DOM ids.
+    const fid = (f: string) => `contact-${contact?.id || 'new'}-${f}`;
+
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <Input label="Full Name" id="name" value={formData.name} onChange={handleChange} required />
-            <Input label="Email Address" id="email" type="email" value={formData.email} onChange={handleChange} required />
-            <Input label="Phone Number" id="phone" value={formData.phone} onChange={handleChange} />
-            <Input label="Company" id="company" value={formData.company} onChange={handleChange} />
-            <Input label="Tags (comma-separated)" id="tags" value={formData.tags} onChange={handleChange} />
+            <Input label="Full Name" id={fid('name')} name="name" value={formData.name} onChange={handleChange} required autoFocus />
+            <div>
+                <Input label="Email Address" id={fid('email')} name="email" type="email" value={formData.email} onChange={handleChange} required />
+                {duplicate && (
+                    <p className="text-xs text-activity-orange mt-1.5">
+                        {duplicate.name} already uses this email.
+                    </p>
+                )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input label="Phone Number" id={fid('phone')} name="phone" type="tel" value={formData.phone} onChange={handleChange} />
+                <Input label="Company" id={fid('company')} name="company" value={formData.company} onChange={handleChange} />
+            </div>
+            <Input label="Tags" hint="comma-separated" id={fid('tags')} name="tags" value={formData.tags} onChange={handleChange} placeholder="client, retainer, vip" />
             <div className="flex justify-end space-x-2 pt-4">
                 <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
                 <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : 'Save Contact'}</Button>
