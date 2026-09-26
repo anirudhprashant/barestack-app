@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -51,6 +52,8 @@ export default defineConfig(({ mode }) => {
           'Content-Security-Policy': `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${pbUrl} wss://${pbHost}; img-src 'self' data: blob:; media-src 'self' data: blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';`,
         },
       },
+      // Unit tests only; Playwright owns tests/e2e.
+      test: { include: ['src/**/*.test.ts'] },
       plugins: [react(), tailwindcss()],
       resolve: {
         alias: {
