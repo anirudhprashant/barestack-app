@@ -125,6 +125,8 @@ Open http://localhost:8080
 
 **Money**
 - Invoices with multiple line items, tax, notes, custom numbering (`INV-2026-001`) and automatic overdue detection
+- **Recurring invoices** for retainers (weekly, monthly, quarterly, yearly), generated on the server as drafts
+- **Client share links**: a private page where your client views the invoice and downloads the PDF, no account needed. Updates when you edit; turn it off any time
 - **Bill unbilled time in one click**: billable hours become invoice lines at the project rate, and the entries are marked as billed
 - Branded PDF invoices with your business details, payment instructions and currency; preview, download, ZIP of many, or email to the client
 - Expenses with categories, projects, receipt links, period filters and CSV export
@@ -132,6 +134,11 @@ Open http://localhost:8080
 
 **Workspace**
 - Command palette (Ctrl/⌘ + K) to jump to any contact, project or invoice, or start a timer
+- Keyboard shortcuts (`g i` invoices, `n c` new contact, `?` for the full list)
+- **Dark mode** (light, dark or follow the system)
+- **Real-time sync**: changes appear instantly in every open tab and device
+- Installable as an app (PWA) on desktop and phones
+- One-click **sample data** to explore, and one-click removal
 - Notifications for overdue invoices, tasks due and deals past their close date
 - Business profile: name, address, tax ID, currency, default tax rate, payment terms and invoice footer
 - Getting-started checklist, activity log, responsive on phones
@@ -162,6 +169,22 @@ automatically (`pb_hooks/auth.pb.js`). As soon as you enable SMTP in the
 PocketBase dashboard (`/_/` → Settings → Mail settings), normal verification
 emails are used. Set `BARESTACK_REQUIRE_EMAIL_VERIFICATION=true` in
 PocketBase's environment to always require verification.
+
+---
+
+## Development
+
+```bash
+npm run dev          # Vite dev server (point VITE_POCKETBASE_URL at a PocketBase)
+npm test             # unit tests (vitest)
+npm run test:e2e     # browser tests: starts a throwaway PocketBase + production build
+npm run typecheck
+```
+
+The end-to-end suite (`tests/e2e`) downloads the pinned PocketBase into
+`.e2e/`, applies this repo's migrations and hooks to a fresh database, and
+drives the real production build with Playwright. CI runs it on every pull
+request.
 
 ---
 

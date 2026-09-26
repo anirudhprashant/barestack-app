@@ -49,7 +49,7 @@ riskier migration and is left to the maintainer).
 | 8 | Low | CSP `connect-src` default includes a bare `https:` wildcard | DOC-ONLY (needs prod backend list) |
 | 9 | Low | CSP `style-src 'unsafe-inline'` + third-party `fonts.googleapis.com` | DOC-ONLY (UX concession for jsPDF/React) |
 | 10 | Low | Runtime dependencies use `^` caret ranges (not exact-pinned); client PocketBase SDK `^0.21.5` vs server `0.36.2` | DOC-ONLY |
-| 11 | Low | CI workflow has no `permissions:` block | DOC-ONLY |
+| 11 | Low | CI workflow has no `permissions:` block | FIXED (v1.2.0) |
 | 12 | Low | Raw backend `.message` strings rendered to users in banners; ErrorBoundary logs stack to console | DOC-ONLY |
 | 13 | Low | No password-strength validation on sign-up | DOC-ONLY |
 | 14 | Low | Import size cap is on the compressed file, not the decompressed payload | DOC-ONLY |
@@ -311,7 +311,7 @@ but not verified. CI uses `npm ci` (lockfile-respecting), mitigating drift, but
 a future `npm install` can pull bumps. **Recommended:** exact-pin runtime deps
 and confirm 0.21.x SDK ↔ 0.36.2 server compatibility.
 
-### F11 — CI has no `permissions:` block (Low, DOC-ONLY)
+### F11 — CI has no `permissions:` block (Low, FIXED in v1.2.0)
 
 `.github/workflows/ci.yml:9-10` has no explicit `permissions:`; the `GITHUB_TOKEN`
 inherits repo defaults. **Recommended:** add `permissions: { contents: read }`.
@@ -359,3 +359,26 @@ placed in `api.ts create()` rather than scattered across `dataStore.tsx`'s 13
 handlers: one insertion point covers every create, cannot miss a handler, and
 cannot perturb the cascade-delete or optimistic-state logic that lives in
 `dataStore.tsx` (the riskiest file to touch).
+
+---
+
+## Addendum (v1.2.0): client share links
+
+`invoice_shares` (`pb_migrations/1780900000_recurring_and_sharing.js`) is the
+only collection with a public read path. Design:
+
+- **What is exposed**: a snapshot of one invoice (lines, totals, dates, notes),
+  the client's name/company/email/phone and the owner's business profile. The
+  live `invoices` / `contacts` records stay owner-only.
+- **Access**: `viewRule` requires `@request.query.token = token`. Tokens are
+  32 random bytes (base64url, 43 chars) from `crypto.getRandomValues`; the
+  field pattern rejects anything under 32 chars. `listRule` is owner-only, so
+  shares can't be enumerated, and create/update/delete are owner-only with the
+  `user` freeze. Verified: no token / wrong token → 404, anonymous list → empty,
+  anonymous update → 404.
+- **Token handling**: links carry the token in the URL fragment
+  (`/share/<id>#<token>`), which browsers never send to servers, so it doesn't
+  end up in access logs, proxies or `Referer` headers. The app sends it to
+  PocketBase as a query parameter on the API call only.
+- **Revocation**: turning a link off deletes the share record; deleting an
+  invoice or its client deletes its share too.

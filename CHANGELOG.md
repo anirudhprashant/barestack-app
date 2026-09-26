@@ -10,6 +10,42 @@ Self-hosters: anything that requires you to change configuration, re-run
 steps needed. If a release has no **Breaking** section, upgrading is a pull and
 a rebuild.
 
+## [1.2.0] - 2026-09-26
+
+Upgrading: pull, rebuild, and restart PocketBase with `--migrationsDir
+./pb_migrations --hooksDir ./pb_hooks` (as `start.sh` does). One new migration
+adds two optional invoice fields and the `invoice_shares` collection.
+
+### Added
+
+- **Recurring invoices**: weekly, monthly, quarterly or yearly. A server cron
+  (`pb_hooks/recurring.pb.js`, hourly) creates each new invoice as a Draft with
+  the same lines, tax, notes and payment window, numbered in your series.
+  Missed periods are caught up; month-end dates stay on the month end.
+- **Client share links**: a private, read-only invoice page with PDF download
+  and print, no account needed. It refreshes when you edit the invoice and can
+  be turned off at any time.
+- **Dark mode**: light, dark or follow the system, in Settings, the header or
+  `Shift+D`. Charts use colour pairs validated for both themes.
+- **Real-time sync** across tabs and devices via PocketBase subscriptions.
+- **Keyboard shortcuts**: `g` + letter to navigate, `n` + letter to create,
+  `/` to search, `t` for the timer, `?` for the list.
+- **Sample data**: load a demo agency from the dashboard or Settings, and
+  remove it again in one click.
+- **Installable app** (web manifest and icons).
+- **End-to-end test suite** (Playwright) against a real PocketBase and the
+  production build, run in CI on every pull request.
+
+### Fixed
+
+- Deletes are idempotent, so a cascade no longer fails half-way when a record
+  was already removed (for example in another tab).
+
+### Security
+
+- CI workflow runs with read-only `permissions` (SECURITY_AUDIT F11).
+- Share-link threat model documented in SECURITY_AUDIT.md.
+
 ## [1.1.0] - 2026-09-26
 
 Upgrading is a pull and a rebuild: restart PocketBase with
@@ -156,5 +192,6 @@ enough to pin a version to.
   a modified version as a network service, AGPL-3.0 section 13 requires you to
   offer users the source of your modified version.
 
+[1.2.0]: https://github.com/anirudhprashant/barestack-app/releases/tag/v1.2.0
 [1.1.0]: https://github.com/anirudhprashant/barestack-app/releases/tag/v1.1.0
 [1.0.0]: https://github.com/anirudhprashant/barestack-app/releases/tag/v1.0.0
