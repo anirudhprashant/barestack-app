@@ -42,7 +42,7 @@ riskier migration and is left to the maintainer).
 | 1 | High | `recent_activity` & `import_batches` fully client-writable → forged/backdated activity logs | PARTIAL (pb_hooks integrity guards added; full transactional tie still doc-only) |
 | 2 | Medium | Zod validation schemas are dead code on the write path | FIXED |
 | 3 | Medium | No `Strict-Transport-Security` (HSTS) | FIXED (serve.cjs) |
-| 4 | Medium | `user` field is client-writable text; update rules don't freeze it → ownership re-parenting | DOC-ONLY (needs relation migration) |
+| 4 | Medium | `user` field is client-writable text; update rules don't freeze it → ownership re-parenting | FIXED (v1.1.0 update-rule freeze) |
 | 5 | Medium | `install.sh`: binary downloaded with no checksum, PB on plaintext `0.0.0.0` HTTP, no `--origins`/`--publicUrl`, `curl\|bash` promoted | PARTIAL (checksum + guidance added) |
 | 6 | Medium | Silent-skip in `require_verified` migration → partial fallback to non-verified rules | FIXED (idempotent re-pin migration) |
 | 7 | Low | Bulk-create carries a server `id` on "create new" duplicate rows | FIXED |
@@ -223,7 +223,7 @@ to the `securityHeaders` object in `serve.cjs`, with a comment noting it only
 matters over TLS (it is a no-op over HTTP, so local dev is unaffected). If TLS
 terminates at an upstream proxy, set it there too.
 
-### F4 — `user` ownership is client-writable re-parentable (Medium, DOC-ONLY)
+### F4 — `user` ownership is client-writable re-parentable (Medium, FIXED in v1.1.0)
 
 The ownership discriminator `user` is a client-writable `text` field
 (`1779676001983_created_contacts.js:87-93`, max 100), not a relation, and the
@@ -239,6 +239,15 @@ adding a PocketBase rule binding `@request.body.user` on create and freezing
 `user` on update — a schema migration that risks existing data rows and is not
 safe to land blind within a hardening pass. **Recommended:** plan a `user`-as-
 relation migration with a data backfill as a separate, tested change.
+
+**Update (v1.1.0): FIXED.** `pb_migrations/1780800000_v1_1_schema.js` sets every
+data collection's update rule to the verified-owner rule plus
+`@request.body.user:changed = false`, so a PATCH that tries to move a record
+into another account is rejected (404, same as any record you don't own), while
+normal edits, including ones that resend the unchanged `user`, keep working.
+Verified against PocketBase 0.36.2. The client also strips `user` from every
+update payload (`src/lib/api.ts`). The field stays `text` rather than a
+relation, which avoids a risky backfill and changes nothing for existing rows.
 
 ### F5 — `install.sh` self-host posture (Medium, PARTIAL)
 
