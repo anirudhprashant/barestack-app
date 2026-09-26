@@ -2,7 +2,7 @@
   "name": "barestack-crm",
   "description": "Open-source business OS for agencies and freelancers: CRM, projects, time tracking, invoicing, expenses and reports. React, TypeScript and PocketBase.",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "license": "AGPL-3.0-only",
   "repository": {
@@ -15,7 +15,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "start": "vite preview --port 3000 --host --strictPort"
+    "start": "vite preview --port 3000 --host --strictPort",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "date-fns": "^3.6.0",
@@ -32,6 +33,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/vite": "^4.3.0",
     "@types/file-saver": "^2.0.7",
     "@types/jszip": "^3.4.0",
