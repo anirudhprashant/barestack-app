@@ -1,0 +1,4 @@
+{
+  "//": "PocketBase JSVM hooks are CommonJS; this keeps Node/vitest reading them that way too.",
+  "type": "commonjs"
+}
