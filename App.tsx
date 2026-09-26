@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { DataProvider } from './dataStore';
 import { AuthProvider, useAuth } from './auth';
@@ -8,6 +9,9 @@ import AppLayout from './components/AppLayout';
 import LoginPage from './pages/LoginPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import VerifyGate from './pages/VerifyGate';
+
+// Public client-facing invoice page: loaded only when someone opens a link.
+const SharedInvoice = lazy(() => import('./pages/SharedInvoice'));
 
 function AppRouter() {
     const { isAuthenticated, session } = useAuth();
@@ -20,6 +24,17 @@ function AppRouter() {
             <Routes>
                 <Route path="/verify/:token" element={<VerifyEmailPage />} />
             </Routes>
+        );
+    }
+
+    // Shared invoice links work for anyone, signed in or not.
+    if (location.pathname.startsWith('/share/')) {
+        return (
+            <Suspense fallback={null}>
+                <Routes>
+                    <Route path="/share/:id" element={<SharedInvoice />} />
+                </Routes>
+            </Suspense>
         );
     }
 

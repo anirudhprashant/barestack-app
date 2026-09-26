@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { addDays, format } from 'date-fns';
+import { addDays, addMonths, addWeeks, format } from 'date-fns';
 import { Button, Icon, IconButton, Modal, Input, Select, Textarea } from './ui';
-import { Invoice, InvoiceStatus, Contact, LineItem, TimeEntry } from '../types';
+import { Invoice, InvoiceStatus, Contact, LineItem, TimeEntry, Recurrence } from '../types';
 import { useData, useCurrency } from '../dataStore';
 import { useToast } from '../src/context/ToastContext';
 import { ContactForm } from './ContactForm';
@@ -52,6 +52,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, initialData, 
     const [status, setStatus] = useState<InvoiceStatus>(initialData?.status || InvoiceStatus.Draft);
     const [taxRate, setTaxRate] = useState(String(initialData ? initialData.tax_rate ?? 0 : profile.default_tax_rate || 0));
     const [notes, setNotes] = useState(initialData?.notes || '');
+    const [recurrence, setRecurrence] = useState<Recurrence | ''>(initialData?.recurrence || '');
+    const [nextIssue, setNextIssue] = useState(toDateInput(initialData?.next_issue_date));
     const [items, setItems] = useState<DraftItem[]>(
         initialData?.line_items?.length ? initialData.line_items.map(toDraft) : [blankItem()]
     );
@@ -118,12 +120,25 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, initialData, 
         setItems(prev => prev.map(i => (i.id === id ? { ...i, [field]: value } : i)));
     };
 
+    const nextAfter = (issue: string, rec: Recurrence | ''): string => {
+        const d = parseDateOnly(issue);
+        if (!d || !rec) return '';
+        const n = rec === 'weekly' ? addWeeks(d, 1) : addMonths(d, rec === 'monthly' ? 1 : rec === 'quarterly' ? 3 : 12);
+        return format(n, 'yyyy-MM-dd');
+    };
+
+    const handleRecurrenceChange = (rec: Recurrence | '') => {
+        setRecurrence(rec);
+        setNextIssue(rec ? nextAfter(issueDate, rec) : '');
+    };
+
     const handleIssueDateChange = (value: string) => {
         setIssueDate(value);
         // Keep the payment window when the issue date moves (new invoices only).
         if (!isEditing && value) {
             setDueDate(format(addDays(parseDateOnly(value)!, profile.payment_terms_days ?? 30), 'yyyy-MM-dd'));
         }
+        if (recurrence && value) setNextIssue(nextAfter(value, recurrence));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -150,6 +165,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, initialData, 
             toast(`Invoice ${number} already exists.`, 'error');
             return;
         }
+        if (recurrence && (!nextIssue || nextIssue <= issueDate)) {
+            toast('The next invoice date must be after the issue date.', 'error');
+            return;
+        }
         if (dueDate && issueDate && dueDate < issueDate) {
             toast('Due date is before the issue date.', 'error');
             return;
@@ -167,6 +186,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, initialData, 
             status,
             notes: notes.trim(),
             paid_date: status === InvoiceStatus.Paid ? (initialData?.paid_date || toStoredDate(new Date())) : '',
+            recurrence,
+            next_issue_date: recurrence && nextIssue ? toStoredDate(nextIssue) : '',
         };
 
         try {
@@ -245,6 +266,24 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, initialData, 
                     <Select label="Status" id="invoice-status" className="col-span-2 sm:col-span-1" value={status} onChange={e => setStatus(e.target.value as InvoiceStatus)}>
                         {Object.values(InvoiceStatus).map(s => <option key={s} value={s}>{s}</option>)}
                     </Select>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 items-end">
+                    <Select label="Repeats" id="invoice-recurrence" value={recurrence} onChange={e => handleRecurrenceChange(e.target.value as Recurrence | '')}>
+                        <option value="">Doesn't repeat</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="yearly">Yearly</option>
+                    </Select>
+                    {recurrence && (
+                        <Input label="Next invoice on" id="invoice-next" type="date" value={nextIssue} min={issueDate} onChange={e => setNextIssue(e.target.value)} required />
+                    )}
+                    {recurrence && (
+                        <p className="col-span-2 sm:col-span-1 text-xs text-muted pb-2">
+                            A draft copy is created automatically on each date, with the same lines and payment terms.
+                        </p>
+                    )}
                 </div>
 
                 <div className="border-t border-border pt-4">

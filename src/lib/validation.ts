@@ -210,6 +210,8 @@ const COLLECTION_RULES: Record<string, Record<string, FieldRule>> = {
         tax_rate: { kind: 'num', min: 0, max: 100 },
         line_items: { kind: 'json_array', maxItems: 500, item: { description: 500, quantity: 1e9, rate: 1e15 } },
         notes: { kind: 'text', max: 5000 },
+        recurrence: { kind: 'select', values: ['weekly', 'monthly', 'quarterly', 'yearly'] as const },
+        next_issue_date: { kind: 'text', max: 100 },
     },
     time_entries: {
         project_id: { kind: 'text', max: 100 },
@@ -242,6 +244,10 @@ const COLLECTION_RULES: Record<string, Record<string, FieldRule>> = {
     import_batches: {
         file_name: { kind: 'text', max: 500 },
         contact_count: { kind: 'num', min: 0, max: 1e9 },
+    },
+    invoice_shares: {
+        invoice_id: { kind: 'text', max: 100 },
+        token: { kind: 'text', max: 64 },
     },
     business_profiles: {
         business_name: { kind: 'text', max: 500 },
