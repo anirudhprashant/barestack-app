@@ -62,7 +62,7 @@ const LoginPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#192118] font-body flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-panel font-body flex items-center justify-center p-4 relative overflow-hidden">
             {/* Ambient radial glows, slowly drifting in the background */}
             <div
                 aria-hidden
@@ -82,7 +82,7 @@ const LoginPage: React.FC = () => {
             <div className="w-full max-w-md relative z-10">
                 {/* Branding */}
                 <div className="mb-8">
-                    <h1 className="text-5xl font-bold font-display text-canvas tracking-tight">
+                    <h1 className="text-5xl font-bold font-display text-cream tracking-tight">
                         BareStack<span className="italic">OS</span>
                     </h1>
                     <p className="text-sm font-semibold text-muted uppercase tracking-widest mt-2">

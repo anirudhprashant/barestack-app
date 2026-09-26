@@ -8,6 +8,7 @@ import { Icon } from './ui';
 import { Power } from 'lucide-react';
 import { computeNotifications } from '../src/lib/notifications';
 import { formatDuration } from '../src/lib/format';
+import { useTheme } from '../src/context/ThemeContext';
 
 interface HeaderProps {
     onMenuToggle?: () => void;
@@ -70,7 +71,7 @@ const Notifications: React.FC = () => {
             >
                 <Icon name="bell" className="w-5 h-5" />
                 {items.length > 0 && (
-                    <span className={`absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 text-[10px] font-bold leading-[18px] text-center text-canvas ${critical ? 'bg-activity-red' : 'bg-charcoal'}`}>
+                    <span className={`absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 text-[10px] font-bold leading-[18px] text-center ${critical ? 'bg-activity-red text-cream' : 'bg-charcoal text-canvas'}`}>
                         {items.length > 9 ? '9+' : items.length}
                     </span>
                 )}
@@ -134,6 +135,16 @@ const TimerPill: React.FC = () => {
     );
 };
 
+const ThemeButton: React.FC = () => {
+    const { theme, toggleTheme } = useTheme();
+    const label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+    return (
+        <button onClick={toggleTheme} className="hidden sm:inline-flex p-2 text-muted hover:text-charcoal transition-colors border border-transparent hover:border-border" aria-label={label} title={label}>
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="w-5 h-5" />
+        </button>
+    );
+};
+
 const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenPalette }) => {
     const location = useLocation();
     const { logout } = useAuth();
@@ -173,6 +184,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenPalette }) => {
                     <kbd className="hidden md:inline text-[10px] font-semibold border border-border px-1">{isMac ? '⌘K' : 'Ctrl K'}</kbd>
                 </button>
                 <TimerPill />
+                <ThemeButton />
                 <Notifications />
                 <div className="h-5 w-px bg-border hidden sm:block"></div>
                 <button

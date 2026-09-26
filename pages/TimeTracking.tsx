@@ -21,7 +21,7 @@ const TimerCard: React.FC = () => {
     const runningProject = data.projects.find(p => p.id === timer.projectId);
 
     return (
-        <div className="bg-[#192118] paper-grain relative text-canvas border border-border p-5 sm:p-6">
+        <div className="bg-panel paper-grain relative text-cream border border-border p-5 sm:p-6">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 font-body">
                     <Icon name="timer" className="w-4 h-4" /> Timer
@@ -31,18 +31,18 @@ const TimerCard: React.FC = () => {
             {timer.running ? (
                 <div>
                     <p className="text-4xl sm:text-5xl font-bold tabular-nums tracking-tight">{formatDuration(timer.elapsedMs)}</p>
-                    <p className="text-sm text-canvas/70 mt-1 truncate">{runningProject?.name || 'Project'}{timer.description ? ` · ${timer.description}` : ''}</p>
+                    <p className="text-sm text-cream/70 mt-1 truncate">{runningProject?.name || 'Project'}{timer.description ? ` · ${timer.description}` : ''}</p>
                     <div className="flex gap-2 mt-5">
-                        <button onClick={timer.stop} className="flex-1 flex items-center justify-center gap-2 bg-canvas text-charcoal font-semibold py-2.5 hover:bg-surface transition-colors">
+                        <button onClick={timer.stop} className="flex-1 flex items-center justify-center gap-2 bg-cream text-[#151817] font-semibold py-2.5 hover:bg-cream/90 transition-colors">
                             <Icon name="stop" className="w-4 h-4" /> Stop &amp; save
                         </button>
-                        <button onClick={timer.discard} className="px-3 border border-canvas/30 text-canvas/70 hover:text-canvas hover:border-canvas text-sm font-semibold transition-colors">
+                        <button onClick={timer.discard} className="px-3 border border-cream/30 text-cream/70 hover:text-cream hover:border-cream text-sm font-semibold transition-colors">
                             Discard
                         </button>
                     </div>
                 </div>
             ) : active.length === 0 ? (
-                <p className="text-sm text-canvas/70">Create an active project to start tracking time.</p>
+                <p className="text-sm text-cream/70">Create an active project to start tracking time.</p>
             ) : (
                 <form
                     className="space-y-3"
@@ -52,7 +52,7 @@ const TimerCard: React.FC = () => {
                         aria-label="Project to track"
                         value={projectId}
                         onChange={e => setProjectId(e.target.value)}
-                        className="w-full p-2.5 bg-transparent border border-canvas/30 text-canvas focus:outline-none focus:border-canvas [&>option]:text-charcoal"
+                        className="w-full p-2.5 bg-transparent border border-cream/30 text-cream focus:outline-none focus:border-cream [&>option]:text-[#151817]"
                     >
                         {active.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
@@ -61,9 +61,9 @@ const TimerCard: React.FC = () => {
                         value={description}
                         onChange={e => setDescription(e.target.value)}
                         placeholder="What are you working on?"
-                        className="w-full p-2.5 bg-transparent border border-canvas/30 text-canvas placeholder:text-canvas/40 focus:outline-none focus:border-canvas"
+                        className="w-full p-2.5 bg-transparent border border-cream/30 text-cream placeholder:text-cream/40 focus:outline-none focus:border-cream"
                     />
-                    <button type="submit" className="w-full flex items-center justify-center gap-2 bg-canvas text-charcoal font-semibold py-2.5 hover:bg-surface transition-colors">
+                    <button type="submit" className="w-full flex items-center justify-center gap-2 bg-cream text-[#151817] font-semibold py-2.5 hover:bg-cream/90 transition-colors">
                         <Icon name="play" className="w-4 h-4" /> Start timer
                     </button>
                 </form>
@@ -149,9 +149,9 @@ const TimeTracking: React.FC = () => {
     return (
         <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <StatTile label="This week" value={formatHours(weekTotal)} sub={isThisWeek ? 'Logged this week' : `Week of ${format(week[0], 'MMM d')}`} badge="Week" badgeClass="bg-[#c37624] text-canvas" />
+                <StatTile label="This week" value={formatHours(weekTotal)} sub={isThisWeek ? 'Logged this week' : `Week of ${format(week[0], 'MMM d')}`} badge="Week" badgeClass="bg-[#c37624] text-cream" />
                 <StatTile label="Billable" value={formatHours(weekBillable)} sub={weekTotal ? `${Math.round((weekBillable / weekTotal) * 100)}% of the week` : 'No time this week'} badge="Billable" />
-                <StatTile label="Unbilled" value={formatHours(unbilled.hours)} sub={unbilled.value ? `${formatMoney(unbilled.value, currency)} ready to invoice` : 'Billable, not invoiced'} badge="To bill" badgeClass="bg-[#e8b86d] text-charcoal" />
+                <StatTile label="Unbilled" value={formatHours(unbilled.hours)} sub={unbilled.value ? `${formatMoney(unbilled.value, currency)} ready to invoice` : 'Billable, not invoiced'} badge="To bill" badgeClass="bg-[#e8b86d] text-[#151817]" />
                 <StatTile label="Active projects" value={projects.filter(p => p.status === ProjectStatus.Active).length} sub="Available to track" badge="Projects" />
             </div>
 
@@ -197,7 +197,7 @@ const TimeTracking: React.FC = () => {
                                             <span className={`text-xs font-bold mb-2 tabular-nums ${hours > 0 ? 'text-charcoal' : 'text-transparent'}`}>{Math.round(hours * 10) / 10}h</span>
                                             <div className="w-full flex-1 flex items-end">
                                                 <div
-                                                    className={`w-full transition-all duration-300 ${isToday ? 'bg-[#c37624]' : hours > 0 ? 'bg-charcoal group-hover:bg-[#192118]' : 'bg-surface border-x border-t border-border'}`}
+                                                    className={`w-full transition-all duration-300 ${isToday ? 'bg-[#c37624]' : hours > 0 ? 'bg-charcoal group-hover:opacity-75' : 'bg-surface border-x border-t border-border'}`}
                                                     style={{ height: hours > 0 ? `${barPct}%` : '4px' }}
                                                     title={`${format(day, 'EEEE')}: ${formatHours(hours)}`}
                                                 />
@@ -264,7 +264,7 @@ const TimeTracking: React.FC = () => {
                                         <TableCell className="hidden sm:table-cell">
                                             {!entry.is_billable ? <span className="text-xs text-muted">Non-billable</span>
                                                 : entry.invoice_id ? <span className="text-xs font-bold px-1.5 py-0.5 bg-activity-green/10 text-activity-green">Billed</span>
-                                                    : <span className="text-xs font-bold px-1.5 py-0.5 bg-[#192118] text-canvas">Billable</span>}
+                                                    : <span className="text-xs font-bold px-1.5 py-0.5 bg-panel text-cream">Billable</span>}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-0.5">

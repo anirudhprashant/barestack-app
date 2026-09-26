@@ -5,6 +5,7 @@ import { useData } from '../dataStore';
 import { useTimer } from '../src/context/TimerContext';
 import { Icon, IconName } from './ui';
 import { navItems } from '../constants';
+import { useTheme } from '../src/context/ThemeContext';
 
 interface Command {
     id: string;
@@ -21,6 +22,7 @@ export const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = 
     const navigate = useNavigate();
     const { data } = useData();
     const timer = useTimer();
+    const { theme, toggleTheme } = useTheme();
     const [query, setQuery] = useState('');
     const [active, setActive] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +51,8 @@ export const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = 
             ...navItems.map(n => ({ id: `nav-${n.href}`, label: n.label, icon: iconFor[n.icon] || 'grid', group: 'Go to', run: go(n.href) })),
             { id: 'nav-pipeline', label: 'Deal pipeline', icon: 'trending-up', group: 'Go to', keywords: 'deals sales', run: go('/crm/pipeline') },
             { id: 'nav-activity', label: 'Activity log', icon: 'activity', group: 'Go to', run: go('/crm/activities') },
+            { id: 'theme', label: theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode', icon: theme === 'dark' ? 'sun' : 'moon', group: 'Go to', keywords: 'theme appearance night', run: () => { toggleTheme(); onClose(); } },
+            { id: 'shortcuts', label: 'Keyboard shortcuts', icon: 'keyboard', group: 'Go to', keywords: 'help keys hotkeys', run: () => { onClose(); setTimeout(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' })), 50); } },
             { id: 'nav-settings', label: 'Settings', icon: 'settings', group: 'Go to', keywords: 'business currency profile backup', run: go('/settings') },
         ];
         for (const c of data.contacts) {
@@ -63,7 +67,7 @@ export const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = 
         }
         return list;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data.contacts, data.projects, data.invoices, timer.running]);
+    }, [data.contacts, data.projects, data.invoices, timer.running, theme]);
 
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -99,7 +103,7 @@ export const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = 
 
     let lastGroup = '';
     return createPortal(
-        <div className="fixed inset-0 bg-charcoal/70 z-[60] flex items-start justify-center p-4 pt-[12vh]" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-start justify-center p-4 pt-[12vh]" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="w-full max-w-xl bg-canvas border border-charcoal shadow-hard" role="dialog" aria-modal="true" aria-label="Command palette">
                 <div className="flex items-center gap-3 px-4 border-b border-border">
                     <Icon name="search" className="w-5 h-5 text-muted shrink-0" />
