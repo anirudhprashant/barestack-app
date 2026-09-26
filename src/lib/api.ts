@@ -33,7 +33,7 @@ function toServer(collection: string, data: Payload): Payload {
     return data;
 }
 
-function fromServer<T extends RecordModel>(collection: string, record: T): T {
+export function fromServer<T extends RecordModel>(collection: string, record: T): T {
     if (collection === 'contacts') {
         return { ...record, tags: tagsFromText((record as Payload).tags) };
     }
@@ -78,9 +78,18 @@ async function update(collection: string, id: string, data: Payload): Promise<Re
     return fromServer(collection, rec);
 }
 
+// Deletes are idempotent: a record that is already gone (deleted in another
+// tab, by a cascade, or by realtime) counts as success, so multi-step
+// cascades don't fail half-way on a 404.
+export const isNotFound = (e: unknown) => (e as { status?: number })?.status === 404;
+
 async function remove(collection: string, id: string): Promise<void> {
     assertAllowed(collection);
-    await pb.collection(collection).delete(sanitizeId(id), { requestKey: null });
+    try {
+        await pb.collection(collection).delete(sanitizeId(id), { requestKey: null });
+    } catch (e) {
+        if (!isNotFound(e)) throw e;
+    }
 }
 
 // Every record the user owns, paged 500 at a time. The old single getList(1, 500)
@@ -116,6 +125,13 @@ export const expenses = crud('expenses', '-date,-created');
 export const notes = crud('notes');
 export const importBatches = crud('import_batches');
 export const businessProfiles = crud('business_profiles');
+export const invoiceShares = crud('invoice_shares');
+
+// Public, unauthenticated read of a shared invoice. The server only returns it
+// when the secret token matches (see migration 1780900000).
+export async function fetchPublicShare(id: string, token: string): Promise<RecordModel> {
+    return pb.collection('invoice_shares').getOne(sanitizeId(id), { query: { token }, requestKey: null });
+}
 
 export const recentActivity = {
     // The feed only ever shows recent entries; cap it rather than paging the

@@ -18,7 +18,11 @@ import {
     Creatable,
     UserProfile,
     BusinessProfile,
+    InvoiceShare,
 } from './types';
+import { buildShareSnapshot, newShareToken } from './src/lib/share';
+import { restoreBackup } from './src/lib/backup';
+import { buildSampleBackup, SAMPLE_TAG } from './src/lib/sampleData';
 
 type WithId<T> = Partial<T> & { id: string };
 
@@ -57,6 +61,12 @@ interface DataContextType {
     addRecentActivity: (activity: Omit<RecentActivity, 'id' | 'user' | 'timestamp'> & { timestamp?: string }) => Promise<void>;
     undoImport: (batchId: string) => Promise<void>;
     saveBusinessProfile: (profile: Partial<BusinessProfile>) => Promise<BusinessProfile>;
+    // Create (or refresh) the public link for an invoice.
+    shareInvoice: (invoiceId: string) => Promise<InvoiceShare>;
+    revokeShare: (invoiceId: string) => Promise<void>;
+    // Demo content for exploring the app; everything is tagged "sample".
+    loadSampleData: () => Promise<void>;
+    removeSampleData: () => Promise<void>;
     updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
 }
 
@@ -88,11 +98,27 @@ const initialState: AppState = {
     recentActivity: [],
     notes: [],
     importBatches: [],
+    invoiceShares: [],
     businessProfile: defaultBusinessProfile,
     userProfile: { name: 'User', email: '' },
 };
 
 type ListKey = Exclude<keyof AppState, 'businessProfile' | 'userProfile'>;
+
+// PocketBase collection -> AppState key, for realtime events.
+const REALTIME: [string, ListKey][] = [
+    ['contacts', 'contacts'],
+    ['deals', 'deals'],
+    ['projects', 'projects'],
+    ['tasks', 'tasks'],
+    ['invoices', 'invoices'],
+    ['time_entries', 'timeEntries'],
+    ['expenses', 'expenses'],
+    ['notes', 'notes'],
+    ['recent_activity', 'recentActivity'],
+    ['import_batches', 'importBatches'],
+    ['invoice_shares', 'invoiceShares'],
+];
 
 interface Binding {
     create: (data: Record<string, unknown>) => Promise<unknown>;
@@ -124,7 +150,7 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         try {
             const [
                 contacts, deals, projects, tasks, invoices,
-                timeEntries, expenses, recentActivity, notes, importBatches, profiles,
+                timeEntries, expenses, recentActivity, notes, importBatches, profiles, shares,
             ] = await Promise.all([
                 api.contacts.fetch(userId),
                 api.deals.fetch(userId),
@@ -139,6 +165,7 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
                 // A server that hasn't run the v1.1 migrations yet has no
                 // business_profiles collection; carry on with defaults.
                 api.businessProfiles.fetch(userId).catch(() => []),
+                api.invoiceShares.fetch(userId).catch(() => []),
             ]);
 
             setData(prev => ({
@@ -153,6 +180,7 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
                 recentActivity: recentActivity as unknown as RecentActivity[],
                 notes: notes as unknown as Note[],
                 importBatches: importBatches as unknown as ImportBatch[],
+                invoiceShares: shares as unknown as InvoiceShare[],
                 businessProfile: profiles[0]
                     ? { ...defaultBusinessProfile, ...(profiles[0] as unknown as BusinessProfile) }
                     : defaultBusinessProfile,
@@ -186,6 +214,65 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         };
     }, [fetchData]);
 
+    // Live updates: changes made in another tab, device or by the server
+    // (recurring invoices) appear without a reload. Our own writes echo back
+    // too; upserting by id makes that a no-op. The subscription obeys the same
+    // owner-only rules as every read.
+    useEffect(() => {
+        if (!userId) return;
+        let cancelled = false;
+        const unsubs: (() => Promise<void>)[] = [];
+        // Events are queued and applied together, so a bulk import (hundreds of
+        // creates) re-renders a handful of times instead of once per record.
+        let queue: { key: ListKey; action: string; rec: { id: string } }[] = [];
+        let timer: number | undefined;
+        const flush = () => {
+            timer = undefined;
+            const batch = queue;
+            queue = [];
+            setData(prev => {
+                const next = { ...prev };
+                for (const { key, action, rec } of batch) {
+                    const list = next[key] as unknown as { id?: string }[];
+                    if (action === 'delete') {
+                        (next as Record<string, unknown>)[key] = list.filter(i => i.id !== rec.id);
+                        continue;
+                    }
+                    const idx = list.findIndex(i => i.id === rec.id);
+                    if (idx === -1) {
+                        (next as Record<string, unknown>)[key] = [rec, ...list];
+                    } else {
+                        const copy = [...list];
+                        copy[idx] = { ...copy[idx], ...rec };
+                        (next as Record<string, unknown>)[key] = copy;
+                    }
+                }
+                return next;
+            });
+        };
+        const apply = (key: ListKey, action: string, raw: Record<string, unknown>) => {
+            const collection = key === 'contacts' ? 'contacts' : key === 'invoices' ? 'invoices' : '';
+            const rec = api.fromServer(collection, raw as never) as unknown as { id: string };
+            queue.push({ key, action, rec });
+            if (timer === undefined) timer = window.setTimeout(flush, 120);
+        };
+        (async () => {
+            for (const [collection, key] of REALTIME) {
+                try {
+                    const unsub = await pb.collection(collection).subscribe('*', (e) => apply(key, e.action, e.record as unknown as Record<string, unknown>));
+                    if (cancelled) unsub(); else unsubs.push(unsub);
+                } catch {
+                    // Realtime is a nicety; the app works without it.
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+            if (timer !== undefined) window.clearTimeout(timer);
+            unsubs.forEach(u => u().catch(() => undefined));
+        };
+    }, [userId]);
+
     // Sync userProfile with session user data on login/signup
     useEffect(() => {
         if (session?.user) {
@@ -209,7 +296,8 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         const add = async (item: Creatable<T>): Promise<T> => {
             if (!userId) throw new Error('User not authenticated');
             const rec = await binding.create({ ...(item as Record<string, unknown>), user: userId }) as T;
-            setData(prev => ({ ...prev, [key]: [rec, ...(prev[key] as unknown as T[])] }));
+            // Upsert: the realtime echo of this create may already have landed.
+            setData(prev => ({ ...prev, [key]: [rec, ...(prev[key] as unknown as T[]).filter(i => i.id !== rec.id)] }));
             return rec;
         };
 
@@ -250,7 +338,7 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
                 timestamp: activity.timestamp || new Date().toISOString(),
                 user: userId,
             }) as unknown as RecentActivity;
-            setData(prev => ({ ...prev, recentActivity: [rec, ...prev.recentActivity] }));
+            setData(prev => ({ ...prev, recentActivity: [rec, ...prev.recentActivity.filter(a => a.id !== rec.id)] }));
         } catch (e) {
             console.error('Failed to log activity:', e);
         }
@@ -276,8 +364,8 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
 
         setData(prev => ({
             ...prev,
-            contacts: [...newContacts, ...prev.contacts],
-            importBatches: [newBatch, ...prev.importBatches],
+            contacts: [...newContacts, ...prev.contacts.filter(c => !newContacts.some(n => n.id === c.id))],
+            importBatches: [newBatch, ...prev.importBatches.filter(b => b.id !== newBatch.id)],
         }));
     }, [userId, resync]);
 
@@ -289,7 +377,8 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         await Promise.all([
             ...d.tasks.filter(t => t.id && projectIds.has(t.project_id)).map(t => api.tasks.remove(t.id!)),
             ...d.timeEntries.filter(te => te.id && projectIds.has(te.project_id)).map(te => api.timeEntries.remove(te.id!)),
-            ...d.expenses.filter(ex => ex.id && ex.project_id && projectIds.has(ex.project_id)).map(ex => api.expenses.update(ex.id!, { project_id: '' })),
+            ...d.expenses.filter(ex => ex.id && ex.project_id && projectIds.has(ex.project_id)).map(ex =>
+                api.expenses.update(ex.id!, { project_id: '' }).catch(e => { if (!api.isNotFound(e)) throw e; })),
         ]);
         await Promise.all([...projectIds].map(id => api.projects.remove(id)));
     }, []);
@@ -320,6 +409,7 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
             await Promise.all([
                 ...d.deals.filter(x => x.id && contactIds.has(x.contact_id)).map(x => api.deals.remove(x.id!)),
                 ...d.invoices.filter(x => x.id && contactIds.has(x.client_id)).map(x => api.invoices.remove(x.id!)),
+                ...d.invoiceShares.filter(sh => d.invoices.some(i => i.id === sh.invoice_id && contactIds.has(i.client_id))).map(sh => api.invoiceShares.remove(sh.id)),
                 ...d.notes.filter(x => x.id && contactIds.has(x.contact_id)).map(x => api.notes.remove(x.id!)),
             ]);
             await Promise.all([...contactIds].map(id => api.contacts.remove(id)));
@@ -333,6 +423,7 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
                 contacts: next.contacts.filter(c => !contactIds.has(c.id!)),
                 deals: next.deals.filter(x => !contactIds.has(x.contact_id)),
                 invoices: next.invoices.filter(x => !contactIds.has(x.client_id)),
+                invoiceShares: next.invoiceShares.filter(sh => next.invoices.some(i => i.id === sh.invoice_id && !contactIds.has(i.client_id))),
                 notes: next.notes.filter(x => !contactIds.has(x.contact_id)),
             };
         });
@@ -357,6 +448,8 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         const billed = dataRef.current.timeEntries.filter(te => te.invoice_id === id && te.id);
         try {
             await Promise.all(billed.map(te => api.timeEntries.update(te.id!, { invoice_id: '' })));
+            const share = dataRef.current.invoiceShares.find(sh => sh.invoice_id === id);
+            if (share) await api.invoiceShares.remove(share.id);
             await api.invoices.remove(id);
         } catch (e) {
             return resync(e);
@@ -364,6 +457,7 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         setData(prev => ({
             ...prev,
             invoices: prev.invoices.filter(i => i.id !== id),
+            invoiceShares: prev.invoiceShares.filter(sh => sh.invoice_id !== id),
             timeEntries: prev.timeEntries.map(te => (te.invoice_id === id ? { ...te, invoice_id: '' } : te)),
         }));
     }, [resync]);
@@ -379,6 +473,64 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         setData(prev => ({ ...prev, businessProfile: merged }));
         return merged;
     }, [userId]);
+
+    const shareInvoice = useCallback(async (invoiceId: string) => {
+        if (!userId) throw new Error('User not authenticated');
+        const d = dataRef.current;
+        const invoice = d.invoices.find(i => i.id === invoiceId);
+        if (!invoice) throw new Error('Invoice not found');
+        const snapshot = buildShareSnapshot(invoice, d.contacts.find(c => c.id === invoice.client_id), d.businessProfile, d.userProfile);
+        const existing = d.invoiceShares.find(s => s.invoice_id === invoiceId);
+        const rec = (existing
+            ? await api.invoiceShares.update(existing.id, { snapshot })
+            : await api.invoiceShares.create({ invoice_id: invoiceId, token: newShareToken(), snapshot, user: userId })) as unknown as InvoiceShare;
+        setData(prev => ({ ...prev, invoiceShares: [rec, ...prev.invoiceShares.filter(s => s.id !== rec.id)] }));
+        return rec;
+    }, [userId]);
+
+    const revokeShare = useCallback(async (invoiceId: string) => {
+        const existing = dataRef.current.invoiceShares.find(s => s.invoice_id === invoiceId);
+        if (!existing) return;
+        await api.invoiceShares.remove(existing.id);
+        setData(prev => ({ ...prev, invoiceShares: prev.invoiceShares.filter(s => s.id !== existing.id) }));
+    }, []);
+
+    // Keep a shared link showing the current invoice after every edit.
+    const updateInvoice = useCallback(async (item: WithId<Invoice>) => {
+        const rec = await invoicesApi.update(item);
+        if (dataRef.current.invoiceShares.some(s => s.invoice_id === item.id)) {
+            // dataRef updates on the next render; merge the change in by hand.
+            const merged = { ...dataRef.current.invoices.find(i => i.id === item.id)!, ...rec };
+            dataRef.current = { ...dataRef.current, invoices: dataRef.current.invoices.map(i => (i.id === item.id ? merged : i)) };
+            shareInvoice(item.id).catch(e => console.error('Could not refresh shared invoice:', e));
+        }
+        return rec;
+    }, [invoicesApi, shareInvoice]);
+
+    const loadSampleData = useCallback(async () => {
+        if (!userId) throw new Error('User not authenticated');
+        await restoreBackup(buildSampleBackup(), userId, { hasBusinessProfile: true });
+        await fetchData({ silent: true });
+    }, [userId, fetchData]);
+
+    const removeSampleData = useCallback(async () => {
+        const d = dataRef.current;
+        const ids = new Set(d.contacts.filter(c => c.tags?.includes(SAMPLE_TAG) && c.id).map(c => c.id!));
+        const projectIds = new Set(d.projects.filter(p => p.id && ids.has(p.client_id)).map(p => p.id!));
+        // Sample expenses are either on sample projects or marked in the description.
+        const expenses = d.expenses.filter(ex => ex.id && ((ex.project_id && projectIds.has(ex.project_id)) || ex.description.endsWith('(sample)')));
+        try {
+            await Promise.all(expenses.map(ex => api.expenses.remove(ex.id!)));
+            // Drop them locally now, so the contact cascade below doesn't try
+            // to unlink expenses that no longer exist.
+            const gone = new Set(expenses.map(ex => ex.id));
+            dataRef.current = { ...dataRef.current, expenses: dataRef.current.expenses.filter(ex => !gone.has(ex.id)) };
+            setData(prev => ({ ...prev, expenses: prev.expenses.filter(ex => !gone.has(ex.id)) }));
+            await deleteContacts(ids);
+        } finally {
+            await fetchData({ silent: true });
+        }
+    }, [deleteContacts, fetchData]);
 
     const updateUserProfile = useCallback(async (profile: Partial<UserProfile>) => {
         if (!session?.user?.id) return;
@@ -407,7 +559,7 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         updateTask: tasksApi.update,
         deleteTask: tasksApi.del,
         addInvoice: invoicesApi.add,
-        updateInvoice: invoicesApi.update,
+        updateInvoice,
         deleteInvoice,
         addTimeEntry: timeEntriesApi.add,
         updateTimeEntry: timeEntriesApi.update,
@@ -421,12 +573,16 @@ export const DataProvider: React.FC<{ children: ReactNode; session: PBSession | 
         addRecentActivity,
         undoImport,
         saveBusinessProfile,
+        shareInvoice,
+        revokeShare,
+        loadSampleData,
+        removeSampleData,
         updateUserProfile,
     }), [
         data, loading, error, refresh,
         contactsApi, dealsApi, projectsApi, tasksApi, invoicesApi, timeEntriesApi, expensesApi, notesApi,
         addMultipleContacts, deleteContact, deleteProject, deleteInvoice, addRecentActivity, undoImport,
-        saveBusinessProfile, updateUserProfile,
+        saveBusinessProfile, updateUserProfile, shareInvoice, revokeShare, updateInvoice, loadSampleData, removeSampleData,
     ]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

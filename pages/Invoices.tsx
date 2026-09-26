@@ -4,7 +4,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { differenceInCalendarDays, startOfYear } from 'date-fns';
 import { Button, Icon, IconButton, Modal, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyState, SearchInput, Segmented, StatTile } from '../components/ui';
-import { Invoice, InvoiceStatus } from '../types';
+import { Invoice, InvoiceShare, InvoiceStatus } from '../types';
 import { useData, useCurrency } from '../dataStore';
 import { InvoiceForm } from '../components/InvoiceForm';
 import { useToast } from '../src/context/ToastContext';
@@ -14,11 +14,12 @@ import { invoiceTotal, effectiveStatus, isUnpaid, nextInvoiceNumber } from '../s
 import { generateInvoicePdf, invoiceFileName } from '../src/lib/invoicePdf';
 import { toCSV, downloadText } from '../src/lib/csv';
 import { invoiceStatusClass } from '../components/badges';
+import { shareUrl } from '../src/lib/share';
 
 type Filter = 'all' | InvoiceStatus;
 
 const Invoices: React.FC = () => {
-    const { data, addInvoice, updateInvoice, deleteInvoice, addRecentActivity } = useData();
+    const { data, addInvoice, updateInvoice, deleteInvoice, addRecentActivity, shareInvoice, revokeShare } = useData();
     const currency = useCurrency();
     const { toast, confirm } = useToast();
     const { invoices, contacts } = data;
@@ -31,6 +32,7 @@ const Invoices: React.FC = () => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [filter, setFilter] = useState<Filter>('all');
     const [search, setSearch] = useState('');
+    const [sharing, setSharing] = useState<Invoice | null>(null);
 
     const clientOf = (inv: Invoice) => contacts.find(c => c.id === inv.client_id);
     const clientName = (inv: Invoice) => clientOf(inv)?.name || 'Unknown Client';
@@ -277,10 +279,10 @@ const Invoices: React.FC = () => {
     return (
         <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-                <StatTile label="Outstanding" value={formatMoney(summary.outstanding, currency)} sub="Sent and unpaid" badge="Due" badgeClass="bg-[#c37624] text-canvas" onClick={() => setFilter(InvoiceStatus.Sent)} />
-                <StatTile label="Overdue" value={formatMoney(summary.overdue, currency)} sub={`${summary.overdueCount} invoice${summary.overdueCount === 1 ? '' : 's'} past due`} badge="Late" badgeClass="bg-activity-red text-canvas" onClick={() => setFilter(InvoiceStatus.Overdue)} />
+                <StatTile label="Outstanding" value={formatMoney(summary.outstanding, currency)} sub="Sent and unpaid" badge="Due" badgeClass="bg-[#c37624] text-cream" onClick={() => setFilter(InvoiceStatus.Sent)} />
+                <StatTile label="Overdue" value={formatMoney(summary.overdue, currency)} sub={`${summary.overdueCount} invoice${summary.overdueCount === 1 ? '' : 's'} past due`} badge="Late" badgeClass="bg-activity-red text-cream" onClick={() => setFilter(InvoiceStatus.Overdue)} />
                 <StatTile label="Paid this year" value={formatMoney(summary.paidYtd, currency)} sub="Collected revenue" badge="YTD" onClick={() => setFilter(InvoiceStatus.Paid)} />
-                <StatTile label="Drafts" value={summary.drafts} sub="Not sent yet" badge="Draft" badgeClass="bg-[#e8b86d] text-charcoal" onClick={() => setFilter(InvoiceStatus.Draft)} />
+                <StatTile label="Drafts" value={summary.drafts} sub="Not sent yet" badge="Draft" badgeClass="bg-[#e8b86d] text-[#151817]" onClick={() => setFilter(InvoiceStatus.Draft)} />
             </div>
 
             <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-4">
@@ -344,6 +346,16 @@ const Invoices: React.FC = () => {
                                         </TableCell>
                                         <TableCell>
                                             <button className="font-medium text-charcoal hover:underline whitespace-nowrap" onClick={() => setPreviewInvoice(invoice)}>{invoice.invoice_number}</button>
+                                            {invoice.recurrence && (
+                                                <span className="flex items-center gap-1 text-[11px] text-muted whitespace-nowrap" title="Recurring invoice">
+                                                    <Icon name="refresh" className="w-3 h-3" />
+                                                    {invoice.recurrence[0].toUpperCase() + invoice.recurrence.slice(1)}
+                                                    {invoice.next_issue_date && ` · next ${formatDateOnly(invoice.next_issue_date, 'MMM d')}`}
+                                                </span>
+                                            )}
+                                            {data.invoiceShares.some(sh => sh.invoice_id === invoice.id) && (
+                                                <span className="flex items-center gap-1 text-[11px] text-accent whitespace-nowrap"><Icon name="globe" className="w-3 h-3" />Shared</span>
+                                            )}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center min-w-0">
@@ -381,6 +393,7 @@ const Invoices: React.FC = () => {
                                             <div className="flex justify-end gap-0.5">
                                                 {st === InvoiceStatus.Draft && <IconButton icon="send" label="Email to client" onClick={() => handleEmail(invoice)} />}
                                                 {(st === InvoiceStatus.Sent || st === InvoiceStatus.Overdue) && <IconButton icon="wallet" label="Mark as paid" onClick={() => setStatus(invoice, InvoiceStatus.Paid)} />}
+                                                <IconButton icon="globe" label="Share link" onClick={() => setSharing(invoice)} />
                                                 <IconButton icon="eye" label="Preview PDF" onClick={() => setPreviewInvoice(invoice)} />
                                                 <IconButton icon="download" label="Download PDF" onClick={() => handleDownloadPDF(invoice)} className="hidden sm:inline-flex" />
                                                 <IconButton icon="copy" label="Duplicate" onClick={() => handleDuplicate(invoice)} className="hidden sm:inline-flex" />
@@ -399,6 +412,21 @@ const Invoices: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            <Modal isOpen={!!sharing} onClose={() => setSharing(null)} title={sharing ? `Share invoice ${sharing.invoice_number}` : 'Share'}>
+                {sharing && (
+                    <ShareDialog
+                        invoice={sharing}
+                        onShare={() => shareInvoice(sharing.id!)}
+                        onRevoke={async () => { await revokeShare(sharing.id!); toast('Link turned off', 'success'); }}
+                        onStopRepeating={sharing.recurrence ? async () => {
+                            await updateInvoice({ id: sharing.id!, recurrence: '', next_issue_date: '' });
+                            setSharing({ ...sharing, recurrence: '', next_issue_date: '' });
+                            toast('This invoice no longer repeats', 'success');
+                        } : undefined}
+                    />
+                )}
+            </Modal>
 
             <Modal isOpen={isFormOpen} onClose={closeForm} title={editingInvoice ? `Edit Invoice ${editingInvoice.invoice_number}` : 'Create New Invoice'} maxWidthClass="max-w-3xl">
                 <InvoiceForm key={editingInvoice?.id || 'new'} onClose={closeForm} initialData={editingInvoice} />
@@ -433,6 +461,80 @@ const Invoices: React.FC = () => {
                     </div>
                 </div>
             </Modal>
+        </div>
+    );
+};
+
+const ShareDialog: React.FC<{
+    invoice: Invoice;
+    onShare: () => Promise<InvoiceShare>;
+    onRevoke: () => Promise<void>;
+    onStopRepeating?: () => Promise<void>;
+}> = ({ invoice, onShare, onRevoke, onStopRepeating }) => {
+    const { data } = useData();
+    const { toast, confirm } = useToast();
+    const share = data.invoiceShares.find(s => s.invoice_id === invoice.id);
+    const [busy, setBusy] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const client = data.contacts.find(c => c.id === invoice.client_id);
+    const url = share ? shareUrl(share) : '';
+
+    const create = async () => {
+        setBusy(true);
+        try { await onShare(); } catch (e) { console.error(e); toast('Could not create the link. Is the server up to date (v1.2 migrations)?', 'error'); }
+        finally { setBusy(false); }
+    };
+    const copy = async () => {
+        try {
+            await navigator.clipboard.writeText(url);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            toast('Copy failed. Select the link and copy it manually.', 'error');
+        }
+    };
+    const revoke = async () => {
+        if (!await confirm({ title: 'Turn off link', message: 'Anyone with the current link will no longer be able to open this invoice.', danger: true, confirmLabel: 'Turn off' })) return;
+        setBusy(true);
+        try { await onRevoke(); } finally { setBusy(false); }
+    };
+
+    return (
+        <div className="space-y-5">
+            <p className="text-sm text-muted">
+                A private link your client can open without an account: they see the invoice and can download the PDF.
+                It updates automatically when you edit the invoice.
+            </p>
+            {share ? (
+                <>
+                    <div className="flex gap-2">
+                        <input readOnly value={url} aria-label="Shareable URL" onFocus={e => e.target.select()} className="flex-1 min-w-0 p-2.5 bg-surface border border-border text-sm font-mono" />
+                        <Button onClick={copy}><Icon name={copied ? 'check' : 'copy'} className="w-4 h-4 mr-2" />{copied ? 'Copied' : 'Copy'}</Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm font-semibold border border-border px-3 py-1.5 hover:border-charcoal">
+                            <Icon name="external-link" className="w-4 h-4 mr-1.5" />Open
+                        </a>
+                        {client?.email && (
+                            <a
+                                href={`mailto:${encodeURIComponent(client.email)}?subject=${encodeURIComponent(`Invoice ${invoice.invoice_number}`)}&body=${encodeURIComponent(`Hi ${client.name.split(' ')[0]},\n\nYou can view and download invoice ${invoice.invoice_number} here:\n${url}\n\nThank you!`)}`}
+                                className="inline-flex items-center text-sm font-semibold border border-border px-3 py-1.5 hover:border-charcoal"
+                            >
+                                <Icon name="mail" className="w-4 h-4 mr-1.5" />Email link
+                            </a>
+                        )}
+                        <Button variant="danger" className="text-sm py-1.5 ml-auto" onClick={revoke} disabled={busy}>Turn off link</Button>
+                    </div>
+                </>
+            ) : (
+                <Button onClick={create} disabled={busy}><Icon name="globe" className="w-4 h-4 mr-2" />{busy ? 'Creating...' : 'Create share link'}</Button>
+            )}
+            {onStopRepeating && (
+                <div className="border-t border-border pt-4 flex items-center justify-between gap-3">
+                    <p className="text-sm text-muted">Repeats {invoice.recurrence}{invoice.next_issue_date ? `, next on ${formatDateOnly(invoice.next_issue_date)}` : ''}.</p>
+                    <Button variant="secondary" className="text-sm py-1.5" onClick={onStopRepeating}>Stop repeating</Button>
+                </div>
+            )}
         </div>
     );
 };

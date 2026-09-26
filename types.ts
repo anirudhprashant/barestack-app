@@ -100,6 +100,25 @@ export interface Invoice extends ServerFields {
   paid_date?: string;
   payment_method?: string;
   notes?: string;
+  recurrence?: Recurrence | '';
+  next_issue_date?: string; // date-only; when the next copy is created
+}
+
+export type Recurrence = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
+// Read-only copy of an invoice that a client can open from a link.
+export interface InvoiceShareSnapshot {
+  invoice: Pick<Invoice, 'invoice_number' | 'issue_date' | 'due_date' | 'line_items' | 'tax_rate' | 'status' | 'paid_date' | 'notes'>;
+  client: Pick<Contact, 'name' | 'company' | 'email' | 'phone'>;
+  business: BusinessProfile;
+  user: UserProfile;
+}
+
+export interface InvoiceShare extends ServerFields {
+  id: string;
+  invoice_id: string;
+  token: string;
+  snapshot: InvoiceShareSnapshot;
 }
 
 export interface TimeEntry extends ServerFields {
@@ -192,6 +211,7 @@ export interface AppState {
   recentActivity: RecentActivity[];
   notes: Note[];
   importBatches: ImportBatch[];
+  invoiceShares: InvoiceShare[];
   businessProfile: BusinessProfile;
   userProfile: UserProfile;
 }
