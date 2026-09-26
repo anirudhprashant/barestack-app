@@ -21,7 +21,7 @@ const SidebarContent: React.FC<{
     <>
         {/* Header */}
         <div className="h-[var(--app-shell-header-height)] flex items-center px-5 border-b border-border/50 shrink-0">
-            <div className="text-xl font-bold font-display tracking-tight text-canvas">
+            <div className="text-xl font-bold font-display tracking-tight text-cream">
                 BareStack<span className="italic">OS</span>
             </div>
         </div>
@@ -36,8 +36,8 @@ const SidebarContent: React.FC<{
                     onClick={onNavigate}
                     className={({ isActive }) =>
                         `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-150 rounded-none ${isActive
-                            ? 'bg-canvas text-charcoal'
-                            : 'text-canvas/60 hover:text-canvas hover:bg-canvas/10'
+                            ? 'bg-cream text-[#151817]'
+                            : 'text-cream/60 hover:text-cream hover:bg-cream/10'
                         }`
                     }
                 >
@@ -48,15 +48,15 @@ const SidebarContent: React.FC<{
         </nav>
 
         {/* Account footer — separated from nav by top border */}
-        <div className="shrink-0 border-t border-canvas/20 px-3 py-4 space-y-1">
+        <div className="shrink-0 border-t border-cream/20 px-3 py-4 space-y-1">
             {/* Settings — grouped with account, not mixed into nav */}
             <NavLink
                 to="/settings"
                 onClick={onNavigate}
                 className={({ isActive }) =>
                     `flex items-center gap-3 px-2 py-2 text-sm font-medium transition-all duration-150 rounded-none ${isActive
-                        ? 'bg-canvas text-charcoal'
-                        : 'text-canvas/60 hover:text-canvas hover:bg-canvas/10'
+                        ? 'bg-cream text-[#151817]'
+                        : 'text-cream/60 hover:text-cream hover:bg-cream/10'
                     }`
                 }
             >
@@ -66,14 +66,14 @@ const SidebarContent: React.FC<{
 
             {/* User profile */}
             <div className="flex items-center gap-3 px-2 pt-3">
-                <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center text-canvas/80 font-bold text-xs">
+                <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center text-cream/80 font-bold text-xs">
                     {userInitial}
                 </div>
                 <div className="min-w-0">
-                    <div className="text-canvas text-sm font-medium truncate max-w-[150px] leading-tight" title={userName}>
+                    <div className="text-cream text-sm font-medium truncate max-w-[150px] leading-tight" title={userName}>
                         {userName}
                     </div>
-                    <div className="text-canvas/40 text-xs truncate max-w-[150px]" title={userEmail}>
+                    <div className="text-cream/40 text-xs truncate max-w-[150px]" title={userEmail}>
                         {userEmail}
                     </div>
                 </div>
@@ -103,18 +103,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     return (
         <>
             {/* Desktop sidebar — always visible on md+ */}
-            <div className="hidden md:flex fixed top-0 left-0 h-full w-[220px] bg-[#192118] paper-grain flex-col z-20">
+            <div className="hidden md:flex fixed top-0 left-0 h-full w-[220px] bg-panel paper-grain flex-col z-20">
                 <SidebarContent userName={userName} userEmail={userEmail} userInitial={userInitial} iconMap={iconMap} />
             </div>
 
             {/* Mobile sidebar — slide-in drawer */}
             <div
-                className={`md:hidden fixed top-0 left-0 h-full w-[260px] bg-[#192118] paper-grain flex-col z-30 transition-transform duration-200 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                className={`md:hidden fixed top-0 left-0 h-full w-[260px] bg-panel paper-grain flex-col z-30 transition-transform duration-200 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
             >
                 {/* Close button for mobile */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-3 p-2 text-canvas/60 hover:text-canvas transition-colors z-10"
+                    className="absolute top-4 right-3 p-2 text-cream/60 hover:text-cream transition-colors z-10"
                     aria-label="Close navigation"
                 >
                     <Icon name="x" size={20} />

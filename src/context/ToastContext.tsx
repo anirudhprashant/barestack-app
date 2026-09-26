@@ -88,7 +88,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             )}
             {confirmState && createPortal(
                 <div
-                    className="fixed inset-0 bg-charcoal/80 z-[101] flex items-center justify-center p-4"
+                    className="fixed inset-0 bg-black/60 z-[101] flex items-center justify-center p-4"
                     onClick={() => resolveConfirm(false)}
                 >
                     <div

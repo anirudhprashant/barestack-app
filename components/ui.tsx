@@ -3,7 +3,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 
-export type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt' | 'chart' | 'settings' | 'plus' | 'search' | 'trash' | 'edit' | 'chevron-down' | 'chevron-left' | 'chevron-right' | 'x' | 'check' | 'bell' | 'mail' | 'phone' | 'zap' | 'eye' | 'trending-up' | 'activity' | 'download' | 'credit-card' | 'more-horizontal' | 'upload' | 'dollar-sign' | 'user' | 'folder' | 'file' | 'alert-circle' | 'alert-triangle' | 'menu' | 'arrow-left' | 'arrow-right' | 'calendar' | 'play' | 'stop' | 'copy' | 'filter' | 'command' | 'tag' | 'briefcase' | 'building' | 'refresh' | 'check-circle' | 'send' | 'wallet' | 'archive' | 'external-link' | 'globe' | 'hash' | 'list' | 'layers' | 'pie-chart' | 'target' | 'timer' | 'inbox' | 'save' | 'database' | 'log-out' | 'sparkles';
+export type IconName = 'grid' | 'users' | 'clipboard' | 'document' | 'clock' | 'receipt' | 'chart' | 'settings' | 'plus' | 'search' | 'trash' | 'edit' | 'chevron-down' | 'chevron-left' | 'chevron-right' | 'x' | 'check' | 'bell' | 'mail' | 'phone' | 'zap' | 'eye' | 'trending-up' | 'activity' | 'download' | 'credit-card' | 'more-horizontal' | 'upload' | 'dollar-sign' | 'user' | 'folder' | 'file' | 'alert-circle' | 'alert-triangle' | 'menu' | 'arrow-left' | 'arrow-right' | 'calendar' | 'play' | 'stop' | 'copy' | 'filter' | 'command' | 'tag' | 'briefcase' | 'building' | 'refresh' | 'check-circle' | 'send' | 'wallet' | 'archive' | 'external-link' | 'globe' | 'hash' | 'list' | 'layers' | 'pie-chart' | 'target' | 'timer' | 'inbox' | 'save' | 'database' | 'log-out' | 'sparkles' | 'sun' | 'moon' | 'monitor' | 'keyboard' | 'link';
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
     name: IconName;
@@ -75,6 +75,11 @@ const iconMap: Record<IconName, React.ComponentType<any>> = {
     'database': LucideIcons.Database,
     'log-out': LucideIcons.LogOut,
     'sparkles': LucideIcons.Sparkles,
+    'sun': LucideIcons.Sun,
+    'moon': LucideIcons.Moon,
+    'monitor': LucideIcons.Monitor,
+    'keyboard': LucideIcons.Keyboard,
+    'link': LucideIcons.Link,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, size = 18, ...props }) => {
@@ -175,7 +180,7 @@ export const Select: React.FC<SelectProps> = ({ label, hint, id, children, class
     return (
         <div className={className}>
             <FieldLabel htmlFor={id} label={label} hint={hint} />
-            <select id={id} {...props} className={`${fieldClass} appearance-none bg-no-repeat bg-right pr-8`} style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23141C11' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")` }}>
+            <select id={id} {...props} className={`${fieldClass} appearance-none bg-no-repeat pr-8 select-chevron`}>
                 {children}
             </select>
         </div>
@@ -236,7 +241,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 bg-charcoal/80 z-50 flex items-end sm:items-center justify-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div
                 ref={dialogRef}
                 tabIndex={-1}
@@ -415,7 +420,7 @@ export function Segmented<T extends string>({ value, onChange, options, classNam
 }
 
 // --- STAT TILE ---
-export const StatTile: React.FC<{ label: string; value: React.ReactNode; sub?: React.ReactNode; badge?: string; badgeClass?: string; icon?: IconName; onClick?: () => void }> = ({ label, value, sub, badge, badgeClass = 'bg-[#192118] text-canvas', icon, onClick }) => {
+export const StatTile: React.FC<{ label: string; value: React.ReactNode; sub?: React.ReactNode; badge?: string; badgeClass?: string; icon?: IconName; onClick?: () => void }> = ({ label, value, sub, badge, badgeClass = 'bg-panel text-cream', icon, onClick }) => {
     const Comp = onClick ? 'button' : 'div';
     return (
         <Comp

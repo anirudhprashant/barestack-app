@@ -12,6 +12,7 @@ import { toCSV } from '../src/lib/csv';
 import { buildBackup, parseBackup, restoreBackup, backupCounts, Backup } from '../src/lib/backup';
 import { nextInvoiceNumber } from '../src/lib/invoice';
 import { BusinessProfile } from '../types';
+import { useTheme, ThemePreference } from '../src/context/ThemeContext';
 
 const Section: React.FC<{ id: string; title: string; description: string; children: React.ReactNode; tone?: 'danger' }> = ({ id, title, description, children, tone }) => (
     <section id={id} className={`bg-canvas border ${tone === 'danger' ? 'border-activity-red/40' : 'border-border'} overflow-hidden scroll-mt-24`}>
@@ -264,6 +265,22 @@ const DataSection: React.FC = () => {
         }
     };
 
+    const { loadSampleData, removeSampleData } = useData();
+    const sampleCount = data.contacts.filter(c => c.tags?.includes('sample')).length;
+    const sample = async (action: 'load' | 'remove') => {
+        if (action === 'remove' && !await confirm({ title: 'Remove sample data', message: `Delete the ${sampleCount} sample clients and everything attached to them (deals, projects, invoices, time, notes, sample expenses)?`, danger: true, confirmLabel: 'Remove' })) return;
+        setBusy('sample');
+        try {
+            if (action === 'load') await loadSampleData(); else await removeSampleData();
+            toast(action === 'load' ? 'Sample data added' : 'Sample data removed', 'success');
+        } catch (error) {
+            console.error(error);
+            toast('Something went wrong. Reloaded your data.', 'error');
+        } finally {
+            setBusy(null);
+        }
+    };
+
     const total = data.contacts.length + data.deals.length + data.projects.length + data.tasks.length + data.invoices.length + data.timeEntries.length + data.expenses.length + data.notes.length;
 
     return (
@@ -287,6 +304,15 @@ const DataSection: React.FC = () => {
                         <Icon name="database" className="w-4 h-4 mr-2" />Download backup
                     </Button>
                 </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-5">
+                    <div>
+                        <h4 className="font-semibold text-charcoal">Sample data</h4>
+                        <p className="text-sm text-muted">{sampleCount ? `${sampleCount} sample clients are in your account. Removing them deletes only sample records.` : 'Add a small demo agency (clients, projects, time, invoices) to explore the app.'}</p>
+                    </div>
+                    <Button variant="secondary" onClick={() => sample(sampleCount ? 'remove' : 'load')} disabled={!!busy}>
+                        <Icon name={sampleCount ? 'trash' : 'sparkles'} className="w-4 h-4 mr-2" />{busy === 'sample' ? 'Working...' : sampleCount ? 'Remove sample data' : 'Load sample data'}
+                    </Button>
+                </div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-5">
                     <div>
                         <h4 className="font-semibold text-charcoal">Restore from backup</h4>
@@ -298,6 +324,34 @@ const DataSection: React.FC = () => {
                         <Icon name="upload" className="w-4 h-4 mr-2" />{busy === 'restore' ? 'Restoring...' : 'Restore backup'}
                     </Button>
                 </div>
+            </div>
+        </Section>
+    );
+};
+
+const AppearanceSection: React.FC = () => {
+    const { preference, setPreference } = useTheme();
+    const options: { value: ThemePreference; label: string; icon: 'sun' | 'moon' | 'monitor' }[] = [
+        { value: 'light', label: 'Light', icon: 'sun' },
+        { value: 'dark', label: 'Dark', icon: 'moon' },
+        { value: 'system', label: 'Match system', icon: 'monitor' },
+    ];
+    return (
+        <Section id="appearance" title="Appearance" description="Saved on this device.">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" role="radiogroup" aria-label="Theme">
+                {options.map(o => (
+                    <button
+                        key={o.value}
+                        role="radio"
+                        aria-checked={preference === o.value}
+                        onClick={() => setPreference(o.value)}
+                        className={`flex items-center gap-3 p-4 border text-left transition-colors ${preference === o.value ? 'border-charcoal bg-surface' : 'border-border hover:border-charcoal'}`}
+                    >
+                        <Icon name={o.icon} className="w-5 h-5" />
+                        <span className="font-semibold text-sm">{o.label}</span>
+                        {preference === o.value && <Icon name="check" className="w-4 h-4 ml-auto" />}
+                    </button>
+                ))}
             </div>
         </Section>
     );
@@ -359,6 +413,7 @@ const Settings: React.FC = () => {
     const links = [
         { id: 'business', label: 'Business' },
         { id: 'account', label: 'Account' },
+        { id: 'appearance', label: 'Appearance' },
         { id: 'data', label: 'Your data' },
         { id: 'danger', label: 'Delete account' },
     ];
@@ -374,6 +429,7 @@ const Settings: React.FC = () => {
             <div className="space-y-8">
                 <BusinessSection />
                 <AccountSection />
+                <AppearanceSection />
                 <DataSection />
                 <DangerSection />
             </div>

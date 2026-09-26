@@ -60,7 +60,7 @@ const VerifyEmailPage: React.FC = () => {
     }, [token, navigate]);
 
     return (
-        <div className="min-h-screen bg-[#192118] font-body flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-panel font-body flex items-center justify-center p-4 relative overflow-hidden">
             <div
                 aria-hidden
                 className="pointer-events-none absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full blur-3xl animate-drift-a bg-[radial-gradient(circle_at_center,rgba(232,184,109,0.10),transparent_70%)]"
@@ -77,7 +77,7 @@ const VerifyEmailPage: React.FC = () => {
 
             <div className="w-full max-w-md relative z-10">
                 <div className="mb-8">
-                    <h1 className="text-5xl font-bold font-display text-canvas tracking-tight">
+                    <h1 className="text-5xl font-bold font-display text-cream tracking-tight">
                         BareStack<span className="italic">OS</span>
                     </h1>
                     <p className="text-sm font-semibold text-muted uppercase tracking-widest mt-2">

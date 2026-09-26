@@ -10,10 +10,10 @@ import { toCSV, downloadText } from '../src/lib/csv';
 
 type Range = '3m' | '6m' | 'ytd' | '12m';
 
-// Validated pair (dataviz validator, light surface #FAF9F5): passes lightness,
-// chroma, CVD separation and contrast. Revenue = blue, expenses = accent.
-const REVENUE = '#2563EB';
-const EXPENSE = '#C37624';
+// Series colours are CSS variables (src/style.css), validated with the dataviz
+// palette checker against both the light and the dark surface.
+const REVENUE = 'var(--chart-revenue)';
+const EXPENSE = 'var(--chart-expense)';
 
 const rangeStart = (r: Range, now: Date) => {
     switch (r) {
@@ -133,10 +133,10 @@ const Reports: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <StatTile label="Revenue" value={formatMoney(report.revenue, currency)} sub="From paid invoices" badge="In" badgeClass="bg-activity-blue text-canvas" />
-                <StatTile label="Expenses" value={formatMoney(report.spend, currency)} sub="Recorded spend" badge="Out" badgeClass="bg-[#c37624] text-canvas" />
+                <StatTile label="Revenue" value={formatMoney(report.revenue, currency)} sub="From paid invoices" badge="In" badgeClass="bg-activity-blue text-cream" />
+                <StatTile label="Expenses" value={formatMoney(report.spend, currency)} sub="Recorded spend" badge="Out" badgeClass="bg-[#c37624] text-cream" />
                 <StatTile label="Profit" value={formatMoney(report.profit, currency)} sub={margin === null ? 'Revenue minus expenses' : `${margin}% margin`} badge="Net" />
-                <StatTile label="Hours" value={formatHours(report.hours)} sub={report.hours ? `${Math.round((report.billable / report.hours) * 100)}% billable` : 'No time logged'} badge="Time" badgeClass="bg-[#e8b86d] text-charcoal" />
+                <StatTile label="Hours" value={formatHours(report.hours)} sub={report.hours ? `${Math.round((report.billable / report.hours) * 100)}% billable` : 'No time logged'} badge="Time" badgeClass="bg-[#e8b86d] text-[#151817]" />
             </div>
 
             {!hasAny ? (
@@ -223,7 +223,7 @@ const Reports: React.FC = () => {
                         <div className="bg-canvas border border-border p-5">
                             <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider mb-3 font-body">Hours by project</h3>
                             {report.topProjects.length ? report.topProjects.map(p => (
-                                <HBar key={p.name} label={p.name} sub={`${Math.round((p.billable / (p.hours || 1)) * 100)}% billable`} value={p.hours} max={report.topProjects[0].hours} display={formatHours(p.hours)} color="#192118" />
+                                <HBar key={p.name} label={p.name} sub={`${Math.round((p.billable / (p.hours || 1)) * 100)}% billable`} value={p.hours} max={report.topProjects[0].hours} display={formatHours(p.hours)} color="var(--color-charcoal)" />
                             )) : <p className="text-sm text-muted">No time logged in this period.</p>}
                         </div>
                         <div className="bg-canvas border border-border p-5">

@@ -6,6 +6,7 @@ import { Button } from './ui';
 import { useData } from '../dataStore';
 import { TimerProvider } from '../src/context/TimerContext';
 import { CommandPalette } from './CommandPalette';
+import { Shortcuts } from './Shortcuts';
 import Dashboard from '../pages/Dashboard';
 
 // Everything except the landing page is split into its own chunk, so heavy
@@ -41,6 +42,7 @@ const AppLayout: React.FC = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [paletteOpen, setPaletteOpen] = useState(false);
     const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+    const openPalette = useCallback(() => setPaletteOpen(true), []);
     const location = useLocation();
 
     // Cmd/Ctrl+K anywhere opens the command palette.
@@ -108,6 +110,7 @@ const AppLayout: React.FC = () => {
                     </main>
                 </div>
                 <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+                <Shortcuts onOpenPalette={openPalette} />
             </div>
         </TimerProvider>
     );

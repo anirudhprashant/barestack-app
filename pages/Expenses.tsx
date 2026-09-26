@@ -202,7 +202,7 @@ const Expenses: React.FC = () => {
 
             {expenses.length > 0 && (
                 <div className="flex flex-wrap items-stretch gap-2 mb-5">
-                    <div className="bg-[#192118] text-canvas px-4 py-2.5 min-w-[140px]">
+                    <div className="bg-panel text-cream px-4 py-2.5 min-w-[140px]">
                         <p className="text-[11px] uppercase tracking-wider font-bold opacity-70">Total</p>
                         <p className="text-lg font-bold tabular-nums">{formatMoney(total, currency)}</p>
                     </div>
