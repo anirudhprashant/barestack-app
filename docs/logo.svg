@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="BareStackOS">
+  <rect width="64" height="64" rx="14" fill="#141C11"/>
+  <g fill="none" stroke-linecap="round" stroke-width="4"><path d="M16 42h32" stroke="#FAF9F5"/><path d="M16 32h24" stroke="#FAF9F5" opacity=".7"/><path d="M16 22h14" stroke="#E0A25E"/></g>
+</svg>

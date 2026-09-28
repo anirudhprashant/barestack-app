@@ -1,8 +1,24 @@
-# BareStack*OS*
+<p align="center">
+  <img src="docs/banner.png" alt="BareStackOS: run your agency on software you own" width="100%">
+</p>
 
-An open-source business operating system for agencies and freelancers: CRM, deal pipeline, projects, time tracking, invoicing, expenses and reports in one self-hostable app. Built with React, TypeScript, PocketBase, and Tailwind CSS.
+<p align="center">
+  <a href="https://github.com/anirudhprashant/barestack-app/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/anirudhprashant/barestack-app/ci.yml?style=flat-square&label=CI&labelColor=141C11&color=C37624"></a>
+  <img alt="v1.2.0" src="https://img.shields.io/badge/version-1.2.0-141C11?style=flat-square&labelColor=141C11&color=3B4834">
+  <a href="LICENSE"><img alt="AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-C37624?style=flat-square&labelColor=141C11"></a>
+  <img alt="React + PocketBase" src="https://img.shields.io/badge/React%20·%20TypeScript%20·%20PocketBase-141C11?style=flat-square&labelColor=141C11&color=3B4834">
+</p>
 
-**[Try the live demo](https://demo.barestack.org).** No sign-up. It resets every hour.
+<p align="center">
+  <b>The business back office for agencies and freelancers, in one app you can own outright.</b><br>
+  CRM, deal pipeline, projects, time tracking, invoicing, expenses and reports.<br>
+  Self-host it for free, with no seat limits and no per-user pricing.
+</p>
+
+<p align="center">
+  <a href="https://demo.barestack.org"><b>Try the live demo →</b></a><br>
+  <sub>No sign-up. Resets every hour.</sub>
+</p>
 
 <table>
   <tr>
@@ -11,13 +27,23 @@ An open-source business operating system for agencies and freelancers: CRM, deal
     <td width="33%"><img src="docs/screenshots/invoicing.png" alt="Invoicing list with paid, sent, overdue and draft statuses"></td>
   </tr>
   <tr>
-    <td align="center">Contacts and pipeline</td>
-    <td align="center">Projects</td>
-    <td align="center">Invoicing</td>
+    <td align="center"><sub>Contacts and pipeline</sub></td>
+    <td align="center"><sub>Projects</sub></td>
+    <td align="center"><sub>Invoicing</sub></td>
   </tr>
 </table>
 
-## Quick Start (One Command)
+## Why BareStackOS
+
+| | |
+|---|---|
+| **Everything in one place** | A contact becomes a deal, the deal becomes a project, the project's hours become an invoice. No Zapier glue between five subscriptions. |
+| **You own it** | Self-hosted on PocketBase, a single binary. Your data sits in one folder on your server. |
+| **Leave any time** | Full JSON backup and restore, CSV exports everywhere. Move between the hosted cloud and your own server in either direction. |
+| **Gets paid** | Recurring retainer invoices, client share links with PDF download, and unbilled time turned into invoice lines in one click. |
+| **Fast to live in** | Command palette, keyboard shortcuts, dark mode, real-time sync across tabs and devices, installable as an app. |
+
+## Install in one command
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/anirudhprashant/barestack-app/main/install.sh | bash
@@ -47,9 +73,8 @@ Then run `./start.sh` to launch.
 > Run `./install.sh --cloud`. This builds the frontend against `api.barestack.org`
 > and skips the local PocketBase setup.
 
----
-
-## Manual Setup
+<details>
+<summary><b>Manual setup</b></summary>
 
 ### 1. Install Dependencies
 
@@ -73,7 +98,7 @@ chmod +x pocketbase
 ### 3. Apply the Schema
 
 The collections and their owner-only access rules are version-controlled in
-`pb_migrations/`. Apply them — no manual collection creation needed:
+`pb_migrations/`. Apply them; no manual collection creation needed:
 
 ```bash
 ./pocketbase migrate up --dir ./pb_data --migrationsDir ./pb_migrations
@@ -107,9 +132,9 @@ PocketBase) behind a TLS-terminating reverse proxy for anything public.
 
 Open http://localhost:8080
 
----
+</details>
 
-## Features
+## Everything it does
 
 **CRM**
 - Contacts with tags, inline editing, search, tag filters, sort, CSV export and bulk actions
@@ -236,3 +261,7 @@ AGPL-3.0. Run it, modify it, self-host it, no charge and no seat limits.
 If you distribute a modified version, or run one as a network service for
 others, you have to publish your source under the same licence. See LICENSE
 for the full text.
+
+---
+
+<p align="center"><img src="docs/logo.svg" width="32" alt=""><br><sub>made by <a href="https://github.com/anirudhprashant">Anirudh Prashant</a> · <a href="https://barestack.org">barestack.org</a></sub></p>

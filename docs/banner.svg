@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" width="1280" height="420" role="img" aria-label="BareStackOS: run your agency on software you own">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#141C11"/><stop offset="1" stop-color="#1D2819"/></linearGradient>
+    <filter id="s" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000" flood-opacity=".35"/></filter>
+  </defs>
+  <rect width="1280" height="420" rx="24" fill="url(#g)"/>
+  <text x="80" y="170" font-family="'Instrument Serif', Georgia, 'Times New Roman', serif" font-size="96" fill="#FAF9F5" letter-spacing="-1">BareStack<tspan font-style="italic" fill="#E0A25E">OS</tspan></text>
+  <text x="84" y="222" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="27" fill="#C9CCBF">Run your agency on software you own.</text>
+  <g font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="15" fill="#8E9684">
+    <text x="84" y="300">CRM · pipeline · projects · time · invoices · expenses · reports</text>
+    <text x="84" y="330">self-hosted · AGPL-3.0 · no seats · no lock-in</text>
+  </g>
+  <rect x="84" y="352" width="56" height="3" rx="1.5" fill="#C37624"/>
+  <!-- app window -->
+  <g filter="url(#s)" transform="translate(770 64)">
+    <rect width="440" height="292" rx="14" fill="#FAF9F5"/>
+    <rect width="96" height="292" rx="14" fill="#1F2A1B"/><rect x="82" width="14" height="292" fill="#1F2A1B"/>
+    <circle cx="20" cy="22" r="4" fill="#E0A25E"/><rect x="30" y="18" width="46" height="8" rx="4" fill="#3B4834"/>
+    <g fill="#3B4834"><rect x="16" y="54" width="62" height="8" rx="4"/><rect x="16" y="78" width="50" height="8" rx="4"/><rect x="16" y="102" width="58" height="8" rx="4"/><rect x="16" y="126" width="44" height="8" rx="4"/></g>
+    <rect x="12" y="72" width="72" height="20" rx="5" fill="#FAF9F5" opacity=".12"/>
+    <text x="118" y="36" font-family="'Instrument Serif', Georgia, serif" font-size="22" fill="#141C11">Pipeline</text>
+    <g font-family="Inter, Helvetica, Arial, sans-serif" font-size="10" fill="#6B6B6B">
+      <text x="118" y="64">LEAD</text><text x="226" y="64">PROPOSAL</text><text x="334" y="64">WON</text>
+    </g>
+    <g>
+      <rect x="116" y="74" width="98" height="52" rx="8" fill="#fff" stroke="#E6E3DB"/><rect x="126" y="86" width="60" height="7" rx="3.5" fill="#141C11"/><rect x="126" y="102" width="40" height="6" rx="3" fill="#C9C6BE"/>
+      <rect x="116" y="134" width="98" height="52" rx="8" fill="#fff" stroke="#E6E3DB"/><rect x="126" y="146" width="70" height="7" rx="3.5" fill="#141C11"/><rect x="126" y="162" width="34" height="6" rx="3" fill="#C9C6BE"/>
+      <rect x="224" y="74" width="98" height="52" rx="8" fill="#fff" stroke="#C37624" stroke-width="1.5"/><rect x="234" y="86" width="56" height="7" rx="3.5" fill="#141C11"/><text x="234" y="113" font-family="'JetBrains Mono', monospace" font-size="11" fill="#C37624">£4,800</text>
+      <rect x="332" y="74" width="92" height="52" rx="8" fill="#EEF3EA" stroke="#CFE0C5"/><rect x="342" y="86" width="50" height="7" rx="3.5" fill="#141C11"/><text x="342" y="113" font-family="'JetBrains Mono', monospace" font-size="11" fill="#3E7B3A">£12,400</text>
+      <rect x="332" y="134" width="92" height="52" rx="8" fill="#EEF3EA" stroke="#CFE0C5"/><rect x="342" y="146" width="62" height="7" rx="3.5" fill="#141C11"/><text x="342" y="173" font-family="'JetBrains Mono', monospace" font-size="11" fill="#3E7B3A">£2,150</text>
+    </g>
+    <rect x="116" y="204" width="308" height="70" rx="8" fill="#fff" stroke="#E6E3DB"/>
+    <polyline points="128,258 162,248 196,252 230,236 264,240 298,222 332,226 366,210 410,214" fill="none" stroke="#C37624" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="128" y="224" font-family="Inter, Helvetica, Arial, sans-serif" font-size="10" fill="#6B6B6B">REVENUE</text>
+  </g>
+</svg>
