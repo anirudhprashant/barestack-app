@@ -22,7 +22,7 @@ export const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = 
     const navigate = useNavigate();
     const { data } = useData();
     const timer = useTimer();
-    const { theme, toggleTheme } = useTheme();
+    const { theme, toggleTheme, design, setDesign } = useTheme();
     const [query, setQuery] = useState('');
     const [active, setActive] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -52,6 +52,7 @@ export const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = 
             { id: 'nav-pipeline', label: 'Deal pipeline', icon: 'trending-up', group: 'Go to', keywords: 'deals sales', run: go('/crm/pipeline') },
             { id: 'nav-activity', label: 'Activity log', icon: 'activity', group: 'Go to', run: go('/crm/activities') },
             { id: 'theme', label: theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode', icon: theme === 'dark' ? 'sun' : 'moon', group: 'Go to', keywords: 'theme appearance night', run: () => { toggleTheme(); onClose(); } },
+            { id: 'design', label: design === 'barestack' ? 'Switch to Classic theme' : 'Switch to BareStack theme', icon: 'layers', group: 'Go to', keywords: 'theme appearance look style design classic barestack', run: () => { setDesign(design === 'barestack' ? 'classic' : 'barestack'); onClose(); } },
             { id: 'shortcuts', label: 'Keyboard shortcuts', icon: 'keyboard', group: 'Go to', keywords: 'help keys hotkeys', run: () => { onClose(); setTimeout(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' })), 50); } },
             { id: 'nav-settings', label: 'Settings', icon: 'settings', group: 'Go to', keywords: 'business currency profile backup', run: go('/settings') },
         ];
@@ -67,7 +68,7 @@ export const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = 
         }
         return list;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data.contacts, data.projects, data.invoices, timer.running, theme]);
+    }, [data.contacts, data.projects, data.invoices, timer.running, theme, design]);
 
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();

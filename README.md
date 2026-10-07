@@ -41,7 +41,7 @@
 | **You own it** | Self-hosted on PocketBase, a single binary. Your data sits in one folder on your server. |
 | **Leave any time** | Full JSON backup and restore, CSV exports everywhere. Move between the hosted cloud and your own server in either direction. |
 | **Gets paid** | Recurring retainer invoices, client share links with PDF download, and unbilled time turned into invoice lines in one click. |
-| **Fast to live in** | Command palette, keyboard shortcuts, dark mode, real-time sync across tabs and devices, installable as an app. |
+| **Fast to live in** | Command palette, keyboard shortcuts, two themes (Classic and BareStack) with dark mode, real-time sync across tabs and devices, installable as an app. |
 
 ## Install in one command
 
@@ -160,7 +160,7 @@ Open http://localhost:8080
 **Workspace**
 - Command palette (Ctrl/⌘ + K) to jump to any contact, project or invoice, or start a timer
 - Keyboard shortcuts (`g i` invoices, `n c` new contact, `?` for the full list)
-- **Dark mode** (light, dark or follow the system)
+- **Themes**: Classic or BareStack (the barestack.org design system), each with light, dark or follow-the-system
 - **Real-time sync**: changes appear instantly in every open tab and device
 - Installable as an app (PWA) on desktop and phones
 - One-click **sample data** to explore, and one-click removal

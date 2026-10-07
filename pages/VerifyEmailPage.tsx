@@ -60,32 +60,32 @@ const VerifyEmailPage: React.FC = () => {
     }, [token, navigate]);
 
     return (
-        <div className="min-h-screen bg-panel font-body flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="bs-auth min-h-screen bg-panel font-body flex items-center justify-center p-4 relative overflow-hidden">
             <div
                 aria-hidden
-                className="pointer-events-none absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full blur-3xl animate-drift-a bg-[radial-gradient(circle_at_center,rgba(232,184,109,0.10),transparent_70%)]"
+                className="bs-decor pointer-events-none absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full blur-3xl animate-drift-a bg-[radial-gradient(circle_at_center,rgba(232,184,109,0.10),transparent_70%)]"
             />
             <div
                 aria-hidden
-                className="pointer-events-none absolute -bottom-48 -right-32 w-[560px] h-[560px] rounded-full blur-3xl animate-drift-b bg-[radial-gradient(circle_at_center,rgba(195,118,36,0.09),transparent_70%)]"
+                className="bs-decor pointer-events-none absolute -bottom-48 -right-32 w-[560px] h-[560px] rounded-full blur-3xl animate-drift-b bg-[radial-gradient(circle_at_center,rgba(195,118,36,0.09),transparent_70%)]"
             />
             <div
                 aria-hidden
-                className="pointer-events-none absolute inset-0 opacity-[0.22] mix-blend-soft-light"
+                className="bs-decor pointer-events-none absolute inset-0 opacity-[0.22] mix-blend-soft-light"
                 style={{ backgroundImage: 'var(--paper-grain)', backgroundSize: '220px 220px' }}
             />
 
             <div className="w-full max-w-md relative z-10">
                 <div className="mb-8">
-                    <h1 className="text-5xl font-bold font-display text-cream tracking-tight">
+                    <h1 className="bs-auth-brand text-5xl font-bold font-display text-cream tracking-tight">
                         BareStack<span className="italic">OS</span>
                     </h1>
-                    <p className="text-sm font-semibold text-muted uppercase tracking-widest mt-2">
+                    <p className="bs-auth-tag text-sm font-semibold text-muted uppercase tracking-widest mt-2">
                         Email verification
                     </p>
                 </div>
 
-                <div className="bg-canvas border border-border p-8">
+                <div className="bs-auth-card bg-canvas border border-border p-8">
                     {status === 'verifying' && (
                         <>
                             <h2 className="text-2xl font-bold font-display text-charcoal mb-2">Verifying…</h2>
@@ -102,7 +102,7 @@ const VerifyEmailPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => navigate('/')}
-                                className="w-full bg-charcoal text-canvas hover:bg-content font-semibold py-4 px-6 border-2 border-charcoal transition-all uppercase tracking-wider"
+                                className="bs-btn bs-btn-primary w-full bg-charcoal text-canvas hover:bg-content font-semibold py-4 px-6 border-2 border-charcoal transition-all uppercase tracking-wider"
                             >
                                 Continue to sign in
                             </button>
@@ -118,7 +118,7 @@ const VerifyEmailPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => navigate('/')}
-                                className="w-full text-center font-semibold text-charcoal hover:text-accent uppercase tracking-wide transition-colors py-2 px-4 border border-charcoal hover:border-accent"
+                                className="bs-btn bs-btn-secondary w-full text-center font-semibold text-charcoal hover:text-accent uppercase tracking-wide transition-colors py-2 px-4 border border-charcoal hover:border-accent"
                             >
                                 ← Back to sign in
                             </button>

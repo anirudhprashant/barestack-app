@@ -21,7 +21,7 @@ const TimerCard: React.FC = () => {
     const runningProject = data.projects.find(p => p.id === timer.projectId);
 
     return (
-        <div className="bg-panel paper-grain relative text-cream border border-border p-5 sm:p-6">
+        <div className="bs-ink bg-panel paper-grain relative text-cream border border-border p-5 sm:p-6">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 font-body">
                     <Icon name="timer" className="w-4 h-4" /> Timer
@@ -30,13 +30,13 @@ const TimerCard: React.FC = () => {
             </div>
             {timer.running ? (
                 <div>
-                    <p className="text-4xl sm:text-5xl font-bold tabular-nums tracking-tight">{formatDuration(timer.elapsedMs)}</p>
+                    <p className="bs-score text-4xl sm:text-5xl font-bold tabular-nums tracking-tight">{formatDuration(timer.elapsedMs)}</p>
                     <p className="text-sm text-cream/70 mt-1 truncate">{runningProject?.name || 'Project'}{timer.description ? ` · ${timer.description}` : ''}</p>
                     <div className="flex gap-2 mt-5">
-                        <button onClick={timer.stop} className="flex-1 flex items-center justify-center gap-2 bg-cream text-[#151817] font-semibold py-2.5 hover:bg-cream/90 transition-colors">
+                        <button onClick={timer.stop} className="bs-btn bs-btn-amber flex-1 flex items-center justify-center gap-2 bg-cream text-[#151817] font-semibold py-2.5 hover:bg-cream/90 transition-colors">
                             <Icon name="stop" className="w-4 h-4" /> Stop &amp; save
                         </button>
-                        <button onClick={timer.discard} className="px-3 border border-cream/30 text-cream/70 hover:text-cream hover:border-cream text-sm font-semibold transition-colors">
+                        <button onClick={timer.discard} className="bs-btn bs-btn-secondary px-3 border border-cream/30 text-cream/70 hover:text-cream hover:border-cream text-sm font-semibold transition-colors">
                             Discard
                         </button>
                     </div>
@@ -52,7 +52,7 @@ const TimerCard: React.FC = () => {
                         aria-label="Project to track"
                         value={projectId}
                         onChange={e => setProjectId(e.target.value)}
-                        className="w-full p-2.5 bg-transparent border border-cream/30 text-cream focus:outline-none focus:border-cream [&>option]:text-[#151817]"
+                        className="bs-input w-full p-2.5 bg-transparent border border-cream/30 text-cream focus:outline-none focus:border-cream [&>option]:text-[#151817]"
                     >
                         {active.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
@@ -61,9 +61,9 @@ const TimerCard: React.FC = () => {
                         value={description}
                         onChange={e => setDescription(e.target.value)}
                         placeholder="What are you working on?"
-                        className="w-full p-2.5 bg-transparent border border-cream/30 text-cream placeholder:text-cream/40 focus:outline-none focus:border-cream"
+                        className="bs-input w-full p-2.5 bg-transparent border border-cream/30 text-cream placeholder:text-cream/40 focus:outline-none focus:border-cream"
                     />
-                    <button type="submit" className="w-full flex items-center justify-center gap-2 bg-cream text-[#151817] font-semibold py-2.5 hover:bg-cream/90 transition-colors">
+                    <button type="submit" className="bs-btn bs-btn-amber w-full flex items-center justify-center gap-2 bg-cream text-[#151817] font-semibold py-2.5 hover:bg-cream/90 transition-colors">
                         <Icon name="play" className="w-4 h-4" /> Start timer
                     </button>
                 </form>

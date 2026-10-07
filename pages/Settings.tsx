@@ -12,12 +12,12 @@ import { toCSV } from '../src/lib/csv';
 import { buildBackup, parseBackup, restoreBackup, backupCounts, Backup } from '../src/lib/backup';
 import { nextInvoiceNumber } from '../src/lib/invoice';
 import { BusinessProfile } from '../types';
-import { useTheme, ThemePreference } from '../src/context/ThemeContext';
+import { useTheme, ThemePreference, DesignTheme } from '../src/context/ThemeContext';
 
 const Section: React.FC<{ id: string; title: string; description: string; children: React.ReactNode; tone?: 'danger' }> = ({ id, title, description, children, tone }) => (
-    <section id={id} className={`bg-canvas border ${tone === 'danger' ? 'border-activity-red/40' : 'border-border'} overflow-hidden scroll-mt-24`}>
-        <div className={`px-5 sm:px-6 py-4 border-b ${tone === 'danger' ? 'border-activity-red/30 bg-activity-red/5' : 'border-border bg-surface'}`}>
-            <h3 className={`text-lg font-bold ${tone === 'danger' ? 'text-activity-red' : 'text-charcoal'}`}>{title}</h3>
+    <section id={id} className={`bs-panel ${tone === 'danger' ? 'bs-danger' : ''} bg-canvas border ${tone === 'danger' ? 'border-activity-red/40' : 'border-border'} overflow-hidden scroll-mt-24`}>
+        <div className={`bs-panel-head px-5 sm:px-6 py-4 border-b ${tone === 'danger' ? 'border-activity-red/30 bg-activity-red/5' : 'border-border bg-surface'}`}>
+            <h3 className={`bs-panel-title text-lg font-bold ${tone === 'danger' ? 'text-activity-red' : 'text-charcoal'}`}>{title}</h3>
             <p className="text-sm text-muted">{description}</p>
         </div>
         <div className="p-5 sm:p-6">{children}</div>
@@ -329,19 +329,90 @@ const DataSection: React.FC = () => {
     );
 };
 
-const AppearanceSection: React.FC = () => {
-    const { preference, setPreference } = useTheme();
-    const options: { value: ThemePreference; label: string; icon: 'sun' | 'moon' | 'monitor' }[] = [
+// Each theme card shows a small fixed-colour sketch of that theme, so the
+// choice reads the same whichever theme is active.
+const THEME_OPTIONS: {
+    value: DesignTheme;
+    label: string;
+    description: string;
+    preview: { side: string; sideText: string; canvas: string; ink: string; pop: string; line: string; font: string; stretch?: string; caps?: boolean; shadow?: boolean };
+}[] = [
+    {
+        value: 'classic',
+        label: 'Classic',
+        description: 'Forest green, serif headings and soft paper. The original BareStackOS look.',
+        preview: { side: '#192118', sideText: '#FAF9F5', canvas: '#FAF9F5', ink: '#141C11', pop: '#C37624', line: '#D4D1C9', font: "'Instrument Serif', Georgia, serif" },
+    },
+    {
+        value: 'barestack',
+        label: 'BareStack',
+        description: 'Ink, paper and amber. Condensed black caps, square boxes and hard shadows, as on barestack.org.',
+        preview: { side: '#0A0806', sideText: '#F4ECDC', canvas: '#F4ECDC', ink: '#0A0806', pop: '#FFB300', line: '#0A0806', font: "'Archivo Variable', 'Arial Narrow', sans-serif", stretch: '66%', caps: true, shadow: true },
+    },
+];
+
+const ThemePreview: React.FC<{ p: typeof THEME_OPTIONS[number]['preview'] }> = ({ p }) => {
+    const display: React.CSSProperties = { fontFamily: p.font, fontStretch: p.stretch, fontWeight: p.caps ? 900 : 400, textTransform: p.caps ? 'uppercase' : 'none', letterSpacing: 0, lineHeight: 1 };
+    return (
+        <div aria-hidden className="flex h-28 w-full overflow-hidden" style={{ background: p.canvas, border: `2px solid ${p.ink}` }}>
+            <div className="w-1/4 p-2 flex flex-col gap-1.5" style={{ background: p.side }}>
+                <span className="text-[11px]" style={{ ...display, color: p.sideText }}>BareStack</span>
+                <span className="h-2.5" style={{ background: p.caps ? p.pop : p.sideText }} />
+                <span className="h-1.5 w-3/4 opacity-50" style={{ background: p.sideText }} />
+                <span className="h-1.5 w-2/3 opacity-50" style={{ background: p.sideText }} />
+            </div>
+            <div className="flex-1 p-3 flex flex-col gap-2 min-w-0">
+                <span className="text-xl truncate" style={{ ...display, color: p.ink }}>Overview</span>
+                <div className="flex gap-2">
+                    {[0, 1].map(i => (
+                        <div key={i} className="flex-1 h-9 p-1.5" style={{ background: p.canvas, border: `${p.shadow ? 2 : 1}px solid ${p.line}`, boxShadow: p.shadow ? `3px 3px 0 ${p.ink}` : 'none' }}>
+                            <span className="block text-sm" style={{ ...display, color: p.ink }}>$4,588</span>
+                        </div>
+                    ))}
+                </div>
+                <span className="h-3 w-16" style={{ background: p.shadow ? p.ink : p.pop, boxShadow: p.shadow ? `2px 2px 0 ${p.pop}` : 'none' }} />
+            </div>
+        </div>
+    );
+};
+
+const ThemesSection: React.FC = () => {
+    const { preference, setPreference, design, setDesign } = useTheme();
+    const modes: { value: ThemePreference; label: string; icon: 'sun' | 'moon' | 'monitor' }[] = [
         { value: 'light', label: 'Light', icon: 'sun' },
         { value: 'dark', label: 'Dark', icon: 'moon' },
         { value: 'system', label: 'Match system', icon: 'monitor' },
     ];
     return (
-        <Section id="appearance" title="Appearance" description="Saved on this device.">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" role="radiogroup" aria-label="Theme">
-                {options.map(o => (
+        <Section id="themes" title="Themes" description="How BareStackOS looks. Saved on this device.">
+            <h4 className="text-sm font-bold text-charcoal uppercase tracking-wider mb-3 font-body" id="theme-label">Theme</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" role="radiogroup" aria-labelledby="theme-label">
+                {THEME_OPTIONS.map(o => (
                     <button
                         key={o.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={design === o.value}
+                        aria-label={o.label}
+                        onClick={() => setDesign(o.value)}
+                        className={`bs-theme-option flex flex-col gap-3 p-4 border text-left transition-colors ${design === o.value ? 'border-charcoal bg-surface' : 'border-border hover:border-charcoal'}`}
+                    >
+                        <ThemePreview p={o.preview} />
+                        <span className="flex items-center gap-2 w-full">
+                            <span className="font-semibold">{o.label}</span>
+                            {design === o.value && <Icon name="check" className="w-4 h-4 ml-auto" />}
+                        </span>
+                        <span className="text-sm text-muted -mt-2">{o.description}</span>
+                    </button>
+                ))}
+            </div>
+
+            <h4 className="text-sm font-bold text-charcoal uppercase tracking-wider mt-8 mb-3 font-body" id="mode-label">Mode</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" role="radiogroup" aria-labelledby="mode-label">
+                {modes.map(o => (
+                    <button
+                        key={o.value}
+                        type="button"
                         role="radio"
                         aria-checked={preference === o.value}
                         onClick={() => setPreference(o.value)}
@@ -413,13 +484,13 @@ const Settings: React.FC = () => {
     const links = [
         { id: 'business', label: 'Business' },
         { id: 'account', label: 'Account' },
-        { id: 'appearance', label: 'Appearance' },
+        { id: 'themes', label: 'Themes' },
         { id: 'data', label: 'Your data' },
         { id: 'danger', label: 'Delete account' },
     ];
     return (
         <div className="max-w-5xl mx-auto">
-            <nav className="flex gap-1 overflow-x-auto scrollbar-hide mb-6 border-b border-border pb-3" aria-label="Settings sections">
+            <nav className="bs-subnav flex gap-1 overflow-x-auto scrollbar-hide mb-6 border-b border-border pb-3" aria-label="Settings sections">
                 {links.map(l => (
                     <a key={l.id} href={`#${l.id}`} onClick={(e) => { e.preventDefault(); document.getElementById(l.id)?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm font-semibold py-1.5 px-3 text-muted hover:text-charcoal border border-transparent hover:border-border whitespace-nowrap">
                         {l.label}
@@ -429,7 +500,7 @@ const Settings: React.FC = () => {
             <div className="space-y-8">
                 <BusinessSection />
                 <AccountSection />
-                <AppearanceSection />
+                <ThemesSection />
                 <DataSection />
                 <DangerSection />
             </div>

@@ -64,11 +64,11 @@ const TaskCard: React.FC<{
 };
 
 const Stat: React.FC<{ label: string; value: React.ReactNode; sub?: React.ReactNode; progress?: number; warn?: boolean }> = ({ label, value, sub, progress, warn }) => (
-    <div className="bg-canvas border border-border p-4">
-        <p className="text-xs font-bold text-muted uppercase tracking-wider">{label}</p>
-        <p className="text-xl font-bold text-charcoal tabular-nums mt-1 truncate">{value}</p>
+    <div className="bs-panel bg-canvas border border-border p-4">
+        <p className="bs-label text-xs font-bold text-muted uppercase tracking-wider">{label}</p>
+        <p className="bs-score text-xl font-bold text-charcoal tabular-nums mt-1 truncate">{value}</p>
         {progress !== undefined && (
-            <div className="w-full bg-surface h-1.5 overflow-hidden mt-2">
+            <div className="bs-meter w-full bg-surface h-1.5 overflow-hidden mt-2">
                 <div className={`h-full ${warn ? 'bg-activity-red' : 'bg-charcoal'}`} style={{ width: `${progress}%` }} />
             </div>
         )}
@@ -214,9 +214,9 @@ const ProjectDetails: React.FC = () => {
                     progress={pct(metrics.tasksDone, metrics.tasksTotal)}
                     sub={metrics.tasksOverdue ? <span className="text-activity-red font-semibold">{metrics.tasksOverdue} overdue</span> : 'done'}
                 />
-                <div className="bg-canvas border border-border p-4 flex flex-col">
-                    <p className="text-xs font-bold text-muted uppercase tracking-wider">Unbilled time</p>
-                    <p className="text-xl font-bold text-charcoal tabular-nums mt-1">{formatHours(metrics.unbilledHours)}</p>
+                <div className="bs-panel bg-canvas border border-border p-4 flex flex-col">
+                    <p className="bs-label text-xs font-bold text-muted uppercase tracking-wider">Unbilled time</p>
+                    <p className="bs-score text-xl font-bold text-charcoal tabular-nums mt-1">{formatHours(metrics.unbilledHours)}</p>
                     <p className="text-xs text-muted mt-1">{project.hourly_rate ? formatMoney(metrics.unbilledHours * project.hourly_rate, currency) : 'Set an hourly rate to price it'}</p>
                     <Button className="mt-auto pt-2 text-xs py-1.5" disabled={metrics.unbilledHours <= 0} onClick={() => setInvoiceOpen(true)}>
                         <Icon name="document" className="w-3.5 h-3.5 mr-1.5" />Create invoice
@@ -254,10 +254,10 @@ const ProjectDetails: React.FC = () => {
                                     setDraggedTask(null);
                                     setDragOverStatus(null);
                                 }}
-                                className={`flex flex-col border ${dragOverStatus === stage ? 'border-charcoal ring-1 ring-charcoal' : 'border-border'} bg-surface`}
+                                className={`bs-column ${dragOverStatus === stage ? 'bs-column-over' : ''} flex flex-col border ${dragOverStatus === stage ? 'border-charcoal ring-1 ring-charcoal' : 'border-border'} bg-surface`}
                             >
-                                <div className="px-4 py-3 flex items-center justify-between border-b border-border bg-canvas">
-                                    <h3 className="font-bold text-charcoal text-xs uppercase tracking-wider font-body">{stage}</h3>
+                                <div className="bs-column-head px-4 py-3 flex items-center justify-between border-b border-border bg-canvas">
+                                    <h3 className="bs-label font-bold text-charcoal text-xs uppercase tracking-wider font-body">{stage}</h3>
                                     <span className="bg-charcoal text-canvas text-xs font-bold px-2 py-0.5">{list.length}</span>
                                 </div>
                                 <div className="p-3 space-y-2 min-h-[160px] md:min-h-[360px]">

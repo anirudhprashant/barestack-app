@@ -64,7 +64,7 @@ const ProTipCard: React.FC = () => {
     const tip = TIPS[currentIndex];
 
     return (
-        <div className="bg-panel paper-grain text-cream border border-border p-6 relative overflow-hidden">
+        <div className="bs-ink bg-panel paper-grain text-cream border border-border p-6 relative overflow-hidden">
             <div className={`relative transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
                 <div className="flex items-center mb-3">
                     <Icon name={tip.icon} className="w-5 h-5 text-accent mr-2" />
@@ -74,7 +74,7 @@ const ProTipCard: React.FC = () => {
                 {tip.action ? (
                     <Button
                         variant="secondary"
-                        className="w-full justify-center bg-cream text-[#151817] border-cream hover:bg-cream/90 text-sm py-2"
+                        className="bs-btn-amber w-full justify-center bg-cream text-[#151817] border-cream hover:bg-cream/90 text-sm py-2"
                         onClick={() => {
                             const [path, hash] = tip.action.split('#');
                             navigate(path);
@@ -93,7 +93,7 @@ const ProTipCard: React.FC = () => {
                         key={idx}
                         onClick={() => setCurrentIndex(idx)}
                         aria-label={`Show tip ${idx + 1}`}
-                        className={`h-1 transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-cream' : 'w-1 bg-cream/30'}`}
+                        className={`h-1 transition-all duration-300 ${idx === currentIndex ? 'bs-dot-on w-4 bg-cream' : 'w-1 bg-cream/30'}`}
                     />
                 ))}
             </div>
@@ -149,7 +149,7 @@ const GettingStarted: React.FC<{ onAction: (a: 'contact' | 'project' | 'invoice'
                     Hide
                 </button>
             </div>
-            <div className="h-1 bg-surface"><div className="h-full bg-accent transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} /></div>
+            <div className="bs-meter h-1 bg-surface"><div className="h-full bg-accent transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} /></div>
             {isEmpty && (
                 <div className="px-5 py-4 border-b border-border bg-surface flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
                     <p className="text-sm text-charcoal"><span className="font-semibold">Just looking around?</span> <span className="text-muted">Fill the app with a sample agency to see everything in action.</span></p>
@@ -238,10 +238,10 @@ const Dashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-4xl font-bold font-display text-charcoal mb-2 tracking-tight">
+                    <h1 className="bs-headline text-2xl sm:text-4xl font-bold font-display text-charcoal mb-2 tracking-tight">
                         {getGreeting()}{firstName ? `, ${firstName}` : ''}
                     </h1>
-                    <p className="text-sm text-muted font-medium tracking-wide">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
+                    <p className="bs-meta text-sm text-muted font-medium tracking-wide">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
                 </div>
             </div>
 
@@ -252,13 +252,13 @@ const Dashboard: React.FC = () => {
                     { icon: 'clipboard' as IconName, badge: 'Projects', badgeClass: 'bg-[#e8b86d] text-[#151817]', value: stats.activeProjects, sub: `Active, ${stats.openTasks} open task${stats.openTasks === 1 ? '' : 's'}`, to: '/projects' },
                     { icon: 'clock' as IconName, badge: 'Time', badgeClass: 'bg-[#c37624] text-cream', value: formatHours(stats.hoursThisWeek), sub: 'Logged this week', to: '/time-tracking' },
                 ].map(tile => (
-                    <button key={tile.badge} onClick={() => navigate(tile.to)} className="text-left bg-canvas text-charcoal p-4 sm:p-6 border border-border hover:border-charcoal transition-colors">
+                    <button key={tile.badge} onClick={() => navigate(tile.to)} className="bs-card text-left bg-canvas text-charcoal p-4 sm:p-6 border border-border hover:border-charcoal transition-colors">
                         <div className="flex justify-between items-start mb-4 sm:mb-5 gap-2">
                             <Icon name={tile.icon} className="w-6 h-6 sm:w-8 sm:h-8 text-charcoal" />
-                            <span className={`text-[10px] sm:text-xs font-bold px-2 py-1 ${tile.badgeClass}`}>{tile.badge}</span>
+                            <span className={`bs-badge text-[10px] sm:text-xs font-bold px-2 py-1 ${tile.badgeClass}`}>{tile.badge}</span>
                         </div>
-                        <div className="text-xl sm:text-3xl font-bold text-charcoal mb-1 tracking-tight tabular-nums truncate">{tile.value}</div>
-                        <div className="text-xs sm:text-sm text-muted font-medium">{tile.sub}</div>
+                        <div className="bs-score text-xl sm:text-3xl font-bold text-charcoal mb-1 tracking-tight tabular-nums truncate">{tile.value}</div>
+                        <div className="bs-tile-sub text-xs sm:text-sm text-muted font-medium">{tile.sub}</div>
                     </button>
                 ))}
             </div>
@@ -329,7 +329,7 @@ const Dashboard: React.FC = () => {
                     <div className="bg-canvas border border-border">
                         <div className="px-5 py-4 border-b border-border flex justify-between items-center">
                             <h3 className="text-xs font-bold text-muted uppercase tracking-wider font-body">Upcoming tasks</h3>
-                            <span className="text-xs text-muted">{stats.openTasks} open</span>
+                            <span className="bs-label text-xs text-muted shrink-0">{stats.openTasks} open</span>
                         </div>
                         {upcoming.length ? (
                             <ul className="divide-y divide-border/50">
@@ -360,7 +360,7 @@ const Dashboard: React.FC = () => {
                             <div className="flex justify-between"><span className="text-muted">Contacts</span><span className="font-bold">{contacts.length}</span></div>
                             <div className="flex justify-between"><span className="text-muted">Open deals</span><span className="font-bold">{data.deals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length}</span></div>
                             <div className="flex justify-between"><span className="text-muted">Tasks completed</span><span className="font-bold">{tasks.filter(t => t.status === TaskStatus.Done).length} / {tasks.length}</span></div>
-                            <div className="w-full bg-surface h-1.5 overflow-hidden">
+                            <div className="bs-meter w-full bg-surface h-1.5 overflow-hidden">
                                 <div className="bg-charcoal h-full" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === TaskStatus.Done).length / tasks.length) * 100 : 0}%` }} />
                             </div>
                         </div>

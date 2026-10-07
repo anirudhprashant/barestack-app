@@ -45,7 +45,7 @@ const Activities: React.FC = () => {
                     <div className="space-y-6">
                         {groups.map(group => (
                             <section key={group.label}>
-                                <h3 className="text-xs font-bold text-muted uppercase tracking-wider mb-2 font-body">{group.label}</h3>
+                                <h3 className="bs-label text-xs font-bold text-muted uppercase tracking-wider mb-2 font-body">{group.label}</h3>
                                 <div className="bg-canvas border border-border divide-y divide-border/50">
                                     {group.items.map(item => <ActivityRow key={item.id} item={item} />)}
                                 </div>

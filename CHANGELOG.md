@@ -10,6 +10,23 @@ Self-hosters: anything that requires you to change configuration, re-run
 steps needed. If a release has no **Breaking** section, upgrading is a pull and
 a rebuild.
 
+## [Unreleased]
+
+### Added
+
+- **BareStack theme**: a second look for the whole app, built from the
+  barestack.org design system (ink, paper and amber; Archivo condensed black
+  caps for display, mono caps for labels; square 2px boxes with hard offset
+  shadows that lift and press). Pick it in Settings → Themes or from the
+  command palette. It has light and dark modes, is saved per device, and is
+  applied before first paint. The original look stays the default as
+  **Classic** and is unchanged. Archivo is self-hosted and only downloads
+  when the BareStack theme is in use.
+
+### Changed
+
+- Settings → Appearance is now Settings → Themes (theme, then light/dark mode).
+
 ## [1.2.0] - 2026-09-26
 
 Upgrading: pull, rebuild, and restart PocketBase with `--migrationsDir

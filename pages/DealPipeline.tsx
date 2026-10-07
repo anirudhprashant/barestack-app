@@ -31,7 +31,7 @@ const DealCard: FC<{
             onDragStart={(e) => onDragStart(e, deal)}
             onDragEnd={onDragEnd}
             onClick={onOpen}
-            className={`bg-canvas p-3 border border-border cursor-grab active:cursor-grabbing hover:border-charcoal transition-all group ${dragging ? 'opacity-50' : ''}`}
+            className={`bs-card bg-canvas p-3 border border-border cursor-grab active:cursor-grabbing hover:border-charcoal transition-all group ${dragging ? 'opacity-50' : ''}`}
         >
             <div className="flex justify-between items-start gap-2">
                 <div className="min-w-0">
@@ -49,7 +49,7 @@ const DealCard: FC<{
                     </button>
                 )}
             </div>
-            <p className="text-lg font-bold text-charcoal tabular-nums mt-1">{formatMoney(deal.value || 0, currency)}</p>
+            <p className="bs-card-num text-lg font-bold text-charcoal tabular-nums mt-1">{formatMoney(deal.value || 0, currency)}</p>
             {close && (
                 <p className={`text-xs mt-1 flex items-center gap-1 ${open && days !== null && days < 0 ? 'text-activity-red font-semibold' : 'text-muted'}`}>
                     <Icon name="calendar" className="w-3 h-3" />
@@ -132,10 +132,10 @@ const DealPipeline: React.FC = () => {
                     { label: 'Win rate', value: stats.winRate === null ? '—' : `${stats.winRate}%`, sub: 'Won vs. closed' },
                     { label: 'Avg. won deal', value: formatMoney(stats.avgDeal, currency), sub: 'Per deal' },
                 ].map(s => (
-                    <div key={s.label} className="bg-canvas border border-border p-4">
-                        <p className="text-xs font-bold text-muted uppercase tracking-wider">{s.label}</p>
-                        <p className="text-xl sm:text-2xl font-bold text-charcoal tabular-nums mt-1 truncate">{s.value}</p>
-                        <p className="text-xs text-muted">{s.sub}</p>
+                    <div key={s.label} className="bs-panel bg-canvas border border-border p-4">
+                        <p className="bs-label text-xs font-bold text-muted uppercase tracking-wider">{s.label}</p>
+                        <p className="bs-score text-xl sm:text-2xl font-bold text-charcoal tabular-nums mt-1 truncate">{s.value}</p>
+                        <p className="bs-tile-sub text-xs text-muted">{s.sub}</p>
                     </div>
                 ))}
             </div>
@@ -157,14 +157,14 @@ const DealPipeline: React.FC = () => {
                                 setDraggedDeal(null);
                                 setDragOverStage(null);
                             }}
-                            className={`bg-surface p-3 border-2 ${dragOverStage === stage ? 'border-charcoal' : 'border-border'} transition-colors`}
+                            className={`bs-column ${dragOverStage === stage ? 'bs-column-over' : ''} bg-surface p-3 border-2 ${dragOverStage === stage ? 'border-charcoal' : 'border-border'} transition-colors`}
                         >
-                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
+                            <div className="bs-column-head flex items-center justify-between mb-3 pb-2 border-b border-border">
                                 <div className="flex items-center gap-2">
-                                    <h3 className="font-bold text-charcoal text-xs uppercase tracking-wider font-body">{stage}</h3>
-                                    <span className={`px-1.5 py-0.5 text-xs font-bold ${dealStageClass[stage]}`}>{stageDeals.length}</span>
+                                    <h3 className="bs-label font-bold text-charcoal text-xs uppercase tracking-wider font-body">{stage}</h3>
+                                    <span className={`bs-badge px-1.5 py-0.5 text-xs font-bold ${dealStageClass[stage]}`}>{stageDeals.length}</span>
                                 </div>
-                                <span className="text-xs font-bold text-muted tabular-nums">{formatMoney(value, currency, { compact: value >= 10000 })}</span>
+                                <span className="bs-label text-xs font-bold text-muted tabular-nums">{formatMoney(value, currency, { compact: value >= 10000 })}</span>
                             </div>
                             <div className="space-y-2 min-h-[120px] lg:min-h-[300px]">
                                 {stageDeals.map(deal => (

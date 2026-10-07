@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/* BareStack theme (opt-in from Settings → Themes). Archivo is only downloaded
+   when that theme renders display type. */
+@import "@fontsource-variable/archivo/wdth.css";
+@import "./themes/barestack.css";
 
 /* ─────────────────────────────────────────
    BARESTACK DESIGN SYSTEM — Tailwind v4 @theme

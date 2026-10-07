@@ -30,8 +30,8 @@ const HBar: React.FC<{ label: string; sub?: string; value: number; max: number; 
             <span className="font-medium text-charcoal truncate">{label}{sub && <span className="text-muted font-normal"> · {sub}</span>}</span>
             <span className="font-semibold tabular-nums shrink-0">{display}</span>
         </div>
-        <div className="h-2 bg-surface">
-            <div className="h-full" style={{ width: `${max ? Math.max(2, (value / max) * 100) : 0}%`, background: color }} />
+        <div className="bs-meter h-2 bg-surface">
+            <div className="bs-series h-full" style={{ width: `${max ? Math.max(2, (value / max) * 100) : 0}%`, background: color }} />
         </div>
     </div>
 );
@@ -147,8 +147,8 @@ const Reports: React.FC = () => {
                         <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3 flex-wrap">
                             <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider font-body">Revenue vs. expenses</h3>
                             <div className="flex items-center gap-4 text-xs text-muted">
-                                <span className="flex items-center gap-1.5"><span className="w-3 h-3 inline-block" style={{ background: REVENUE }} />Revenue</span>
-                                <span className="flex items-center gap-1.5"><span className="w-3 h-3 inline-block" style={{ background: EXPENSE }} />Expenses</span>
+                                <span className="flex items-center gap-1.5"><span className="bs-series w-3 h-3 inline-block" style={{ background: REVENUE }} />Revenue</span>
+                                <span className="flex items-center gap-1.5"><span className="bs-series w-3 h-3 inline-block" style={{ background: EXPENSE }} />Expenses</span>
                                 <button className="underline font-semibold text-charcoal" onClick={() => setShowTable(v => !v)}>{showTable ? 'Chart' : 'Table'}</button>
                             </div>
                         </div>
@@ -189,8 +189,8 @@ const Reports: React.FC = () => {
                                             tabIndex={0}
                                             aria-label={`${format(m.month, 'MMMM yyyy')}: revenue ${formatMoney(m.revenue, currency)}, expenses ${formatMoney(m.expenses, currency)}`}
                                         >
-                                            <div className="w-1/3 max-w-[18px]" style={{ height: `${(m.revenue / peak) * 100}%`, minHeight: m.revenue ? 2 : 0, background: REVENUE }} />
-                                            <div className="w-1/3 max-w-[18px]" style={{ height: `${(m.expenses / peak) * 100}%`, minHeight: m.expenses ? 2 : 0, background: EXPENSE }} />
+                                            <div className="bs-series w-1/3 max-w-[18px]" style={{ height: `${(m.revenue / peak) * 100}%`, minHeight: m.revenue ? 2 : 0, background: REVENUE }} />
+                                            <div className="bs-series w-1/3 max-w-[18px]" style={{ height: `${(m.expenses / peak) * 100}%`, minHeight: m.expenses ? 2 : 0, background: EXPENSE }} />
                                             {hover === i && (
                                                 <div className={`absolute top-1 z-10 bg-charcoal text-canvas text-xs p-2.5 whitespace-nowrap pointer-events-none ${i > report.monthly.length / 2 ? 'right-0' : 'left-0'}`}>
                                                     <p className="font-bold mb-1">{format(m.month, 'MMMM yyyy')}</p>

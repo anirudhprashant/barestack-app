@@ -139,6 +139,33 @@ test.describe('BareStackOS', () => {
         await expect(page.locator('html')).toHaveClass(/dark/);
     });
 
+    test('BareStack theme switches in settings and sticks', async ({ page }) => {
+        await signIn(page);
+        await page.goto('/settings');
+        await expect(page.locator('html')).toHaveClass(/theme-classic/);
+        await page.getByRole('radio', { name: 'BareStack' }).click();
+        await expect(page.locator('html')).toHaveClass(/theme-barestack/);
+        await expect(page.getByRole('radio', { name: 'BareStack' })).toHaveAttribute('aria-checked', 'true');
+
+        // Applied before first paint on reload, and the display face loads
+        // from the app itself (the CSP only allows self-hosted fonts).
+        await page.reload();
+        await expect(page.locator('html')).toHaveClass(/theme-barestack/);
+        await expect(page.locator('html')).not.toHaveClass(/theme-classic/);
+        const archivo = await page.evaluate(async () => {
+            const faces = await document.fonts.load('900 16px "Archivo Variable"', 'A');
+            return faces.map(f => f.status);
+        });
+        expect(archivo).toContain('loaded');
+
+        // Light/dark still works on top of it.
+        await page.getByRole('radio', { name: 'Light' }).click();
+        await expect(page.locator('html')).not.toHaveClass(/dark/);
+
+        await page.getByRole('radio', { name: 'Classic' }).click();
+        await expect(page.locator('html')).toHaveClass(/theme-classic/);
+    });
+
     test('sample data loads and removes cleanly', async ({ page }) => {
         await signIn(page);
         await page.goto('/settings');

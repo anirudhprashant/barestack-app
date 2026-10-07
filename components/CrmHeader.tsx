@@ -13,7 +13,7 @@ const CrmHeader: FC<{ children?: React.ReactNode }> = ({ children }) => {
     ];
 
     return (
-        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-6 border-b border-border pb-4">
+        <div className="bs-subnav flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-6 border-b border-border pb-4">
             <nav className="flex gap-1 overflow-x-auto -mx-1 px-1 scrollbar-hide" aria-label="CRM sections">
                 {navLinks.map(link => (
                     <NavLink

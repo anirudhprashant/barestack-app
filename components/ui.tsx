@@ -97,7 +97,7 @@ interface CardProps {
 
 export const Card: React.FC<CardProps> = ({ children, className = '', onClick }) => {
     return (
-        <div onClick={onClick} className={`bg-canvas p-4 sm:p-6 border border-border ${className}`}>
+        <div onClick={onClick} className={`bs-panel bg-canvas p-4 sm:p-6 border border-border ${className}`}>
             {children}
         </div>
     );
@@ -111,7 +111,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', className = '', ...props }) => {
-    const baseClasses = "font-semibold py-2 px-4 rounded-none transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1";
+    const baseClasses = `bs-btn bs-btn-${variant} font-semibold py-2 px-4 rounded-none transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1`;
 
     let variantClasses = "";
     if (variant === 'primary') {
@@ -132,13 +132,13 @@ export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', c
 };
 
 // --- INPUT COMPONENT ---
-const fieldClass = "w-full p-2.5 bg-canvas text-charcoal rounded-none border border-border focus:outline-none focus:border-content focus:ring-1 focus:ring-content transition-colors disabled:opacity-60";
+const fieldClass = "bs-input w-full p-2.5 bg-canvas text-charcoal rounded-none border border-border focus:outline-none focus:border-content focus:ring-1 focus:ring-content transition-colors disabled:opacity-60";
 
 const FieldLabel: React.FC<{ htmlFor?: string; label?: string; hint?: string }> = ({ htmlFor, label, hint }) =>
     label ? (
-        <label htmlFor={htmlFor} className="flex items-baseline justify-between text-sm font-semibold text-charcoal mb-1.5">
+        <label htmlFor={htmlFor} className="bs-field-label flex items-baseline justify-between text-sm font-semibold text-charcoal mb-1.5">
             <span>{label}</span>
-            {hint && <span className="text-xs font-normal text-muted">{hint}</span>}
+            {hint && <span className="bs-hint text-xs font-normal text-muted">{hint}</span>}
         </label>
     ) : null;
 
@@ -245,14 +245,14 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             <div
                 ref={dialogRef}
                 tabIndex={-1}
-                className={`bg-canvas p-4 sm:p-6 w-full ${maxWidthClass} relative border border-border max-h-[92vh] sm:max-h-[90vh] overflow-y-auto focus:outline-none animate-in fade-in slide-in-from-bottom-2 duration-150`}
+                className={`bs-modal bg-canvas p-4 sm:p-6 w-full ${maxWidthClass} relative border border-border max-h-[92vh] sm:max-h-[90vh] overflow-y-auto focus:outline-none animate-in fade-in slide-in-from-bottom-2 duration-150`}
                 role="dialog"
                 aria-modal="true"
                 aria-label={title}
             >
-                <div className="flex justify-between items-center gap-3 mb-6 border-b border-border pb-4">
-                    <h2 className="text-xl sm:text-2xl font-bold text-charcoal min-w-0 truncate">{title}</h2>
-                    <button onClick={onClose} aria-label="Close dialog" className="p-2 hover:bg-surface text-muted transition-colors rounded-none shrink-0">
+                <div className="bs-modal-head flex justify-between items-center gap-3 mb-6 border-b border-border pb-4">
+                    <h2 className="bs-modal-title text-xl sm:text-2xl font-bold text-charcoal min-w-0 truncate">{title}</h2>
+                    <button onClick={onClose} aria-label="Close dialog" className="bs-modal-close p-2 hover:bg-surface text-muted transition-colors rounded-none shrink-0">
                         <Icon name="x" className="w-5 h-5" />
                     </button>
                 </div>
@@ -276,12 +276,12 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, icon }) => {
         <Card className="flex flex-col justify-between h-full">
             <div>
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-medium text-muted">{title}</h3>
+                    <h3 className="bs-label text-sm font-medium text-muted">{title}</h3>
                     <div className="p-2 bg-surface border border-border">
                         <Icon name={icon} className="w-5 h-5 text-charcoal" />
                     </div>
                 </div>
-                <p className="text-3xl font-bold text-charcoal">{value}</p>
+                <p className="bs-score text-3xl font-bold text-charcoal">{value}</p>
             </div>
         </Card>
     );
@@ -289,7 +289,7 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, icon }) => {
 
 // --- TABLE COMPONENTS ---
 export const Table: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <div className={`overflow-x-auto border border-border ${className}`}>
+    <div className={`bs-table overflow-x-auto border border-border ${className}`}>
         <table className="w-full text-left border-collapse bg-canvas">
             {children}
         </table>
@@ -297,7 +297,7 @@ export const Table: React.FC<{ children: React.ReactNode; className?: string }> 
 );
 
 export const TableHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <thead className="bg-surface border-b border-border">
+    <thead className="bs-thead bg-surface border-b border-border">
         {children}
     </thead>
 );
@@ -357,7 +357,8 @@ export const IconButton: React.FC<IconButtonProps> = ({ icon, label, tone = 'def
         type="button"
         title={label}
         aria-label={label}
-        className={`p-1.5 transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-40 ${tone === 'danger'
+        data-tone={tone}
+        className={`bs-icon-btn p-1.5 transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-40 ${tone === 'danger'
             ? 'text-activity-red hover:bg-activity-red/10 focus:ring-activity-red'
             : 'text-charcoal hover:bg-surface focus:ring-charcoal'} ${className}`}
         {...props}
@@ -369,10 +370,10 @@ export const IconButton: React.FC<IconButtonProps> = ({ icon, label, tone = 'def
 // --- EMPTY STATE ---
 export const EmptyState: React.FC<{ icon: IconName; title: string; description?: string; children?: React.ReactNode }> = ({ icon, title, description, children }) => (
     <div className="text-center py-12 px-4 bg-canvas border border-dashed border-border">
-        <div className="w-16 h-16 bg-surface flex items-center justify-center mx-auto mb-4">
+        <div className="bs-empty-icon w-16 h-16 bg-surface flex items-center justify-center mx-auto mb-4">
             <Icon name={icon} className="w-8 h-8 text-muted" />
         </div>
-        <h3 className="text-lg font-medium text-charcoal mb-1">{title}</h3>
+        <h3 className="bs-empty-title text-lg font-medium text-charcoal mb-1">{title}</h3>
         {description && <p className="text-muted text-sm mb-6 max-w-md mx-auto">{description}</p>}
         {children && <div className="flex justify-center gap-2 flex-wrap">{children}</div>}
     </div>
@@ -389,7 +390,7 @@ export const SearchInput: React.FC<{ value: string; onChange: (v: string) => voi
             onChange={e => onChange(e.target.value)}
             placeholder={placeholder}
             aria-label={placeholder}
-            className="w-full pl-9 pr-3 py-2 border border-border bg-canvas rounded-none focus:outline-none focus:border-content focus:ring-1 focus:ring-content transition-colors text-charcoal text-sm"
+            className="bs-input w-full pl-9 pr-3 py-2 border border-border bg-canvas rounded-none focus:outline-none focus:border-content focus:ring-1 focus:ring-content transition-colors text-charcoal text-sm"
         />
     </div>
 );
@@ -402,7 +403,7 @@ export function Segmented<T extends string>({ value, onChange, options, classNam
     className?: string;
 }) {
     return (
-        <div className={`inline-flex border border-border overflow-x-auto scrollbar-hide max-w-full ${className}`} role="tablist">
+        <div className={`bs-seg inline-flex border border-border overflow-x-auto scrollbar-hide max-w-full ${className}`} role="tablist">
             {options.map(o => (
                 <button
                     key={o.value}
@@ -425,14 +426,14 @@ export const StatTile: React.FC<{ label: string; value: React.ReactNode; sub?: R
     return (
         <Comp
             onClick={onClick}
-            className={`text-left w-full bg-canvas text-charcoal p-5 sm:p-6 border border-border ${onClick ? 'hover:border-charcoal cursor-pointer' : ''} transition-colors`}
+            className={`${onClick ? 'bs-card' : 'bs-panel'} text-left w-full bg-canvas text-charcoal p-5 sm:p-6 border border-border ${onClick ? 'hover:border-charcoal cursor-pointer' : ''} transition-colors`}
         >
             <div className="flex justify-between items-start gap-2 mb-3 sm:mb-4">
-                {icon ? <Icon name={icon} className="w-6 h-6 text-charcoal" /> : <span className="text-xs font-bold text-muted uppercase tracking-wider min-w-0">{label}</span>}
-                {badge && <span className={`hidden sm:inline-block shrink-0 text-xs font-bold px-2.5 py-1 ${badgeClass}`}>{badge}</span>}
+                {icon ? <Icon name={icon} className="w-6 h-6 text-charcoal" /> : <span className="bs-label text-xs font-bold text-muted uppercase tracking-wider min-w-0">{label}</span>}
+                {badge && <span className={`bs-badge hidden sm:inline-block shrink-0 text-xs font-bold px-2.5 py-1 ${badgeClass}`}>{badge}</span>}
             </div>
-            <div className="text-2xl sm:text-3xl font-bold text-charcoal mb-1 tracking-tight tabular-nums break-words">{value}</div>
-            {(sub || icon) && <div className="text-sm text-muted font-medium">{sub ?? label}</div>}
+            <div className="bs-score text-2xl sm:text-3xl font-bold text-charcoal mb-1 tracking-tight tabular-nums break-words">{value}</div>
+            {(sub || icon) && <div className="bs-tile-sub text-sm text-muted font-medium">{sub ?? label}</div>}
         </Comp>
     );
 };
