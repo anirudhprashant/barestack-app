@@ -1,0 +1,1172 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   BARESTACK THEME
+   The barestack.org design system (BareStack-Website/design-system) applied
+   to BareStackOS: brutal type, neobrutalist hardware. Ink, paper and amber;
+   Archivo condensed black caps for display, Inter for body, mono caps for
+   labels; square 2px ink boxes with solid offset shadows that lift and press.
+
+   Everything here is scoped to html.theme-barestack, set by ThemeContext (and
+   public/theme-init.js before first paint), so the classic theme is untouched.
+   Rules are unlayered on purpose: they beat Tailwind's layered utilities, so
+   a component's existing classes don't need to change to be re-skinned.
+
+   Hook classes (bs-*) in the markup carry no styles outside this file.
+   ───────────────────────────────────────────────────────────────────────── */
+
+html.theme-barestack {
+  /* ---- the system's own tokens (barestack.css) ---- */
+  --bs-ink: #0a0806;
+  --bs-ink-2: #1a1613;
+  --bs-paper: #f4ecdc;
+  --bs-paper-2: #eae1ce;
+  --bs-white: #ffffff;
+  --bs-amber: #ffb300;
+  --bs-burnt: #c97a25;
+  --bs-green: #39d98a;
+  --bs-red: #ff5c3a;
+  --bs-blue: #6fa8ff;
+
+  --bs-font-display: 'Archivo Variable', 'Archivo', 'Arial Narrow', sans-serif;
+  --bs-font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bs-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --bs-display-stretch: 66%;
+
+  --bs-text-hero: clamp(4rem, 13vw, 22rem);
+  --bs-text-h1: clamp(4rem, 9.4vw, 15rem);
+  --bs-text-h2: clamp(2.2rem, 3.6vw, 5.4rem);
+  --bs-text-h3: clamp(1.5rem, 1.9vw, 2.6rem);
+  --bs-text-label: 0.6875rem;
+
+  --bs-gut: clamp(16px, 2.2vw, 56px);
+  --bs-shadow-sm: 5px;
+  --bs-shadow-md: 8px;
+  --bs-shadow-lg: 12px;
+  --bs-fast: 0.14s;
+  --bs-base: 0.18s;
+
+  /* Contextual: what borders and shadows are drawn in, the second shadow
+     colour, the fill of inputs and table bodies, and secondary text. */
+  --nb-ink: var(--bs-ink);
+  --nb-pop: var(--bs-amber);
+  --nb-field: var(--bs-white);
+  --nb-soft: #5c5248; /* secondary text on paper, 6.5:1 */
+
+  /* ---- the app's tokens, re-pointed at the system ---- */
+  --color-canvas: var(--bs-paper);
+  --color-surface: var(--bs-paper-2);
+  --color-content: var(--bs-ink);
+  --color-charcoal: var(--bs-ink);
+  --color-muted: var(--nb-soft);
+  --color-accent: var(--bs-ink); /* amber is never text on paper; fills are mapped below */
+  --color-border: var(--bs-ink);
+  --color-off-white: var(--bs-paper);
+  --color-panel: var(--bs-ink);
+  --color-cream: var(--bs-paper);
+  --color-forest: var(--bs-ink);
+  --color-forest-dark: var(--bs-ink);
+  --color-forest-mid: var(--bs-ink-2);
+
+  --color-bg-main: var(--bs-paper);
+  --color-bg-surface: var(--bs-paper-2);
+  --color-bg-sidebar: var(--bs-ink);
+  --color-text-main: var(--bs-ink);
+  --color-text-sidebar: var(--bs-paper);
+  --color-text-secondary: var(--nb-soft);
+  --color-text-inverted: var(--bs-paper);
+  --color-brand-dark: var(--bs-ink);
+  --color-brand-light: var(--bs-paper);
+  --color-brand-accent: var(--bs-amber);
+  --color-sidebar-bg: var(--bs-ink);
+  --color-sidebar-text: var(--bs-paper);
+
+  /* Status as TEXT (overdue counts, late dates) has to stay readable, so the
+     text tokens are deep versions of the status hues (all >= 4.5:1 on paper).
+     As FILLS (badges, dots, chips) they become the system's bright status
+     colours with ink on them: see "Status" below. */
+  --color-activity-green: #136b42;
+  --color-activity-emerald: #136b42;
+  --color-activity-blue: #2a5bb0;
+  --color-activity-indigo: #2a5bb0;
+  --color-activity-purple: #6a3fb5;
+  --color-activity-red: #b3311a;
+  --color-activity-orange: #8a5300;
+
+  --font-display: var(--bs-font-display);
+  --font-body: var(--bs-font-body);
+  --font-sans: var(--bs-font-body);
+
+  --app-shell-header-height: 4.5rem;
+
+  /* Chart series: ink, then amber, flat fills with ink outlines. */
+  --chart-revenue: var(--bs-ink);
+  --chart-expense: var(--bs-amber);
+
+  color-scheme: light;
+}
+
+/* Dark mode: the whole app becomes an ink surface (the system's .nb-dark):
+   paper text, paper borders and shadows, amber still marks the current thing. */
+html.theme-barestack.dark {
+  --nb-ink: var(--bs-paper);
+  --nb-pop: var(--bs-amber);
+  --nb-field: var(--bs-ink-2);
+  --nb-soft: #bcb09c; /* secondary text on ink, 9.4:1 */
+
+  --color-canvas: var(--bs-ink);
+  --color-surface: var(--bs-ink-2);
+  --color-content: var(--bs-paper);
+  --color-charcoal: var(--bs-paper);
+  --color-muted: var(--nb-soft);
+  --color-accent: var(--bs-amber);
+  --color-border: var(--bs-paper);
+  --color-off-white: var(--bs-ink-2);
+
+  --color-bg-main: var(--bs-ink);
+  --color-bg-surface: var(--bs-ink-2);
+  --color-text-main: var(--bs-paper);
+  --color-text-secondary: var(--nb-soft);
+  --color-brand-dark: var(--bs-paper);
+  --color-brand-light: var(--bs-ink);
+
+  --color-activity-green: #39d98a;
+  --color-activity-emerald: #39d98a;
+  --color-activity-blue: #6fa8ff;
+  --color-activity-indigo: #6fa8ff;
+  --color-activity-purple: #b79bff;
+  --color-activity-red: #ff7a5c;
+  --color-activity-orange: var(--bs-amber);
+
+  --chart-revenue: var(--bs-paper);
+  --chart-expense: var(--bs-amber);
+
+  color-scheme: dark;
+}
+
+/* ─────────────────────────────────────────
+   BASE
+   ───────────────────────────────────────── */
+
+html.theme-barestack body {
+  background-color: var(--color-canvas);
+  color: var(--color-content);
+  font-family: var(--bs-font-body);
+}
+
+html.theme-barestack ::selection {
+  background: var(--bs-amber);
+  color: var(--bs-ink);
+}
+
+/* Display: Archivo, condensed, black, caps. Never letter-spaced, never italic. */
+html.theme-barestack :is(h1, h2, h3, h4, h5, h6, .font-display, .bs-display) {
+  font-family: var(--bs-font-display);
+  font-weight: 900;
+  font-stretch: var(--bs-display-stretch);
+  font-style: normal;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  line-height: 0.92;
+}
+
+html.theme-barestack :is(h1, h2, h3, h4, h5, h6, .font-display) :is(em, i, .italic) {
+  font-style: normal;
+}
+
+/* Label: the small mono caps line that names a section, a field or a column.
+   Anything the classic markup already set as small tracked caps becomes one. */
+/* :where keeps this at the lowest specificity, so headings and buttons that
+   also carry tracked caps keep their own (display) treatment. */
+html.theme-barestack :where(.bs-label, [class~="uppercase"][class~="tracking-wider"], [class~="uppercase"][class~="tracking-widest"], [class~="uppercase"][class~="tracking-wide"]) {
+  font-family: var(--bs-font-mono);
+  font-weight: 500;
+  font-stretch: normal;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Button labels are display type, even when the classic markup tracked them. */
+html.theme-barestack :is(button, a)[class~="uppercase"]:not(.bs-label),
+html.theme-barestack :is(button, a) > [class~="uppercase"]:not(.bs-label) {
+  font-family: var(--bs-font-display);
+  font-weight: 900;
+  font-stretch: var(--bs-display-stretch);
+  letter-spacing: 0;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+html.theme-barestack .bs-label {
+  font-family: var(--bs-font-mono);
+  font-stretch: normal;
+  font-size: var(--bs-text-label);
+  line-height: 1.4;
+  letter-spacing: 0.2em;
+  color: var(--color-content);
+}
+
+/* Panel titles: the small caps headings that open a panel ("Recent activity",
+   "Upcoming tasks"). Display face at the panel-title scale. */
+html.theme-barestack :is(h2, h3, h4)[class~="font-body"]:not(.bs-label),
+html.theme-barestack .bs-panel-title {
+  font-family: var(--bs-font-display);
+  font-weight: 900;
+  font-stretch: var(--bs-display-stretch);
+  font-size: var(--bs-text-h3);
+  letter-spacing: 0;
+  line-height: 0.92;
+  color: var(--color-content);
+}
+
+/* Focus is always visible: a 3px amber outline. */
+html.theme-barestack :focus-visible {
+  outline: 3px solid var(--bs-amber);
+  outline-offset: 3px;
+}
+
+/* No texture, glows or drifting decoration in this system. */
+html.theme-barestack :is(.grain-overlay, .bs-decor) {
+  display: none;
+}
+
+html.theme-barestack .paper-grain::after {
+  content: none;
+}
+
+/* ─────────────────────────────────────────
+   APP SHELL
+   ───────────────────────────────────────── */
+
+/* Sidebar: ink, display-type nav, the active item is an amber block. */
+html.theme-barestack .bs-sidebar {
+  background: var(--bs-ink);
+  color: var(--bs-paper);
+}
+
+html.theme-barestack.dark .bs-sidebar {
+  border-right: 2px solid var(--bs-paper);
+}
+
+html.theme-barestack .bs-sidebar-head {
+  border-bottom: 2px solid var(--bs-paper);
+}
+
+html.theme-barestack .bs-sidebar-foot {
+  border-top: 2px solid var(--bs-paper);
+}
+
+html.theme-barestack .bs-brand {
+  font-family: var(--bs-font-display);
+  font-weight: 900;
+  font-stretch: var(--bs-display-stretch);
+  font-size: 2rem;
+  line-height: 0.8;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--bs-paper);
+}
+
+html.theme-barestack .bs-brand :is(.italic, em, i) {
+  font-style: normal;
+  color: var(--bs-amber);
+}
+
+html.theme-barestack .bs-nav-link {
+  min-height: 2.75rem;
+  border: 2px solid transparent;
+  color: var(--bs-paper);
+  font-family: var(--bs-font-display);
+  font-weight: 900;
+  font-stretch: var(--bs-display-stretch);
+  font-size: 1.25rem;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  transition: background-color var(--bs-fast) ease-out, color var(--bs-fast) ease-out;
+}
+
+html.theme-barestack .bs-nav-link:hover {
+  background: var(--bs-ink-2);
+  color: var(--bs-paper);
+}
+
+html.theme-barestack .bs-nav-link[aria-current='page'] {
+  background: var(--bs-amber);
+  color: var(--bs-ink);
+  border-color: var(--bs-ink);
+}
+
+html.theme-barestack .bs-user-meta {
+  color: #bcb09c;
+}
+
+/* App bar: paper, closed by a 2px rule. Page title in the display face. */
+html.theme-barestack .bs-appbar {
+  background: var(--color-canvas);
+  border-bottom: 2px solid var(--nb-ink);
+}
+
+html.theme-barestack .bs-page-title {
+  font-size: clamp(1.75rem, 2.5vw, 2.75rem);
+  line-height: 0.85;
+  padding-top: 0.1em;
+}
+
+html.theme-barestack .bs-tool {
+  border: 2px solid transparent;
+  color: var(--color-content);
+}
+
+html.theme-barestack .bs-tool:hover {
+  border-color: var(--nb-ink);
+  background: var(--color-surface);
+}
+
+html.theme-barestack .bs-count {
+  background: var(--bs-amber);
+  color: var(--bs-ink);
+  outline: 2px solid var(--bs-ink);
+  font-family: var(--bs-font-mono);
+}
+
+html.theme-barestack .bs-count[class~="bg-activity-red"] {
+  background: var(--bs-red);
+}
+
+/* Full bleed: content runs to the gutter, not a centred column. */
+html.theme-barestack .bs-main {
+  padding: 1.5rem var(--bs-gut) 4rem;
+}
+
+@media (min-width: 768px) {
+  html.theme-barestack .bs-main {
+    padding: 2rem var(--bs-gut) 6rem;
+  }
+}
+
+html.theme-barestack .bs-main > [class~="mx-auto"] {
+  max-width: none;
+}
+
+/* Backdrops: ink, not a grey wash. */
+html.theme-barestack :is([class~="bg-black/60"], [class~="bg-black/50"]) {
+  background-color: rgb(10 8 6 / 0.72);
+}
+
+/* ─────────────────────────────────────────
+   HARDWARE
+   ───────────────────────────────────────── */
+
+/* Every box is 2px ink, square. 1px stays for rules inside lists and tables. */
+html.theme-barestack [class~="border"]:is([class~="border-border"], [class~="border-charcoal"]):is([class~="bg-canvas"], [class~="bg-surface"], [class~="bg-panel"]),
+html.theme-barestack :is(.bs-panel, .bs-frame) {
+  border-width: 2px;
+  border-color: var(--nb-ink);
+}
+
+html.theme-barestack [class~="border-dashed"] {
+  border-width: 2px;
+  border-color: var(--nb-ink);
+}
+
+/* Rules inside lists are 1px solid ink, not a faded line. */
+html.theme-barestack :is([class~="divide-border/50"], [class~="divide-border"]) > :not(:last-child) {
+  border-color: var(--nb-ink);
+}
+
+html.theme-barestack :is([class~="border-border/50"], [class~="border-cream/20"]) {
+  border-color: var(--nb-ink);
+}
+
+/* Frame: static panel that floats (popovers, palette, login card). */
+html.theme-barestack :is(.shadow-hard, [class~="shadow-hard"], .bs-frame) {
+  border-width: 2px;
+  border-color: var(--nb-ink);
+  box-shadow: var(--bs-shadow-md) var(--bs-shadow-md) 0 0 var(--nb-ink);
+}
+
+html.theme-barestack :is(.shadow-hard-sm, [class~="shadow-hard-sm"]) {
+  box-shadow: var(--bs-shadow-sm) var(--bs-shadow-sm) 0 0 var(--nb-ink);
+}
+
+/* Card: a clickable box. Sits on an ink shadow, lifts up-left on hover and
+   the shadow turns amber. */
+html.theme-barestack :is(.bs-card, button[class~="bg-canvas"][class~="border"][class~="border-border"]) {
+  --d: var(--bs-shadow-sm);
+  border-width: 2px;
+  border-color: var(--nb-ink);
+  box-shadow: var(--d) var(--d) 0 0 var(--nb-ink);
+  transition: transform var(--bs-base) ease-out, box-shadow var(--bs-base) ease-out, background-color var(--bs-base) ease-out;
+}
+
+@media (hover: hover) {
+  html.theme-barestack :is(.bs-card, button[class~="bg-canvas"][class~="border"][class~="border-border"]):not(:disabled):hover {
+    transform: translate(-4px, -4px);
+    background-color: var(--color-canvas);
+    box-shadow: calc(var(--d) + 4px) calc(var(--d) + 4px) 0 0 var(--nb-pop), calc(var(--d) + 4px) calc(var(--d) + 4px) 0 2px var(--nb-ink);
+  }
+}
+
+html.theme-barestack :is(.bs-card, button[class~="bg-canvas"][class~="border"][class~="border-border"]):active {
+  transform: none;
+  box-shadow: 0 0 0 0 var(--nb-ink);
+}
+
+/* Button: display type on a two-tone offset shadow; presses into it. */
+html.theme-barestack .bs-btn {
+  --bd: 4px;
+  min-height: 2.75rem;
+  padding: 0.65rem 1.1rem;
+  border: 2px solid var(--nb-ink);
+  border-radius: 0;
+  font-family: var(--bs-font-display);
+  font-weight: 900;
+  font-stretch: var(--bs-display-stretch);
+  font-size: 1.1rem;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  box-shadow: var(--bd) var(--bd) 0 0 var(--nb-pop), var(--bd) var(--bd) 0 2px var(--nb-ink);
+  transition: transform var(--bs-fast) ease-out, box-shadow var(--bs-fast) ease-out, background-color var(--bs-fast) ease-out;
+}
+
+html.theme-barestack .bs-btn-sm {
+  --bd: 3px;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.8rem;
+  font-size: 1rem;
+}
+
+html.theme-barestack .bs-btn-primary {
+  background: var(--bs-ink);
+  color: var(--bs-paper);
+}
+
+html.theme-barestack.dark .bs-btn-primary {
+  background: var(--bs-amber);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack .bs-btn-secondary {
+  background: var(--color-canvas);
+  color: var(--color-content);
+}
+
+html.theme-barestack .bs-btn-danger {
+  background: var(--bs-red);
+  color: var(--bs-ink);
+}
+
+/* Primary on ink: amber fill, ink text. */
+html.theme-barestack .bs-btn-amber {
+  background: var(--bs-amber);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack .bs-btn-ghost {
+  background: transparent;
+  color: var(--color-content);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+@media (hover: hover) {
+  html.theme-barestack .bs-btn:not(:disabled):not(.bs-btn-ghost):hover {
+    transform: translate(calc(var(--bd) / 2), calc(var(--bd) / 2));
+    box-shadow: calc(var(--bd) / 2) calc(var(--bd) / 2) 0 0 var(--nb-pop), calc(var(--bd) / 2) calc(var(--bd) / 2) 0 2px var(--nb-ink);
+  }
+
+  html.theme-barestack .bs-btn-ghost:not(:disabled):hover {
+    border-color: var(--nb-ink);
+    background: var(--color-surface);
+  }
+}
+
+html.theme-barestack .bs-btn:not(:disabled):not(.bs-btn-ghost):active {
+  transform: translate(var(--bd), var(--bd));
+  box-shadow: 0 0 0 0 var(--nb-pop);
+}
+
+html.theme-barestack .bs-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Icon buttons: square, bordered on hover, danger is a red fill. */
+html.theme-barestack .bs-icon-btn {
+  border: 2px solid transparent;
+  color: var(--color-content);
+}
+
+html.theme-barestack .bs-icon-btn:hover:not(:disabled) {
+  border-color: var(--nb-ink);
+  background: var(--color-surface);
+}
+
+html.theme-barestack .bs-icon-btn[data-tone='danger']:hover:not(:disabled) {
+  background: var(--bs-red);
+  color: var(--bs-ink);
+}
+
+/* Inputs: white, 2px ink. Focus is an amber offset shadow, not a glow. */
+html.theme-barestack :is(.bs-input, :is(input, select, textarea)[class~="border"]:is([class~="border-border"], [class~="border-charcoal"], [class~="border-2"])) {
+  background-color: var(--nb-field);
+  color: var(--color-content);
+  border-width: 2px;
+  border-color: var(--nb-ink);
+  border-radius: 0;
+  outline: none;
+  transition: box-shadow var(--bs-fast) ease-out;
+}
+
+html.theme-barestack :is(input, select, textarea)[class~="border-2"] {
+  border-style: solid;
+}
+
+html.theme-barestack :is(.bs-input, :is(input, select, textarea)[class~="border"]):focus {
+  border-color: var(--nb-ink);
+  box-shadow: var(--bs-shadow-sm) var(--bs-shadow-sm) 0 0 var(--bs-amber), var(--bs-shadow-sm) var(--bs-shadow-sm) 0 2px var(--nb-ink);
+  outline: none;
+}
+
+html.theme-barestack :is(.bs-input, input, select, textarea)[aria-invalid='true'] {
+  box-shadow: var(--bs-shadow-sm) var(--bs-shadow-sm) 0 0 var(--bs-red), var(--bs-shadow-sm) var(--bs-shadow-sm) 0 2px var(--nb-ink);
+}
+
+html.theme-barestack :is(input, textarea)::placeholder {
+  color: var(--nb-soft);
+  opacity: 0.75;
+}
+
+html.theme-barestack input:is([type='checkbox'], [type='radio']) {
+  accent-color: var(--bs-ink);
+}
+
+html.theme-barestack.dark input:is([type='checkbox'], [type='radio']) {
+  accent-color: var(--bs-amber);
+}
+
+html.theme-barestack .select-chevron {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%230A0806' stroke-linecap='square' stroke-width='2.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+html.theme-barestack.dark .select-chevron {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23F4ECDC' stroke-linecap='square' stroke-width='2.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Field labels above every field. */
+html.theme-barestack .bs-field-label {
+  font-family: var(--bs-font-mono);
+  font-size: var(--bs-text-label);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-content);
+}
+
+html.theme-barestack .bs-field-label :is(.bs-hint) {
+  letter-spacing: 0.08em;
+  text-transform: none;
+  font-weight: 400;
+  color: var(--nb-soft);
+}
+
+/* Ink sections inside a paper page (the timer, the tips card): the system's
+   .nb-dark. Everything inside re-points to paper ink. */
+html.theme-barestack .bs-ink {
+  --nb-ink: var(--bs-paper);
+  --nb-field: var(--bs-ink-2);
+  --nb-soft: #bcb09c;
+  --color-canvas: var(--bs-ink);
+  --color-surface: var(--bs-ink-2);
+  --color-content: var(--bs-paper);
+  --color-charcoal: var(--bs-paper);
+  --color-muted: #bcb09c;
+  --color-border: var(--bs-paper);
+  --color-accent: var(--bs-amber);
+  --color-cream: var(--bs-paper);
+  background-color: var(--bs-ink);
+  color: var(--bs-paper);
+  border: 2px solid var(--bs-ink);
+}
+
+html.theme-barestack.dark .bs-ink {
+  border-color: var(--bs-paper);
+}
+
+html.theme-barestack .bs-ink :is(p, span)[class*="text-cream/"] {
+  color: #bcb09c;
+}
+
+html.theme-barestack .bs-ink .bs-dot-on {
+  background: var(--bs-amber);
+}
+
+/* Sub-navigation (CRM sections, settings sections): display-type tabs,
+   the current one an amber block. */
+html.theme-barestack .bs-subnav {
+  border-bottom: 2px solid var(--nb-ink);
+}
+
+html.theme-barestack .bs-subnav a {
+  font-family: var(--bs-font-display);
+  font-weight: 900;
+  font-stretch: var(--bs-display-stretch);
+  font-size: 1.15rem;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--color-content);
+  border: 2px solid transparent;
+}
+
+html.theme-barestack .bs-subnav a:hover {
+  border-color: var(--nb-ink);
+  background: var(--color-surface);
+}
+
+html.theme-barestack .bs-subnav a :is(span) {
+  font-family: var(--bs-font-mono);
+  font-size: var(--bs-text-label);
+  opacity: 1;
+}
+
+/* Card titles inside clickable cards. */
+html.theme-barestack :is(.bs-card, button[class~="bg-canvas"][class~="border"][class~="border-border"], a[class~="bg-canvas"][class~="border"]) :is(h2, h3):not([class~="font-body"]) {
+  font-size: clamp(1.35rem, 1.6vw, 2rem);
+  line-height: 0.9;
+}
+
+html.theme-barestack .bs-card {
+  min-width: 0;
+}
+
+/* "Current thing" is amber with ink on it: selected tabs, checked options,
+   active palette rows, pressed toggles. */
+html.theme-barestack :is([role='tab'][aria-selected='true'], [role='option'][aria-selected='true'], [role='radio'][aria-checked='true'], [aria-pressed='true'], .bs-subnav a[aria-current='page'], .bs-current) {
+  background-color: var(--bs-amber);
+  color: var(--bs-ink);
+  border-color: var(--bs-ink);
+}
+
+/* Segmented control and tab bars: a 2px box of mono-caps tabs. */
+html.theme-barestack :is(.bs-seg, [role='tablist'][class~="border"]) {
+  border: 2px solid var(--nb-ink);
+  background: var(--color-canvas);
+}
+
+html.theme-barestack :is(.bs-seg, [role='tablist'][class~="border"]) > [role='tab'] {
+  font-family: var(--bs-font-mono);
+  font-size: var(--bs-text-label);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-content);
+  min-height: 2.25rem;
+}
+
+html.theme-barestack :is(.bs-seg, [role='tablist'][class~="border"]) > [role='tab'] + [role='tab'] {
+  border-left: 2px solid var(--nb-ink);
+}
+
+html.theme-barestack :is(.bs-seg, [role='tablist'][class~="border"]) > [role='tab'][aria-selected='true'] {
+  background: var(--bs-amber);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack :is(.bs-seg, [role='tablist'][class~="border"]) > [role='tab']:not([aria-selected='true']):hover {
+  background: var(--color-surface);
+}
+
+/* Inverted chips (tag filters, counts, active pills): amber, not ink. */
+html.theme-barestack [class~="bg-charcoal"][class~="text-canvas"]:is(button, a, span):not(.bs-btn):not(.bs-keep-ink) {
+  background-color: var(--bs-amber);
+  color: var(--bs-ink);
+  border-color: var(--bs-ink);
+}
+
+/* Badge: status in a table cell or beside a title. The fill carries the
+   meaning; text is always ink, the border always ink. */
+html.theme-barestack .bs-badge {
+  /* no display here: badges keep their own (some hide on phones) */
+  padding: 0.2rem 0.5rem;
+  border: 2px solid var(--bs-ink);
+  background-color: var(--bs-paper);
+  color: var(--bs-ink);
+  font-family: var(--bs-font-mono);
+  font-size: var(--bs-text-label);
+  font-weight: 600;
+  font-stretch: normal;
+  line-height: 1.3;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────
+   STATUS
+   Bright fills carrying ink text inside an ink border. Never a tint with a
+   coloured border. Maps the classic palette's fills and tints.
+   ───────────────────────────────────────── */
+
+html.theme-barestack :is(.bs-tone-green, [class~="bg-activity-green"], [class~="bg-activity-emerald"], [class~="bg-activity-green/10"], [class~="bg-activity-emerald/10"]) {
+  background-color: var(--bs-green);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack :is(.bs-tone-blue, [class~="bg-activity-blue"], [class~="bg-activity-indigo"], [class~="bg-activity-blue/10"], [class~="bg-activity-indigo/10"]) {
+  background-color: var(--bs-blue);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack :is(.bs-tone-red, [class~="bg-activity-red"], [class~="bg-activity-red/10"]) {
+  background-color: var(--bs-red);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack :is(.bs-tone-amber, [class~="bg-activity-orange"], [class~="bg-activity-orange/10"], [class~="bg-accent"], [class~="bg-[#e8b86d]"], [class~="bg-[#c37624]"]) {
+  background-color: var(--bs-amber);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack :is(.bs-tone-white, [class~="bg-activity-purple"], [class~="bg-activity-purple/10"]) {
+  background-color: var(--bs-white);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack .bs-tone-paper {
+  background-color: var(--bs-paper-2);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack :is(.bs-tone-ink, .bs-badge[class~="bg-panel"]) {
+  background-color: var(--bs-ink);
+  color: var(--bs-paper);
+}
+
+html.theme-barestack.dark :is(.bs-tone-ink, .bs-badge[class~="bg-panel"]) {
+  background-color: var(--bs-paper);
+  color: var(--bs-ink);
+}
+
+/* Tinted boxes become filled, outlined boxes (badges, activity icons, "billed"
+   chips, error blocks). The outline sits on the border so nothing shifts. */
+html.theme-barestack :is([class~="bg-activity-green/10"], [class~="bg-activity-emerald/10"], [class~="bg-activity-blue/10"], [class~="bg-activity-indigo/10"], [class~="bg-activity-red/10"], [class~="bg-activity-orange/10"], [class~="bg-activity-purple/10"]) {
+  border-color: var(--bs-ink);
+  outline: 2px solid var(--bs-ink);
+  outline-offset: -2px;
+}
+
+/* Faint tints (kanban columns, danger panels) become the second paper. */
+html.theme-barestack :is([class~="bg-activity-green/5"], [class~="bg-activity-blue/5"], [class~="bg-activity-red/5"], [class~="bg-activity-purple/5"]) {
+  background-color: var(--color-surface);
+}
+
+html.theme-barestack [class*="border-activity-"] {
+  border-color: var(--nb-ink);
+}
+
+/* Text on a status fill is ink, even when the classic markup said cream. */
+html.theme-barestack [class*="bg-activity-"]:not([class*="/5"])[class~="text-cream"],
+html.theme-barestack [class~="bg-accent"][class~="text-cream"] {
+  color: var(--bs-ink);
+}
+
+/* ─────────────────────────────────────────
+   TABLES
+   Ink header in mono caps, white body, 1px ink rules, amber on hover.
+   ───────────────────────────────────────── */
+
+html.theme-barestack .bs-table {
+  border: 2px solid var(--nb-ink);
+  background: var(--nb-field);
+}
+
+html.theme-barestack .bs-table table {
+  background: var(--nb-field);
+  color: var(--color-content);
+}
+
+html.theme-barestack .bs-thead,
+html.theme-barestack .bs-table thead {
+  background: var(--bs-ink);
+  border-bottom: 0;
+}
+
+html.theme-barestack.dark .bs-thead,
+html.theme-barestack.dark .bs-table thead {
+  background: var(--bs-paper);
+}
+
+html.theme-barestack :is(.bs-thead, .bs-table thead) th {
+  color: var(--bs-paper);
+  font-family: var(--bs-font-mono);
+  font-size: var(--bs-text-label);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+html.theme-barestack.dark :is(.bs-thead, .bs-table thead) th {
+  color: var(--bs-ink);
+}
+
+html.theme-barestack :is(.bs-thead, .bs-table thead) th :is(button, a, span, svg) {
+  color: inherit;
+}
+
+html.theme-barestack .bs-table tbody > tr + tr,
+html.theme-barestack .bs-table tbody > tr:first-child {
+  border-top: 1px solid var(--nb-ink);
+}
+
+html.theme-barestack .bs-table tbody > tr:first-child {
+  border-top: 0;
+}
+
+html.theme-barestack .bs-table tbody > tr:hover {
+  background-color: color-mix(in srgb, var(--bs-amber) 28%, var(--nb-field));
+}
+
+html.theme-barestack .bs-table tbody > tr:is([aria-selected='true'], [data-selected='true']) {
+  background-color: var(--bs-amber);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack .bs-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────────────────
+   PANELS, MODALS, POPOVERS, TOASTS
+   ───────────────────────────────────────── */
+
+/* Panel head: a band closed by a 2px rule. */
+html.theme-barestack .bs-panel-head {
+  border-bottom: 2px solid var(--nb-ink);
+  background: var(--color-surface);
+}
+
+html.theme-barestack .bs-panel-head :is(p) {
+  color: var(--nb-soft);
+}
+
+html.theme-barestack .bs-danger {
+  border-color: var(--nb-ink);
+}
+
+html.theme-barestack .bs-danger .bs-panel-head {
+  background: var(--bs-red);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack .bs-danger .bs-panel-head :is(h3, p) {
+  color: var(--bs-ink);
+}
+
+/* Modal: a frame on paper with an amber title bar holding a mono label and
+   an ink close button. */
+html.theme-barestack .bs-modal {
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--bs-shadow-lg) var(--bs-shadow-lg) 0 0 var(--nb-ink);
+  padding-top: 0;
+}
+
+html.theme-barestack .bs-modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 -1rem 1.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  background: var(--bs-amber);
+  color: var(--bs-ink);
+  border-bottom: 2px solid var(--nb-ink);
+}
+
+@media (min-width: 640px) {
+  html.theme-barestack .bs-modal-head {
+    margin: 0 -1.5rem 1.5rem;
+    padding-left: 1.5rem;
+  }
+}
+
+html.theme-barestack .bs-modal-title {
+  font-family: var(--bs-font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-stretch: normal;
+  letter-spacing: 0.2em;
+  line-height: 1.4;
+  color: var(--bs-ink);
+}
+
+html.theme-barestack .bs-modal-close {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bs-ink);
+  color: var(--bs-paper);
+  border: 2px solid var(--bs-ink);
+}
+
+html.theme-barestack .bs-modal-close:hover {
+  background: var(--bs-ink-2);
+  color: var(--bs-amber);
+}
+
+/* Toasts: a framed block whose fill says what happened. */
+html.theme-barestack .bs-toast {
+  border: 2px solid var(--bs-ink);
+  box-shadow: var(--bs-shadow-sm) var(--bs-shadow-sm) 0 0 var(--nb-ink);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack .bs-toast :is(span, button) {
+  color: var(--bs-ink);
+}
+
+html.theme-barestack .bs-toast[data-kind='success'] {
+  background: var(--bs-green);
+}
+
+html.theme-barestack .bs-toast[data-kind='error'] {
+  background: var(--bs-red);
+}
+
+html.theme-barestack .bs-toast[data-kind='info'] {
+  background: var(--bs-paper);
+}
+
+/* Empty state: the one place a panel gets big type. */
+html.theme-barestack .bs-empty-title {
+  font-size: var(--bs-text-h3);
+  line-height: 0.92;
+}
+
+html.theme-barestack .bs-empty-icon {
+  border: 2px solid var(--nb-ink);
+  background: var(--bs-amber);
+  color: var(--bs-ink);
+}
+
+html.theme-barestack .bs-empty-icon svg {
+  color: var(--bs-ink);
+}
+
+/* ─────────────────────────────────────────
+   SCOREBOARD: dashboard numbers
+   A display-face number as large as its tile allows, a mono label under it.
+   ───────────────────────────────────────── */
+
+/* The tile is a size container, so the number is as large as its tile
+   allows: on a phone's half-width tile as much as on a 2560px monitor. */
+html.theme-barestack :has(> .bs-score) {
+  container-type: inline-size;
+}
+
+html.theme-barestack .bs-score {
+  font-family: var(--bs-font-display);
+  font-weight: 900;
+  font-stretch: var(--bs-display-stretch);
+  font-size: clamp(1.75rem, 21cqi, 4.5rem);
+  overflow-wrap: normal;
+  line-height: 0.85;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+html.theme-barestack .bs-tile-sub {
+  font-family: var(--bs-font-mono);
+  font-size: var(--bs-text-label);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+
+html.theme-barestack .bs-headline {
+  font-size: var(--bs-text-h2);
+  line-height: 0.88;
+}
+
+html.theme-barestack .bs-meta {
+  font-family: var(--bs-font-mono);
+  font-size: var(--bs-text-label);
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* Kanban: columns are paper-2 bands with a rule-row header. */
+html.theme-barestack .bs-column {
+  background: var(--color-surface);
+  border: 2px solid var(--nb-ink);
+}
+
+html.theme-barestack .bs-column-head {
+  border-bottom: 2px solid var(--nb-ink);
+}
+
+/* Progress: a 2px box with an ink (or amber) fill. */
+html.theme-barestack .bs-meter {
+  background: var(--nb-field);
+  outline: 2px solid var(--nb-ink);
+  outline-offset: 0;
+}
+
+/* ─────────────────────────────────────────
+   SIGN-IN AND VERIFY SCREENS
+   Ink surface, hero-scale wordmark, a paper frame on an amber shadow.
+   ───────────────────────────────────────── */
+
+html.theme-barestack .bs-auth {
+  background: var(--bs-ink);
+}
+
+/* Sized so the wordmark spans the card column and no further. */
+html.theme-barestack .bs-auth-brand {
+  font-size: clamp(2.5rem, 13.4vw, 4.1rem);
+  line-height: 0.8;
+  color: var(--bs-paper);
+}
+
+html.theme-barestack .bs-auth-brand :is(.italic, em, i) {
+  color: var(--bs-amber);
+}
+
+html.theme-barestack .bs-auth-tag {
+  color: var(--bs-paper);
+  font-family: var(--bs-font-mono);
+  font-size: var(--bs-text-label);
+  letter-spacing: 0.2em;
+}
+
+html.theme-barestack .bs-auth-foot {
+  color: #bcb09c;
+  font-family: var(--bs-font-mono);
+  font-size: var(--bs-text-label);
+  letter-spacing: 0.2em;
+}
+
+html.theme-barestack .bs-auth-card {
+  background: var(--bs-paper);
+  color: var(--bs-ink);
+  border: 2px solid var(--bs-paper);
+  box-shadow: var(--bs-shadow-lg) var(--bs-shadow-lg) 0 0 var(--bs-amber);
+}
+
+/* The sign-in card is always paper, so it keeps light-mode ink inside even
+   when the app is in dark mode. */
+html.theme-barestack.dark .bs-auth-card {
+  --nb-ink: var(--bs-ink);
+  --nb-field: var(--bs-white);
+  --nb-soft: #5c5248;
+  --color-canvas: var(--bs-paper);
+  --color-surface: var(--bs-paper-2);
+  --color-content: var(--bs-ink);
+  --color-charcoal: var(--bs-ink);
+  --color-muted: #5c5248;
+  --color-border: var(--bs-ink);
+  --color-accent: var(--bs-ink);
+}
+
+html.theme-barestack .bs-auth-card h2 {
+  font-size: var(--bs-text-h3);
+}
+
+/* ─────────────────────────────────────────
+   MOTION
+   Fast and mechanical. Transitions off under reduced motion.
+   ───────────────────────────────────────── */
+
+html.theme-barestack .animate-in {
+  animation-duration: var(--bs-base);
+  animation-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-barestack :is(.bs-btn, .bs-card, .bs-nav-link, .bs-input, button, input, select, textarea) {
+    transition: none;
+  }
+}
+
+/* App bar search: a white field-like box from 640px. */
+@media (min-width: 640px) {
+  html.theme-barestack .bs-search {
+    border-width: 2px;
+    border-color: var(--nb-ink);
+    background: var(--nb-field);
+    color: var(--color-content);
+  }
+}
+
+html.theme-barestack .bs-search kbd {
+  border: 2px solid var(--nb-ink);
+  font-family: var(--bs-font-mono);
+  padding: 0 0.3em;
+}
+
+/* Grid children that hold display type need min-width: 0, or a long number
+   pushes the tile past the viewport. */
+html.theme-barestack .bs-panel {
+  min-width: 0;
+}
+
+/* Number on a small card (deal value). */
+html.theme-barestack .bs-card-num {
+  font-family: var(--bs-font-display);
+  font-weight: 900;
+  font-stretch: var(--bs-display-stretch);
+  font-size: 1.6rem;
+  line-height: 0.9;
+  letter-spacing: 0;
+  margin-top: 0.4rem;
+}
+
+html.theme-barestack .bs-column-over {
+  background: color-mix(in srgb, var(--bs-amber) 28%, var(--color-surface));
+}
+
+/* Only ink sits on amber: secondary text inside a current (amber) item too. */
+html.theme-barestack :is([role='tab'][aria-selected='true'], [role='option'][aria-selected='true'], [role='radio'][aria-checked='true'], [aria-pressed='true'], .bs-current) :is([class~="text-muted"], [class*="text-muted/"], svg) {
+  color: var(--bs-ink);
+}
+
+/* Burnt orange as small text is unreadable on paper: it becomes ink. On ink
+   surfaces the classic gold becomes amber. */
+html.theme-barestack [class~="text-[#c37624]"] {
+  color: var(--color-content);
+  font-weight: 700;
+}
+
+html.theme-barestack [class~="text-[#e8b86d]"] {
+  color: var(--bs-amber);
+}
+
+html.theme-barestack [class~="border-[#e8b86d]"] {
+  border-color: var(--bs-amber);
+}
+
+/* Dialogs take focus programmatically (for screen readers); the frame is the
+   indicator, not a ring around it. Borderless fields ring inside themselves. */
+html.theme-barestack :is([role='dialog'], [tabindex='-1']):focus-visible {
+  outline: none;
+}
+
+html.theme-barestack :is(input, textarea, select):not([class~="border"]):not([class~="border-2"]):focus-visible {
+  outline-offset: -3px;
+}
+
+html.theme-barestack.dark .bs-auth-card .bs-btn-primary {
+  background: var(--bs-ink);
+  color: var(--bs-paper);
+}
+
+/* Chart series: flat fills with ink outlines, no gradients or fades. */
+html.theme-barestack .bs-series {
+  box-shadow: inset 0 0 0 2px var(--nb-ink);
+}

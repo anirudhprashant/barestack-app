@@ -62,37 +62,37 @@ const LoginPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-panel font-body flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="bs-auth min-h-screen bg-panel font-body flex items-center justify-center p-4 relative overflow-hidden">
             {/* Ambient radial glows, slowly drifting in the background */}
             <div
                 aria-hidden
-                className="pointer-events-none absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full blur-3xl animate-drift-a bg-[radial-gradient(circle_at_center,rgba(232,184,109,0.10),transparent_70%)]"
+                className="bs-decor pointer-events-none absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full blur-3xl animate-drift-a bg-[radial-gradient(circle_at_center,rgba(232,184,109,0.10),transparent_70%)]"
             />
             <div
                 aria-hidden
-                className="pointer-events-none absolute -bottom-48 -right-32 w-[560px] h-[560px] rounded-full blur-3xl animate-drift-b bg-[radial-gradient(circle_at_center,rgba(195,118,36,0.09),transparent_70%)]"
+                className="bs-decor pointer-events-none absolute -bottom-48 -right-32 w-[560px] h-[560px] rounded-full blur-3xl animate-drift-b bg-[radial-gradient(circle_at_center,rgba(195,118,36,0.09),transparent_70%)]"
             />
             {/* Grain overlay */}
             <div
                 aria-hidden
-                className="pointer-events-none absolute inset-0 opacity-[0.22] mix-blend-soft-light"
+                className="bs-decor pointer-events-none absolute inset-0 opacity-[0.22] mix-blend-soft-light"
                 style={{ backgroundImage: 'var(--paper-grain)', backgroundSize: '220px 220px' }}
             />
 
             <div className="w-full max-w-md relative z-10">
                 {/* Branding */}
                 <div className="mb-8">
-                    <h1 className="text-5xl font-bold font-display text-cream tracking-tight">
+                    <h1 className="bs-auth-brand text-5xl font-bold font-display text-cream tracking-tight">
                         BareStack<span className="italic">OS</span>
                     </h1>
-                    <p className="text-sm font-semibold text-muted uppercase tracking-widest mt-2">
+                    <p className="bs-auth-tag text-sm font-semibold text-muted uppercase tracking-widest mt-2">
                         CRM for agencies + freelancers
                     </p>
                 </div>
 
                 {/* Check-your-email card (shown after sign-up) */}
                 {verificationSentTo ? (
-                <div className="bg-canvas border border-border p-8">
+                <div className="bs-auth-card bg-canvas border border-border p-8">
                     <div className="border-b border-border pb-6 mb-8">
                         <h2 className="text-2xl font-bold font-display text-charcoal">Check your email</h2>
                     </div>
@@ -106,7 +106,7 @@ const LoginPage: React.FC = () => {
                         type="button"
                         disabled={loading}
                         onClick={handleResend}
-                        className="w-full bg-charcoal text-canvas hover:bg-content font-semibold py-4 px-6 border-2 border-charcoal transition-all uppercase tracking-wider disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="bs-btn bs-btn-primary w-full bg-charcoal text-canvas hover:bg-content font-semibold py-4 px-6 border-2 border-charcoal transition-all uppercase tracking-wider disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Sending...' : 'Resend verification email'}
                     </button>
@@ -114,7 +114,7 @@ const LoginPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={resetToSignIn}
-                            className="w-full text-center font-semibold text-charcoal hover:text-accent uppercase tracking-wide transition-colors py-2 px-4 border border-charcoal hover:border-accent"
+                            className="bs-btn bs-btn-secondary w-full text-center font-semibold text-charcoal hover:text-accent uppercase tracking-wide transition-colors py-2 px-4 border border-charcoal hover:border-accent"
                         >
                             ← Back to sign in
                         </button>
@@ -122,7 +122,7 @@ const LoginPage: React.FC = () => {
                 </div>
                 ) : (
                 /* Form Card */
-                <div className="bg-canvas border border-border p-8">
+                <div className="bs-auth-card bg-canvas border border-border p-8">
                     <div className="border-b border-border pb-6 mb-8">
                         <h2 className="text-2xl font-bold font-display text-charcoal">
                             {isSignUp ? 'Create account' : 'Sign in'}
@@ -157,7 +157,7 @@ const LoginPage: React.FC = () => {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {isSignUp && (
                             <div>
-                                <label htmlFor="auth-name" className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Name</label>
+                                <label htmlFor="auth-name" className="bs-field-label block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Name</label>
                                 <input
                                     id="auth-name"
                                     autoComplete="name"
@@ -165,13 +165,13 @@ const LoginPage: React.FC = () => {
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     required={isSignUp}
-                                    className="w-full bg-canvas border-2 border-charcoal px-4 py-3 text-charcoal font-semibold placeholder-muted focus:outline-none focus:border-accent transition-colors"
+                                    className="bs-input w-full bg-canvas border-2 border-charcoal px-4 py-3 text-charcoal font-semibold placeholder-muted focus:outline-none focus:border-accent transition-colors"
                                     placeholder="Your name"
                                 />
                             </div>
                         )}
                         <div>
-                            <label htmlFor="auth-email" className="block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Email</label>
+                            <label htmlFor="auth-email" className="bs-field-label block text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">Email</label>
                             <input
                                 id="auth-email"
                                 autoComplete="email"
@@ -179,14 +179,14 @@ const LoginPage: React.FC = () => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full bg-canvas border-2 border-charcoal px-4 py-3 text-charcoal font-semibold placeholder-muted focus:outline-none focus:border-accent transition-colors"
+                                className="bs-input w-full bg-canvas border-2 border-charcoal px-4 py-3 text-charcoal font-semibold placeholder-muted focus:outline-none focus:border-accent transition-colors"
                                 placeholder="you@example.com"
                             />
                         </div>
                         <div>
-                            <label htmlFor="auth-password" className="flex justify-between text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">
+                            <label htmlFor="auth-password" className="bs-field-label flex justify-between text-sm font-semibold text-charcoal mb-2 uppercase tracking-wide">
                                 <span>Password</span>
-                                {isSignUp && <span className="normal-case tracking-normal font-normal text-muted text-xs">at least 8 characters</span>}
+                                {isSignUp && <span className="bs-hint normal-case tracking-normal font-normal text-muted text-xs">at least 8 characters</span>}
                             </label>
                             <input
                                 id="auth-password"
@@ -196,7 +196,7 @@ const LoginPage: React.FC = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="w-full bg-canvas border-2 border-charcoal px-4 py-3 text-charcoal font-semibold placeholder-muted focus:outline-none focus:border-accent transition-colors"
+                                className="bs-input w-full bg-canvas border-2 border-charcoal px-4 py-3 text-charcoal font-semibold placeholder-muted focus:outline-none focus:border-accent transition-colors"
                                 placeholder="••••••••"
                             />
                         </div>
@@ -204,7 +204,7 @@ const LoginPage: React.FC = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-charcoal text-canvas hover:bg-content font-semibold py-4 px-6 border-2 border-charcoal transition-all uppercase tracking-wider disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="bs-btn bs-btn-primary w-full bg-charcoal text-canvas hover:bg-content font-semibold py-4 px-6 border-2 border-charcoal transition-all uppercase tracking-wider disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Sign In'}
                         </button>
@@ -214,7 +214,7 @@ const LoginPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => { setIsSignUp(!isSignUp); setError(null); }}
-                            className="w-full text-center font-semibold text-charcoal hover:text-accent uppercase tracking-wide transition-colors py-2 px-4 border border-charcoal hover:border-accent"
+                            className="bs-btn bs-btn-secondary w-full text-center font-semibold text-charcoal hover:text-accent uppercase tracking-wide transition-colors py-2 px-4 border border-charcoal hover:border-accent"
                         >
                             {isSignUp ? '← Already have an account? Sign in' : "Don't have an account? Sign up →"}
                         </button>
@@ -222,7 +222,7 @@ const LoginPage: React.FC = () => {
                 </div>
                 )}
 
-                <p className="text-center text-muted/60 text-xs font-semibold uppercase tracking-widest mt-6">
+                <p className="bs-auth-foot text-center text-muted/60 text-xs font-semibold uppercase tracking-widest mt-6">
                     Built with AI • Open-source forever
                 </p>
             </div>

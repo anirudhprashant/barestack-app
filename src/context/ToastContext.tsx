@@ -69,7 +69,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     {toasts.map(t => (
                         <div
                             key={t.id}
-                            className={`flex items-start gap-3 bg-canvas border ${kindStyles[t.kind]} px-4 py-3 shadow-hard-sm animate-in fade-in slide-in-from-bottom-2 duration-200`}
+                            data-kind={t.kind}
+                            className={`bs-toast flex items-start gap-3 bg-canvas border ${kindStyles[t.kind]} px-4 py-3 shadow-hard-sm animate-in fade-in slide-in-from-bottom-2 duration-200`}
                             role={t.kind === 'error' ? 'alert' : 'status'}
                         >
                             <span className="font-bold mt-px" aria-hidden="true">{kindIcon[t.kind]}</span>
@@ -92,7 +93,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     onClick={() => resolveConfirm(false)}
                 >
                     <div
-                        className="bg-canvas p-6 w-full max-w-md border border-border"
+                        className="bs-frame bg-canvas p-6 w-full max-w-md border border-border"
                         onClick={e => e.stopPropagation()}
                         role="dialog"
                         aria-modal="true"
@@ -102,16 +103,16 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => resolveConfirm(false)}
-                                className="font-semibold py-2 px-4 bg-canvas text-charcoal border border-charcoal hover:bg-surface transition-all"
+                                className="bs-btn bs-btn-secondary font-semibold py-2 px-4 bg-canvas text-charcoal border border-charcoal hover:bg-surface transition-all"
                             >
                                 {confirmState.cancelLabel || 'Cancel'}
                             </button>
                             <button
                                 onClick={() => resolveConfirm(true)}
-                                className={`font-semibold py-2 px-4 border transition-all ${
+                                className={`bs-btn font-semibold py-2 px-4 border transition-all ${
                                     confirmState.danger
-                                        ? 'bg-surface text-activity-red border-activity-red/30 hover:bg-activity-red/10'
-                                        : 'bg-charcoal text-canvas border-charcoal hover:bg-content'
+                                        ? 'bs-btn-danger bg-surface text-activity-red border-activity-red/30 hover:bg-activity-red/10'
+                                        : 'bs-btn-primary bg-charcoal text-canvas border-charcoal hover:bg-content'
                                 }`}
                             >
                                 {confirmState.confirmLabel || 'Confirm'}

@@ -65,13 +65,13 @@ const Notifications: React.FC = () => {
         <div className="relative" ref={ref}>
             <button
                 onClick={() => setOpen(o => !o)}
-                className="relative p-2 text-muted hover:text-charcoal transition-colors border border-transparent hover:border-border"
+                className="bs-tool relative p-2 text-muted hover:text-charcoal transition-colors border border-transparent hover:border-border"
                 aria-label={`Notifications${items.length ? ` (${items.length})` : ''}`}
                 aria-expanded={open}
             >
                 <Icon name="bell" className="w-5 h-5" />
                 {items.length > 0 && (
-                    <span className={`absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 text-[10px] font-bold leading-[18px] text-center ${critical ? 'bg-activity-red text-cream' : 'bg-charcoal text-canvas'}`}>
+                    <span className={`bs-count absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 text-[10px] font-bold leading-[18px] text-center ${critical ? 'bg-activity-red text-cream' : 'bg-charcoal text-canvas'}`}>
                         {items.length > 9 ? '9+' : items.length}
                     </span>
                 )}
@@ -79,7 +79,7 @@ const Notifications: React.FC = () => {
             {open && (
                 <div className="absolute right-0 top-full mt-2 w-[min(22rem,calc(100vw-2rem))] bg-canvas border border-charcoal shadow-hard z-30">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                        <h3 className="text-sm font-bold uppercase tracking-wider font-body">Needs attention</h3>
+                        <h3 className="bs-label text-sm font-bold uppercase tracking-wider font-body">Needs attention</h3>
                         {items.length > 0 && (
                             <button className="text-xs font-semibold text-muted hover:text-charcoal underline" onClick={() => persist(new Set([...dismissed, ...items.map(n => n.id)]))}>
                                 Clear all
@@ -128,7 +128,7 @@ const TimerPill: React.FC = () => {
                 <span className="font-bold tabular-nums">{formatDuration(timer.elapsedMs)}</span>
                 <span className="hidden lg:inline text-muted max-w-[140px] truncate">{project?.name}</span>
             </button>
-            <button onClick={timer.stop} className="px-2 py-1.5 border-l border-charcoal bg-charcoal text-canvas hover:bg-content" aria-label="Stop timer" title="Stop timer">
+            <button onClick={timer.stop} className="bs-keep-ink px-2 py-1.5 border-l border-charcoal bg-charcoal text-canvas hover:bg-content" aria-label="Stop timer" title="Stop timer">
                 <Icon name="stop" className="w-3.5 h-3.5" />
             </button>
         </div>
@@ -139,7 +139,7 @@ const ThemeButton: React.FC = () => {
     const { theme, toggleTheme } = useTheme();
     const label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
     return (
-        <button onClick={toggleTheme} className="hidden sm:inline-flex p-2 text-muted hover:text-charcoal transition-colors border border-transparent hover:border-border" aria-label={label} title={label}>
+        <button onClick={toggleTheme} className="bs-tool hidden sm:inline-flex p-2 text-muted hover:text-charcoal transition-colors border border-transparent hover:border-border" aria-label={label} title={label}>
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="w-5 h-5" />
         </button>
     );
@@ -160,7 +160,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenPalette }) => {
     const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
     return (
-        <header className="fixed top-0 left-0 md:left-[220px] right-0 h-[var(--app-shell-header-height)] bg-canvas border-b border-border flex items-center justify-between gap-2 px-4 sm:px-6 z-10">
+        <header className="bs-appbar fixed top-0 left-0 md:left-[220px] right-0 h-[var(--app-shell-header-height)] bg-canvas border-b border-border flex items-center justify-between gap-2 px-4 sm:px-6 z-10">
             <div className="flex items-center gap-3 min-w-0">
                 {onMenuToggle && (
                     <button
@@ -171,12 +171,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenPalette }) => {
                         <Icon name="menu" size={22} />
                     </button>
                 )}
-                <h1 className="text-lg font-display text-charcoal truncate">{currentPage}</h1>
+                <h1 className="bs-page-title text-lg font-display text-charcoal truncate">{currentPage}</h1>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-3">
                 <button
                     onClick={onOpenPalette}
-                    className="flex items-center gap-2 p-2 sm:px-3 sm:py-1.5 text-sm text-muted border border-transparent sm:border-border hover:border-charcoal hover:text-charcoal transition-colors"
+                    className="bs-search flex items-center gap-2 p-2 sm:px-3 sm:py-1.5 text-sm text-muted border border-transparent sm:border-border hover:border-charcoal hover:text-charcoal transition-colors"
                     aria-label="Search and commands"
                 >
                     <Icon name="search" className="w-4 h-4" />
@@ -190,7 +190,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenPalette }) => {
                 <button
                     onClick={logout}
                     aria-label="Log out"
-                    className="hidden sm:inline-flex text-sm font-semibold text-muted hover:text-canvas hover:bg-charcoal transition-colors px-3 py-1.5 border border-border hover:border-charcoal"
+                    className="bs-btn bs-btn-secondary bs-btn-sm hidden sm:inline-flex text-sm font-semibold text-muted hover:text-canvas hover:bg-charcoal transition-colors px-3 py-1.5 border border-border hover:border-charcoal"
                 >
                     Log Out
                 </button>

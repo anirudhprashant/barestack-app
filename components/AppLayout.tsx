@@ -76,7 +76,7 @@ const AppLayout: React.FC = () => {
                 <div className="md:ml-[220px] transition-[margin] duration-200">
                     <Header onMenuToggle={() => setSidebarOpen(prev => !prev)} onOpenPalette={() => setPaletteOpen(true)} />
                     <main className="pt-[var(--app-shell-header-height)]">
-                        <div className="p-4 sm:p-6 lg:p-8">
+                        <div className="bs-main p-4 sm:p-6 lg:p-8">
                             {loading ? (
                                 <div className="flex justify-center items-center h-64">
                                     <p className="text-2xl sm:text-4xl font-display text-content animate-pulse">Loading your dashboard...</p>
