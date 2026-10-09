@@ -26,22 +26,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     useEffect(() => {
         const init = async () => {
-            // Demo mode: sign in automatically with a throwaway seeded account so
-            // the public demo opens straight into the app instead of a login
-            // wall. Both vars must be set at build time, so this is inert for
-            // every normal self-hosted install. Never point these at a real
-            // account: anyone loading the page gets that session.
-            const demoEmail = import.meta.env.VITE_DEMO_EMAIL;
-            const demoPassword = import.meta.env.VITE_DEMO_PASSWORD;
-            if (!pb.authStore.isValid && demoEmail && demoPassword) {
-                try {
-                    await pb.collection('users').authWithPassword(demoEmail, demoPassword);
-                } catch {
-                    // Fall through to the normal sign-in screen if the demo
-                    // account is mid-reset or missing.
-                }
-            }
-
             // Refresh a stored session: extends the token and picks up changes
             // made elsewhere (name, verified flag). A rejected token (deleted
             // user, changed password) signs out; a network blip keeps the
@@ -52,6 +36,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 } catch (err: unknown) {
                     const status = (err as { status?: number })?.status;
                     if (status === 401 || status === 403 || status === 404) pb.authStore.clear();
+                }
+            }
+
+            // Demo mode: sign in automatically with a throwaway seeded account so
+            // the public demo opens straight into the app instead of a login
+            // wall. Both vars must be set at build time, so this is inert for
+            // every normal self-hosted install. Never point these at a real
+            // account: anyone loading the page gets that session. Runs after the
+            // refresh above so a stored demo session the server has since
+            // rejected (the account was re-seeded) signs straight back in.
+            const demoEmail = import.meta.env.VITE_DEMO_EMAIL;
+            const demoPassword = import.meta.env.VITE_DEMO_PASSWORD;
+            if (!pb.authStore.isValid && demoEmail && demoPassword) {
+                try {
+                    await pb.collection('users').authWithPassword(demoEmail, demoPassword);
+                } catch {
+                    // Fall through to the normal sign-in screen if the demo
+                    // account is mid-reset or missing.
                 }
             }
 
@@ -95,7 +97,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const value = useMemo(() => ({
         session,
-        isAuthenticated: pb.authStore.isValid,
+        // Tied to `session`, the memo's only dependency: reading the auth store
+        // alone went stale when a rejected token was cleared during init, and
+        // the app showed the verify gate instead of the sign-in screen.
+        isAuthenticated: !!session && pb.authStore.isValid,
         logout,
         currentUser: pb.authStore.model as PBAuthModel | null,
     }), [session]);
